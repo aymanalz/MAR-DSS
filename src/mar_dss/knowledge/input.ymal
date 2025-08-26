@@ -1,0 +1,53 @@
+inputs:
+  - id: "Ks"
+    name: "Aquifer Conductivity"
+    description: "Hydraulic conductivity of the aquifer"
+    type: numeric
+    units: "m/day"
+    value: 5.5
+    default: 1.0
+    range: [1e-6, 2000]
+    certainty: 1.0
+    group: "Aquifer Properties"
+
+  - id: "Dgw"
+    name: "Groundwater Depth"
+    description: "Depth to groundwater table"
+    type: numeric
+    units: "m"
+    value: 20
+    default: 5
+    range: [0, 2000]
+    certainty: 1.0
+    group: "Aquifer Properties"
+
+  - id: "Aqtype"
+    name: "Aquifer Type"
+    description: "Geologic type of the aquifer"
+    type: categorical
+    value: "Unconfined"
+    default: "Unconfined"
+    allowed_values: ["Confined", "Unconfined"]
+    certainty: 1.0
+    group: "Aquifer Properties"
+
+  - id: "Ss"
+    name: "Storage Coefficient"
+    description: "Specific storage or storativity of the aquifer"
+    type: numeric
+    value: 0.15
+    default: 0.05
+    range: [1e-5, 0.7]
+    certainty: 0.9
+    units: "-"
+    group: "Aquifer Properties"
+
+  - id: "Vw"
+    name: "Available Water"
+    description: "Volume of water available for use"
+    type: numeric
+    units: "m³"
+    value: 1000
+    range: [0, null]
+    certainty: 0.85
+    group: "Water Balance"

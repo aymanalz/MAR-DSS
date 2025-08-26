@@ -1,0 +1,26 @@
+rules:
+  - id: "Vs"
+    name: "Available Storage"
+    symbol: "Vs"
+    description: "Calculates the volume of available storage in the aquifer."
+    type: numeric
+    module: "aquifer_calculations"     # Python file: aquifer_calculations.py
+    function_name: "compute_vs"        # Function inside the module
+    dependencies: ["Ks", "Dgw", "Qtype"]
+    certainty: 1.0
+    range: [0, null]
+    group: "Aquifer Properties"
+    leaf: false
+
+  - id: "Wlog"
+    name: "Waterlogging Checker"
+    symbol: "Wlog"
+    description: "Determines whether waterlogging occurs by comparing available storage with available water."
+    type: boolean
+    module: "aquifer_calculations"
+    function_name: "check_waterlogging"
+    dependencies: ["Vs", "Vw"]
+    certainty: 1.0
+    allowed_values: [true, false]
+    group: "Water Balance"
+    leaf: true
