@@ -1,6 +1,7 @@
 import pytest
 from mar_dss.base import Node
 
+
 def test_node_init_and_attributes():
     node = Node(
         node_id="Ks",
@@ -102,3 +103,8 @@ def test_evaluate_rule_node_with_missing_dependencies_raises_keyerror():
     )
     with pytest.raises(KeyError):
         node.evaluate({"A": 1})  # "B" is missing
+
+
+
+
+        

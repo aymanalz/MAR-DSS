@@ -6,7 +6,7 @@ rules:
     type: numeric
     module: "aquifer_calculations"     # Python file: aquifer_calculations.py
     function_name: "compute_vs"        # Function inside the module
-    dependencies: ["Ks", "Dgw", "Qtype"]
+    dependencies: ["Ks", "Dgw", "Aqtype"]
     certainty: 1.0
     range: [0, null]
     group: "Aquifer Properties"
