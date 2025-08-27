@@ -51,3 +51,36 @@ inputs:
     range: [0, null]
     certainty: 0.85
     group: "Water Balance"
+
+  - id: "Dgw_min"
+    name: "Minimum Groundwater Depth"
+    description: "Minimum depth of groundwater below ground surface before waterlogging issues occur"
+    type: numeric
+    units: "m"
+    value: 5.0
+    default: 5.0
+    range: [0.0, 100.0]
+    certainty: 0.8
+    group: "Water Balance"
+
+  - id: "Hmax"
+    name: "Maximum Allowable Head Change"
+    description: "Maximum allowable hydraulic head change in confined aquifers to prevent too much land uplift and environmental impacts"
+    type: numeric
+    units: "m"
+    value: 2.0
+    default: 2.0
+    range: [0.1, 50.0]
+    certainty: 0.85
+    group: "Aquifer Properties"
+
+  - id: "n"
+    name: "Porosity"
+    description: "Fraction of void space in the aquifer material (ratio of void volume to total volume)"
+    type: numeric
+    units: "-"
+    value: 0.25
+    default: 0.20
+    range: [0.01, 0.60]
+    certainty: 0.9
+    group: "Aquifer Properties"

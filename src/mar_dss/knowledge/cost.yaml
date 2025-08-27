@@ -1,0 +1,25 @@
+bill_of_quantities:
+  - item_no: 1
+    description: "Site preparation & earthworks"
+    unit: "per hectare"
+    unit_price_usd: 12000
+
+  - item_no: 2
+    description: "Construction of infiltration pond"
+    unit: "per pond"
+    unit_price_usd: 45000
+
+  - item_no: 3
+    description: "Monitoring wells (drilling & casing)"
+    unit: "per well"
+    unit_price_usd: 20000
+
+  - item_no: 4
+    description: "Water conveyance pipeline"
+    unit: "per meter"
+    unit_price_usd: 150
+
+  - item_no: 5
+    description: "Basic treatment (screening & sedimentation)"
+    unit: "per unit"
+    unit_price_usd: 30000

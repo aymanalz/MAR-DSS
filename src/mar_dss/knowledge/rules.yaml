@@ -4,9 +4,9 @@ rules:
     symbol: "Vs"
     description: "Calculates the volume of available storage in the aquifer."
     type: numeric
-    module: "aquifer_calculations"     # Python file: aquifer_calculations.py
-    function_name: "compute_vs"        # Function inside the module
-    dependencies: ["Ks", "Dgw", "Aqtype"]
+    module: "geohydro_rules"     
+    function_name: "compute_available_storage"  # Function inside the module
+    dependencies: ["Dgw", "Dgw_min", "Aqtype", "Ss"]
     certainty: 1.0
     range: [0, null]
     group: "Aquifer Properties"
@@ -24,3 +24,4 @@ rules:
     allowed_values: [true, false]
     group: "Water Balance"
     leaf: true
+
