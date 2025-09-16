@@ -103,15 +103,61 @@ class DecisionGraph:
                         )
                         self.add_node(node)
 
-    def evaluate(self, input_values: dict) -> dict:
-        """Evaluate all rule nodes based on input values."""
-        results = {}
-        for node_id, node in self.nodes.items():
-            if node.is_input():
-                results[node_id] = input_values.get(node_id, node.value)
+    def evaluate_node(self, node_id: str, input_values: dict, cache: dict) -> Any:
+        """Recursively evaluate a node with memoization."""
+        if node_id in cache:
+            return cache[node_id]
+
+        node = self.nodes[node_id]
+
+        if node.is_input():
+            value = input_values.get(node_id, node.value)
+        else:
+            # recursively evaluate dependencies
+            dep_values = {
+                dep: self.evaluate_node(dep, input_values, cache)
+                for dep in node.dependencies
+            }
+            if node.function:
+                value = node.function(*dep_values.values())
             else:
-                results[node_id] = node.evaluate(results)
+                value = node.value
+
+        # Update the node's value with the computed result
+        node.value = value
+        cache[node_id] = value
+        return value
+
+    def evaluate(self, input_values: dict) -> dict:
+        """Evaluate all leaf nodes in the graph."""
+        cache = {}  # Cache for all computed values
+        leaf_nodes = [nid for nid, n in self.nodes.items() if n.leaf_flag]
+        results = {}  # Only leaf node results
+
+        for nid in leaf_nodes:
+            results[nid] = self.evaluate_node(nid, input_values, cache)
+
         return results
+    
+    def get_node_values(self) -> dict:
+        """Get current values of all nodes in the graph."""
+        return {node_id: node.value for node_id, node in self.nodes.items()}
+    
+    def get_node_value(self, node_id: str) -> Any:
+        """Get the current value of a specific node."""
+        node = self.nodes.get(node_id)
+        return node.value if node else None
+    
+    def get_all_computed_values(self, input_values: dict) -> dict:
+        """Get all computed values including intermediate nodes."""
+        # Just evaluate leaf nodes (which computes everything) and return cache
+        cache = {}
+        leaf_nodes = [nid for nid, n in self.nodes.items() if n.leaf_flag]
+        
+        for nid in leaf_nodes:
+            self.evaluate_node(nid, input_values, cache)
+        
+        return cache
     
     # using networkx, plot the graph
     def plot(self):
