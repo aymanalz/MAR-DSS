@@ -179,8 +179,8 @@ class DashboardApp:
             dbc.CardBody([
                 html.Label("MAR Project Purpose:", className="fw-bold"),
                 html.P("Select one or more purposes for your MAR project:", className="text-muted small"),
-                dcc.Dropdown(
-                    id="mar-purpose-dropdown",
+                dbc.Checklist(
+                    id="mar-purpose-checklist",
                     options=[
                         {"label": "Secure Water Supply", "value": "secure_water_supply"},
                         {"label": "Restore Depleted Aquifer Storage", "value": "restore_aquifer_storage"},
@@ -189,8 +189,7 @@ class DashboardApp:
                         {"label": "Improve Water Quality", "value": "improve_water_quality"}
                     ],
                     value=["secure_water_supply"],  # Default selection
-                    multi=True,  # Allow multiple selections
-                    placeholder="Select MAR project purposes...",
+                    inline=False,
                     style={"margin-top": "10px"}
                 )
             ])
@@ -319,8 +318,8 @@ class DashboardApp:
                             dbc.Tabs([
                                 dbc.Tab(label="Overview", tab_id="overview"),
                                 dbc.Tab(label="Water Source", tab_id="analysis"),
-                                dbc.Tab(label="Reports", tab_id="reports"),
-                                dbc.Tab(label="Settings", tab_id="settings")
+                                dbc.Tab(label="Settings", tab_id="settings"),
+                                dbc.Tab(label="Reports", tab_id="reports")
                             ], id="top-tabs", active_tab="overview")
                         ]),
                         dbc.CardBody([

@@ -323,8 +323,68 @@ def create_general_tab_content():
                 dbc.Card([
                     dbc.CardHeader("Water Quality", className="fw-bold bg-success text-white"),
                     dbc.CardBody([
-                        html.P("Water quality parameters and monitoring information will be displayed here.", 
-                               className="text-muted")
+                        dbc.Row([
+                            # Physical Parameters
+                            dbc.Col([
+                                html.H6("Physical Parameters", className="fw-bold mb-3"),
+                                dbc.Checklist(
+                                    id="physical-parameters",
+                                    options=[
+                                        {"label": "Temperature", "value": "temperature"},
+                                        {"label": "Turbidity", "value": "turbidity"},
+                                        {"label": "Total Suspended Solids", "value": "tss"}
+                                    ],
+                                    value=[],
+                                    inline=False
+                                )
+                            ], width=3),
+                            
+                            # Chemical Parameters
+                            dbc.Col([
+                                html.H6("Chemical Parameters", className="fw-bold mb-3"),
+                                dbc.Checklist(
+                                    id="chemical-parameters",
+                                    options=[
+                                        {"label": "Salinity/TDS", "value": "salinity_tds"},
+                                        {"label": "Major Ions", "value": "major_ions"},
+                                        {"label": "Nitrate", "value": "nitrate"},
+                                        {"label": "Phosphate", "value": "phosphate"},
+                                        {"label": "Trace Metals", "value": "trace_metals"}
+                                    ],
+                                    value=[],
+                                    inline=False
+                                )
+                            ], width=3),
+                            
+                            # Biological Indicators
+                            dbc.Col([
+                                html.H6("Biological Indicators", className="fw-bold mb-3"),
+                                dbc.Checklist(
+                                    id="biological-indicators",
+                                    options=[
+                                        {"label": "E. coli", "value": "e_coli"},
+                                        {"label": "Viruses", "value": "viruses"},
+                                        {"label": "Protozoa", "value": "protozoa"}
+                                    ],
+                                    value=[],
+                                    inline=False
+                                )
+                            ], width=3),
+                            
+                            # Emerging Contaminants
+                            dbc.Col([
+                                html.H6("Emerging Contaminants", className="fw-bold mb-3"),
+                                dbc.Checklist(
+                                    id="emerging-contaminants",
+                                    options=[
+                                        {"label": "PFAS", "value": "pfas"},
+                                        {"label": "Pesticides", "value": "pesticides"}
+                                    ],
+                                    value=[],
+                                    inline=False
+                                )
+                            ], width=3)
+                        ])
                     ])
                 ])
             ], width=12)
