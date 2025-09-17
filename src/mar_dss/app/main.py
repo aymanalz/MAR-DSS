@@ -172,6 +172,49 @@ class DashboardApp:
         
         return cards
     
+    def create_mar_purpose_section(self):
+        """Create MAR Project Purpose section for overview."""
+        return dbc.Card([
+            dbc.CardHeader("MAR Project Purpose", className="fw-bold bg-success text-white"),
+            dbc.CardBody([
+                html.Label("MAR Project Purpose:", className="fw-bold"),
+                html.P("Select one or more purposes for your MAR project:", className="text-muted small"),
+                dcc.Dropdown(
+                    id="mar-purpose-dropdown",
+                    options=[
+                        {"label": "Secure Water Supply", "value": "secure_water_supply"},
+                        {"label": "Restore Depleted Aquifer Storage", "value": "restore_aquifer_storage"},
+                        {"label": "Reduce Flood Impact", "value": "reduce_flood_impact"},
+                        {"label": "Mitigate Seawater Intrusion", "value": "mitigate_seawater_intrusion"},
+                        {"label": "Improve Water Quality", "value": "improve_water_quality"}
+                    ],
+                    value=["secure_water_supply"],  # Default selection
+                    multi=True,  # Allow multiple selections
+                    placeholder="Select MAR project purposes...",
+                    style={"margin-top": "10px"}
+                )
+            ])
+        ])
+    
+    def create_location_map_section(self):
+        """Create location map section for overview."""
+        # Import the function from general_tab
+        try:
+            from mar_dss.app.general_tab import create_location_map
+        except ImportError:
+            from .general_tab import create_location_map
+        
+        return dbc.Card([
+            dbc.CardHeader("Project Location - Sacramento, California, United States", id="location-card-header", className="fw-bold bg-success text-white"),
+            dbc.CardBody([
+                dcc.Graph(
+                    figure=create_location_map(),
+                    config={'displayModeBar': True},
+                    id="location-map"
+                )
+            ])
+        ])
+    
     def setup_layout(self):
         """Set up the main dashboard layout."""
         # Sample data
@@ -275,7 +318,7 @@ class DashboardApp:
                         dbc.CardHeader([
                             dbc.Tabs([
                                 dbc.Tab(label="Overview", tab_id="overview"),
-                                dbc.Tab(label="General", tab_id="analysis"),
+                                dbc.Tab(label="Water Source", tab_id="analysis"),
                                 dbc.Tab(label="Reports", tab_id="reports"),
                                 dbc.Tab(label="Settings", tab_id="settings")
                             ], id="top-tabs", active_tab="overview")
@@ -331,23 +374,13 @@ class DashboardApp:
                 # Default content (overview)
                 return [
                     dbc.Row([
-                        dbc.Col(card, width=4) for card in self.summary_cards
-                    ], className="mb-4"),
-                    
-                    dbc.Row([
                         dbc.Col([
-                            dcc.Graph(figure=self.water_level_chart)
+                            self.create_mar_purpose_section()
                         ], width=6),
                         dbc.Col([
-                            dcc.Graph(figure=self.recharge_chart)
+                            self.create_location_map_section()
                         ], width=6)
-                    ]),
-                    
-                    dbc.Row([
-                        dbc.Col([
-                            dcc.Graph(figure=self.quality_chart)
-                        ], width=12)
-                    ], className="mt-4")
+                    ], className="mb-4")
                 ]
             
             # Check if sidebar navigation was triggered
@@ -358,23 +391,13 @@ class DashboardApp:
                     # Show overview content
                     return [
                         dbc.Row([
-                            dbc.Col(card, width=4) for card in self.summary_cards
-                        ], className="mb-4"),
-                        
-                        dbc.Row([
                             dbc.Col([
-                                dcc.Graph(figure=self.water_level_chart)
+                                self.create_mar_purpose_section()
                             ], width=6),
                             dbc.Col([
-                                dcc.Graph(figure=self.recharge_chart)
+                                self.create_location_map_section()
                             ], width=6)
-                        ]),
-                        
-                        dbc.Row([
-                            dbc.Col([
-                                dcc.Graph(figure=self.quality_chart)
-                            ], width=12)
-                        ], className="mt-4")
+                        ], className="mb-4")
                     ]
                 elif button_id == "nav-water-levels":
                     return create_water_levels_content()
@@ -390,23 +413,13 @@ class DashboardApp:
                 if active_tab == "overview":
                     return [
                         dbc.Row([
-                            dbc.Col(card, width=4) for card in self.summary_cards
-                        ], className="mb-4"),
-                        
-                        dbc.Row([
                             dbc.Col([
-                                dcc.Graph(figure=self.water_level_chart)
+                                self.create_mar_purpose_section()
                             ], width=6),
                             dbc.Col([
-                                dcc.Graph(figure=self.recharge_chart)
+                                self.create_location_map_section()
                             ], width=6)
-                        ]),
-                        
-                        dbc.Row([
-                            dbc.Col([
-                                dcc.Graph(figure=self.quality_chart)
-                            ], width=12)
-                        ], className="mt-4")
+                        ], className="mb-4")
                     ]
                 elif active_tab == "analysis":
                     return create_general_tab_content()
@@ -419,23 +432,13 @@ class DashboardApp:
             if active_tab == "overview":
                 return [
                     dbc.Row([
-                        dbc.Col(card, width=4) for card in self.summary_cards
-                    ], className="mb-4"),
-                    
-                    dbc.Row([
                         dbc.Col([
-                            dcc.Graph(figure=self.water_level_chart)
+                            self.create_mar_purpose_section()
                         ], width=6),
                         dbc.Col([
-                            dcc.Graph(figure=self.recharge_chart)
+                            self.create_location_map_section()
                         ], width=6)
-                    ]),
-                    
-                    dbc.Row([
-                        dbc.Col([
-                            dcc.Graph(figure=self.quality_chart)
-                        ], width=12)
-                    ], className="mt-4")
+                    ], className="mb-4")
                 ]
             elif active_tab == "analysis":
                 return create_general_tab_content()
@@ -524,6 +527,50 @@ class DashboardApp:
             
             # Default fallback
             return "Project Location - Sacramento, California, United States"
+        
+        # Add callback to create the editable table
+        @self.app.callback(
+            Output("flow-table-container", "children"),
+            [Input("flow-data-store", "data")]
+        )
+        def create_flow_table(flow_data):
+            """Create the editable flow table."""
+            try:
+                from mar_dss.app.general_tab import create_editable_flow_table
+            except ImportError:
+                from .general_tab import create_editable_flow_table
+            
+            return create_editable_flow_table()
+        
+        # Add callback for updating monthly flow chart from table
+        @self.app.callback(
+            Output("monthly-flow-chart", "figure"),
+            [Input("flow-data-table", "data")]
+        )
+        def update_monthly_flow_chart_from_table(table_data):
+            """Update the monthly flow chart based on table data."""
+            if not table_data:
+                # Return default chart if no data
+                try:
+                    from mar_dss.app.general_tab import create_monthly_flow_chart
+                except ImportError:
+                    from .general_tab import create_monthly_flow_chart
+                return create_monthly_flow_chart()
+            
+            # Extract flow data from table
+            flow_data = {}
+            for row in table_data:
+                month = row['Month']
+                flow = row.get('Flow (m³/month)', 0)
+                flow_data[month] = flow if flow is not None else 0
+            
+            # Create chart with the data
+            try:
+                from mar_dss.app.general_tab import create_monthly_flow_chart
+            except ImportError:
+                from .general_tab import create_monthly_flow_chart
+            
+            return create_monthly_flow_chart(flow_data)
         
     def get_theme_css(self, theme_name):
         """Get CSS for the selected theme."""
