@@ -177,6 +177,29 @@ class DashboardApp:
         return dbc.Card([
             dbc.CardHeader("MAR Project Purpose", className="fw-bold bg-success text-white"),
             dbc.CardBody([
+                html.Label("Project Name:", className="fw-bold"),
+                dbc.Input(
+                    id="project-name-input",
+                    type="text",
+                    placeholder="Enter your MAR project name...",
+                    value="",
+                    style={"margin-bottom": "15px"}
+                ),
+                html.Label("Analysis Date:", className="fw-bold"),
+                dbc.Input(
+                    id="analysis-date-input",
+                    type="date",
+                    value=datetime.now().strftime("%Y-%m-%d"),
+                    style={"margin-bottom": "15px"}
+                ),
+                html.Label("Project Location:", className="fw-bold"),
+                dbc.Input(
+                    id="project-location-input",
+                    type="text",
+                    placeholder="Enter project location (e.g., Sacramento, CA)...",
+                    value="",
+                    style={"margin-bottom": "20px"}
+                ),
                 html.Label("MAR Project Purpose:", className="fw-bold"),
                 html.P("Select one or more purposes for your MAR project:", className="text-muted small"),
                 dbc.Checklist(
@@ -239,7 +262,39 @@ class DashboardApp:
                 dbc.Col([
                     html.Div([
                         # Title
-                        html.H1("MAR DSS Dashboard", className="text-center mb-4"),
+                        html.Div([
+                            html.H1("Managed Aquifer Recharge Decision Support System", 
+                                   className="text-left mb-4",
+                                   style={"font-family": "'Segoe UI', Tahoma, sans-serif", 
+                                          "font-size": "2.75rem", 
+                                          "font-weight": "700",
+                                          "color": "#2C3E50",
+                                          "background-color": "#FFFFFF",
+                                          "padding": "0px",
+                                          "border-radius": "8px",
+                                          "border": "none",
+                                          "width": "fit-content",
+                                          "display": "inline-block",
+                                          "vertical-align": "middle"})
+                        ], style={"display": "flex", "align-items": "center", "justify-content": "flex-start"}),
+                        
+                        # Action Icons Row
+                        html.Div([
+                            dbc.ButtonGroup([
+                                dbc.Button([
+                                    html.I(className="fas fa-folder-open me-1"),
+                                    "Open"
+                                ], id="btn-open", color="outline-primary", size="sm", className="me-1", style={"padding": "4px 8px"}),
+                                dbc.Button([
+                                    html.I(className="fas fa-save me-1"),
+                                    "Save"
+                                ], id="btn-save", color="outline-success", size="sm", className="me-1", style={"padding": "4px 8px"}),
+                                dbc.Button([
+                                    html.I(className="fas fa-plus me-1"),
+                                    "New"
+                                ], id="btn-new", color="outline-info", size="sm", style={"padding": "4px 8px"})
+                            ], className="mb-2")
+                        ], style={"margin-top": "5px"}),
                         
                         # Theme Selector and Logo Row
                         html.Div([
@@ -264,9 +319,9 @@ class DashboardApp:
                                 src="assets/logo.jpg",
                                 alt="MAR DSS Logo",
                                 style={
-                                    "height": "80px",
+                                    "height": "160px",
                                     "width": "auto",
-                                    "max-width": "150px",
+                                    "max-width": "300px",
                                     "vertical-align": "middle"
                                 }
                             )
@@ -282,7 +337,7 @@ class DashboardApp:
                 # Left Sidebar
                 dbc.Col([
                     dbc.Card([
-                        dbc.CardHeader("Navigation"),
+                        dbc.CardHeader("Analysis", className="fw-bold"),
                         dbc.CardBody([
                             dbc.Nav([
                                 dbc.NavItem([
@@ -290,15 +345,23 @@ class DashboardApp:
                                               href="#", active=True)
                                 ]),
                                 dbc.NavItem([
-                                    dbc.NavLink("Water Levels", id="nav-water-levels", 
+                                    dbc.NavLink("DSS Algorithm", id="nav-water-levels", 
                                               href="#")
                                 ]),
                                 dbc.NavItem([
-                                    dbc.NavLink("Recharge Rates", id="nav-recharge", 
+                                    dbc.NavLink("Decision Sensitivity", id="nav-recharge", 
                                               href="#")
                                 ]),
                                 dbc.NavItem([
-                                    dbc.NavLink("Water Quality", id="nav-quality", 
+                                    dbc.NavLink("Decision Interpretation", id="nav-quality", 
+                                              href="#")
+                                ]),
+                                dbc.NavItem([
+                                    dbc.NavLink("Scenarios Comparison", id="nav-scenarios", 
+                                              href="#")
+                                ]),
+                                dbc.NavItem([
+                                    dbc.NavLink("AI Generated Decision", id="nav-ai-decision", 
                                               href="#")
                                 ]),
                                 dbc.NavItem([
@@ -318,7 +381,9 @@ class DashboardApp:
                             dbc.Tabs([
                                 dbc.Tab(label="Overview", tab_id="overview"),
                                 dbc.Tab(label="Water Source", tab_id="analysis"),
-                                dbc.Tab(label="Settings", tab_id="settings"),
+                                dbc.Tab(label="Hydrogeology", tab_id="settings"),
+                                dbc.Tab(label="Environmental Impact", tab_id="environmental"),
+                                dbc.Tab(label="Legal Constraints", tab_id="legal"),
                                 dbc.Tab(label="Reports", tab_id="reports")
                             ], id="top-tabs", active_tab="overview")
                         ]),
