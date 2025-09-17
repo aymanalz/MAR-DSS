@@ -500,7 +500,31 @@ class DashboardApp:
                 button_id == "nav-quality",
                 button_id == "nav-export"
             )
-    
+        
+        # Add callback for map interactions to update location title
+        @self.app.callback(
+            Output("location-card-header", "children"),
+            [Input("location-map", "relayoutData")]
+        )
+        def update_location_title(relayout_data):
+            """Update the location card title based on map interactions."""
+            if relayout_data and 'mapbox.center' in relayout_data:
+                center = relayout_data['mapbox.center']
+                lat = center['lat']
+                lon = center['lon']
+                
+                # Import the function from general_tab
+                try:
+                    from mar_dss.app.general_tab import get_location_details
+                except ImportError:
+                    from .general_tab import get_location_details
+                
+                location_name = get_location_details(lat, lon)
+                return f"Project Location - {location_name}"
+            
+            # Default fallback
+            return "Project Location - Sacramento, California, United States"
+        
     def get_theme_css(self, theme_name):
         """Get CSS for the selected theme."""
         theme_map = {

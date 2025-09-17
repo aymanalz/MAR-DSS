@@ -1,0 +1,9 @@
+# Logo Placeholder
+# 
+# To add your logo:
+# 1. Place your logo image file in this assets folder
+# 2. Name it "logo.png" (or update the src path in main.py)
+# 3. Supported formats: PNG, JPG, SVG
+# 4. Recommended size: 200x60 pixels or similar aspect ratio
+#
+# The logo will appear on the right side of the title
