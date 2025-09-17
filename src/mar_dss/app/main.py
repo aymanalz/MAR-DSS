@@ -2,7 +2,6 @@
 Main dashboard application for MAR DSS.
 """
 
-import webbrowser
 import dash
 from dash import dcc, html, Input, Output, State, callback
 import dash_bootstrap_components as dbc
@@ -12,6 +11,28 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import json
+try:
+    # Try absolute imports first (when run as module)
+    from mar_dss.app.general_tab import create_general_tab_content
+    from mar_dss.app.reports_tab import create_reports_tab_content
+    from mar_dss.app.settings_tab import create_settings_tab_content
+    from mar_dss.app.sidebar_content import (
+        create_water_levels_content, 
+        create_recharge_content, 
+        create_quality_content, 
+        create_export_content
+    )
+except ImportError:
+    # Fallback to relative imports (when run directly)
+    from .general_tab import create_general_tab_content
+    from .reports_tab import create_reports_tab_content
+    from .settings_tab import create_settings_tab_content
+    from .sidebar_content import (
+        create_water_levels_content, 
+        create_recharge_content, 
+        create_quality_content, 
+        create_export_content
+    )
 
 
 class DashboardApp:
@@ -24,7 +45,8 @@ class DashboardApp:
             external_stylesheets=[
                 "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
             ],
-            suppress_callback_exceptions=True
+            suppress_callback_exceptions=True,
+            assets_folder="assets"
         )
         self.current_theme = "CERULEAN"
         self.setup_layout()
@@ -153,13 +175,13 @@ class DashboardApp:
     def setup_layout(self):
         """Set up the main dashboard layout."""
         # Sample data
-        data = self.create_sample_data()
+        self.data = self.create_sample_data()
         
         # Create charts
-        water_level_chart = self.create_water_level_chart(data)
-        recharge_chart = self.create_recharge_chart(data)
-        quality_chart = self.create_quality_chart(data)
-        summary_cards = self.create_summary_cards(data)
+        self.water_level_chart = self.create_water_level_chart(self.data)
+        self.recharge_chart = self.create_recharge_chart(self.data)
+        self.quality_chart = self.create_quality_chart(self.data)
+        self.summary_cards = self.create_summary_cards(self.data)
         
         # Main layout
         self.app.layout = html.Div([
@@ -170,25 +192,41 @@ class DashboardApp:
                 href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.2/dist/cerulean/bootstrap.min.css"
             ),
             dbc.Container([
-            # Header with Theme Selector
+            # Header with Logo and Theme Selector
             dbc.Row([
                 dbc.Col([
                     html.Div([
+                        # Title
                         html.H1("MAR DSS Dashboard", className="text-center mb-4"),
+                        
+                        # Theme Selector and Logo Row
                         html.Div([
-                            html.Label("Theme", className="small text-muted"),
-                            dbc.Select(
-                                id="theme-selector",
-                                options=[
-                                    {"label": "Cerulean", "value": "CERULEAN"},
-                                    {"label": "Darkly", "value": "DARKLY"},
-                                    {"label": "Flatly", "value": "FLATLY"},
-                                    {"label": "Cyborg", "value": "CYBORG"},
-                                    {"label": "Slate", "value": "SLATE"}
-                                ],
-                                value="CERULEAN",
-                                size="sm",
-                                style={"width": "120px"}
+                            html.Div([
+                                html.Label("Theme", className="small text-muted"),
+                                dbc.Select(
+                                    id="theme-selector",
+                                    options=[
+                                        {"label": "Cerulean", "value": "CERULEAN"},
+                                        {"label": "Darkly", "value": "DARKLY"},
+                                        {"label": "Flatly", "value": "FLATLY"},
+                                        {"label": "Cyborg", "value": "CYBORG"},
+                                        {"label": "Slate", "value": "SLATE"}
+                                    ],
+                                    value="CERULEAN",
+                                    size="sm",
+                                    style={"width": "120px"}
+                                )
+                            ], style={"display": "inline-block", "margin-right": "20px"}),
+                            
+                            html.Img(
+                                src="assets/logo.jpg",
+                                alt="MAR DSS Logo",
+                                style={
+                                    "height": "80px",
+                                    "width": "auto",
+                                    "max-width": "150px",
+                                    "vertical-align": "middle"
+                                }
                             )
                         ], className="position-absolute", 
                            style={"top": "10px", "right": "20px"})
@@ -237,86 +275,34 @@ class DashboardApp:
                         dbc.CardHeader([
                             dbc.Tabs([
                                 dbc.Tab(label="Overview", tab_id="overview"),
-                                dbc.Tab(label="Analysis", tab_id="analysis"),
+                                dbc.Tab(label="General", tab_id="analysis"),
                                 dbc.Tab(label="Reports", tab_id="reports"),
                                 dbc.Tab(label="Settings", tab_id="settings")
                             ], id="top-tabs", active_tab="overview")
                         ]),
                         dbc.CardBody([
-                            # Overview Tab Content
-                            html.Div(id="overview-content", children=[
+                            # Main Content Area - switches based on navigation
+                            html.Div(id="main-content", children=[
+                                # Default content (overview)
                                 dbc.Row([
-                                    dbc.Col(card, width=4) for card in summary_cards
+                                    dbc.Col(card, width=4) for card in self.summary_cards
                                 ], className="mb-4"),
                                 
                                 dbc.Row([
                                     dbc.Col([
-                                        dcc.Graph(figure=water_level_chart)
+                                        dcc.Graph(figure=self.water_level_chart)
                                     ], width=6),
                                     dbc.Col([
-                                        dcc.Graph(figure=recharge_chart)
+                                        dcc.Graph(figure=self.recharge_chart)
                                     ], width=6)
                                 ]),
                                 
                                 dbc.Row([
                                     dbc.Col([
-                                        dcc.Graph(figure=quality_chart)
+                                        dcc.Graph(figure=self.quality_chart)
                                     ], width=12)
                                 ], className="mt-4")
-                            ]),
-                            
-                            # Analysis Tab Content
-                            html.Div(id="analysis-content", children=[
-                                html.H3("Analysis Tools"),
-                                html.P("Advanced analysis tools will be implemented here."),
-                                dbc.Alert("Analysis features coming soon!", 
-                                        color="info", className="mt-3")
-                            ], style={"display": "none"}),
-                            
-                            # Reports Tab Content
-                            html.Div(id="reports-content", children=[
-                                html.H3("Reports"),
-                                html.P("Generate and download reports here."),
-                                dbc.Button("Generate Report", color="primary", 
-                                         className="mt-3")
-                            ], style={"display": "none"}),
-                            
-                            # Settings Tab Content
-                            html.Div(id="settings-content", children=[
-                                html.H3("Settings"),
-                                html.P("Configure dashboard settings here."),
-                                dbc.Form([
-                                    dbc.Row([
-                                        dbc.Label("Update Frequency:", width=3),
-                                        dbc.Col([
-                                            dbc.Select(
-                                                options=[
-                                                    {"label": "Real-time", "value": "realtime"},
-                                                    {"label": "Every 5 minutes", "value": "5min"},
-                                                    {"label": "Every hour", "value": "1hour"},
-                                                    {"label": "Daily", "value": "daily"}
-                                                ],
-                                                value="1hour"
-                                            )
-                                        ], width=9)
-                                    ], className="mb-3"),
-                                    
-                                    dbc.Row([
-                                        dbc.Label("Data Range:", width=3),
-                                        dbc.Col([
-                                            dbc.Select(
-                                                options=[
-                                                    {"label": "Last 7 days", "value": "7days"},
-                                                    {"label": "Last 30 days", "value": "30days"},
-                                                    {"label": "Last 3 months", "value": "3months"},
-                                                    {"label": "Last year", "value": "1year"}
-                                                ],
-                                                value="30days"
-                                            )
-                                        ], width=9)
-                                    ])
-                                ])
-                            ], style={"display": "none"})
+                            ])
                         ])
                     ])
                 ], width=9)
@@ -328,31 +314,138 @@ class DashboardApp:
         """Set up dashboard callbacks."""
         
         @self.app.callback(
-            [Output("overview-content", "style"),
-             Output("analysis-content", "style"),
-             Output("reports-content", "style"),
-             Output("settings-content", "style")],
-            [Input("top-tabs", "active_tab")]
+            Output("main-content", "children"),
+            [Input("top-tabs", "active_tab"),
+             Input("nav-dashboard", "n_clicks"),
+             Input("nav-water-levels", "n_clicks"),
+             Input("nav-recharge", "n_clicks"),
+             Input("nav-quality", "n_clicks"),
+             Input("nav-export", "n_clicks")]
         )
-        def update_tab_content(active_tab):
-            """Update content based on active tab."""
-            styles = [
-                {"display": "none"},
-                {"display": "none"},
-                {"display": "none"},
-                {"display": "none"}
-            ]
+        def update_main_content(active_tab, dash_clicks, water_clicks, 
+                              recharge_clicks, quality_clicks, export_clicks):
+            """Update main content based on navigation."""
+            ctx = dash.callback_context
             
+            if not ctx.triggered:
+                # Default content (overview)
+                return [
+                    dbc.Row([
+                        dbc.Col(card, width=4) for card in self.summary_cards
+                    ], className="mb-4"),
+                    
+                    dbc.Row([
+                        dbc.Col([
+                            dcc.Graph(figure=self.water_level_chart)
+                        ], width=6),
+                        dbc.Col([
+                            dcc.Graph(figure=self.recharge_chart)
+                        ], width=6)
+                    ]),
+                    
+                    dbc.Row([
+                        dbc.Col([
+                            dcc.Graph(figure=self.quality_chart)
+                        ], width=12)
+                    ], className="mt-4")
+                ]
+            
+            # Check if sidebar navigation was triggered
+            if ctx.triggered[0]["prop_id"].startswith("nav-"):
+                button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+                
+                if button_id == "nav-dashboard":
+                    # Show overview content
+                    return [
+                        dbc.Row([
+                            dbc.Col(card, width=4) for card in self.summary_cards
+                        ], className="mb-4"),
+                        
+                        dbc.Row([
+                            dbc.Col([
+                                dcc.Graph(figure=self.water_level_chart)
+                            ], width=6),
+                            dbc.Col([
+                                dcc.Graph(figure=self.recharge_chart)
+                            ], width=6)
+                        ]),
+                        
+                        dbc.Row([
+                            dbc.Col([
+                                dcc.Graph(figure=self.quality_chart)
+                            ], width=12)
+                        ], className="mt-4")
+                    ]
+                elif button_id == "nav-water-levels":
+                    return create_water_levels_content()
+                elif button_id == "nav-recharge":
+                    return create_recharge_content()
+                elif button_id == "nav-quality":
+                    return create_quality_content()
+                elif button_id == "nav-export":
+                    return create_export_content()
+            
+            # Handle top tab navigation - check if it's a top tab change
+            if "top-tabs" in ctx.triggered[0]["prop_id"] or ctx.triggered[0]["prop_id"] == "top-tabs.active_tab":
+                if active_tab == "overview":
+                    return [
+                        dbc.Row([
+                            dbc.Col(card, width=4) for card in self.summary_cards
+                        ], className="mb-4"),
+                        
+                        dbc.Row([
+                            dbc.Col([
+                                dcc.Graph(figure=self.water_level_chart)
+                            ], width=6),
+                            dbc.Col([
+                                dcc.Graph(figure=self.recharge_chart)
+                            ], width=6)
+                        ]),
+                        
+                        dbc.Row([
+                            dbc.Col([
+                                dcc.Graph(figure=self.quality_chart)
+                            ], width=12)
+                        ], className="mt-4")
+                    ]
+                elif active_tab == "analysis":
+                    return create_general_tab_content()
+                elif active_tab == "reports":
+                    return create_reports_tab_content()
+                elif active_tab == "settings":
+                    return create_settings_tab_content()
+            
+            # Fallback: handle based on active_tab value regardless of trigger
             if active_tab == "overview":
-                styles[0] = {"display": "block"}
+                return [
+                    dbc.Row([
+                        dbc.Col(card, width=4) for card in self.summary_cards
+                    ], className="mb-4"),
+                    
+                    dbc.Row([
+                        dbc.Col([
+                            dcc.Graph(figure=self.water_level_chart)
+                        ], width=6),
+                        dbc.Col([
+                            dcc.Graph(figure=self.recharge_chart)
+                        ], width=6)
+                    ]),
+                    
+                    dbc.Row([
+                        dbc.Col([
+                            dcc.Graph(figure=self.quality_chart)
+                        ], width=12)
+                    ], className="mt-4")
+                ]
             elif active_tab == "analysis":
-                styles[1] = {"display": "block"}
+                return create_general_tab_content()
             elif active_tab == "reports":
-                styles[2] = {"display": "block"}
+                return create_reports_tab_content()
             elif active_tab == "settings":
-                styles[3] = {"display": "block"}
+                return create_settings_tab_content()
             
-            return styles
+            # Default fallback
+            return []
         
         @self.app.callback(
             [Output("theme-selector", "value"),
@@ -389,9 +482,9 @@ class DashboardApp:
              Input("nav-quality", "n_clicks"),
              Input("nav-export", "n_clicks")]
         )
-        def update_sidebar_navigation(dash_clicks, water_clicks, 
-                                    recharge_clicks, quality_clicks, 
-                                    export_clicks):
+        def update_sidebar_active_states(dash_clicks, water_clicks, 
+                                       recharge_clicks, quality_clicks, 
+                                       export_clicks):
             """Update sidebar navigation active states."""
             ctx = dash.callback_context
             
@@ -415,21 +508,27 @@ class DashboardApp:
             "DARKLY": dbc.themes.DARKLY,
             "FLATLY": dbc.themes.FLATLY,
             "CYBORG": dbc.themes.CYBORG,
-            "SLATE": dbc.themes.SLATE
-        }
+            "SLATE": dbc.themes.SLATE     }  
         return theme_map.get(theme_name, dbc.themes.CERULEAN)
     
-    def run(self, debug=False, port=8050):
+    def run(self, debug=True, port=8050, open_browser=True):
         """Run the dashboard application."""
         url = f"http://127.0.0.1:{port}/"
-        webbrowser.open(url)
+        print(f"Dashboard running at: {url}")
+        print("Open the URL in your browser to view the dashboard.")
+        
+        if open_browser:
+            import webbrowser
+            print(f"Opening browser to: {url}")
+            webbrowser.open(url)
+            
         self.app.run(debug=debug, port=port)
 
 
-def main(port: int = 8050):
+def main(port: int = 8050, open_browser: bool = True):
     """Main function to run the dashboard."""
     dashboard = DashboardApp()
-    dashboard.run(port=port)
+    dashboard.run(port=port, open_browser=open_browser)
 
 
 if __name__ == "__main__":
