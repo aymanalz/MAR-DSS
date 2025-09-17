@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 import json
 try:
     # Try absolute imports first (when run as module)
-    from mar_dss.app.general_tab import create_general_tab_content
+    from mar_dss.app.water_source_tab import create_general_tab_content
     from mar_dss.app.reports_tab import create_reports_tab_content
     from mar_dss.app.settings_tab import create_settings_tab_content
     from mar_dss.app.sidebar_content import (
@@ -24,7 +24,7 @@ try:
     )
 except ImportError:
     # Fallback to relative imports (when run directly)
-    from .general_tab import create_general_tab_content
+    from .water_source_tab import create_general_tab_content
     from .reports_tab import create_reports_tab_content
     from .settings_tab import create_settings_tab_content
     from .sidebar_content import (
@@ -197,11 +197,11 @@ class DashboardApp:
     
     def create_location_map_section(self):
         """Create location map section for overview."""
-        # Import the function from general_tab
+        # Import the function from water_source_tab
         try:
-            from mar_dss.app.general_tab import create_location_map
+            from mar_dss.app.water_source_tab import create_location_map
         except ImportError:
-            from .general_tab import create_location_map
+            from .water_source_tab import create_location_map
         
         return dbc.Card([
             dbc.CardHeader("Project Location - Sacramento, California, United States", id="location-card-header", className="fw-bold bg-success text-white"),
@@ -515,11 +515,11 @@ class DashboardApp:
                 lat = center['lat']
                 lon = center['lon']
                 
-                # Import the function from general_tab
+                # Import the function from water_source_tab
                 try:
-                    from mar_dss.app.general_tab import get_location_details
+                    from mar_dss.app.water_source_tab import get_location_details
                 except ImportError:
-                    from .general_tab import get_location_details
+                    from .water_source_tab import get_location_details
                 
                 location_name = get_location_details(lat, lon)
                 return f"Project Location - {location_name}"
@@ -535,9 +535,9 @@ class DashboardApp:
         def create_flow_table(flow_data):
             """Create the editable flow table."""
             try:
-                from mar_dss.app.general_tab import create_editable_flow_table
+                from mar_dss.app.water_source_tab import create_editable_flow_table
             except ImportError:
-                from .general_tab import create_editable_flow_table
+                from .water_source_tab import create_editable_flow_table
             
             return create_editable_flow_table()
         
@@ -551,9 +551,9 @@ class DashboardApp:
             if not table_data:
                 # Return default chart if no data
                 try:
-                    from mar_dss.app.general_tab import create_monthly_flow_chart
+                    from mar_dss.app.water_source_tab import create_monthly_flow_chart
                 except ImportError:
-                    from .general_tab import create_monthly_flow_chart
+                    from .water_source_tab import create_monthly_flow_chart
                 return create_monthly_flow_chart()
             
             # Extract flow data from table
@@ -565,9 +565,9 @@ class DashboardApp:
             
             # Create chart with the data
             try:
-                from mar_dss.app.general_tab import create_monthly_flow_chart
+                from mar_dss.app.water_source_tab import create_monthly_flow_chart
             except ImportError:
-                from .general_tab import create_monthly_flow_chart
+                from .water_source_tab import create_monthly_flow_chart
             
             return create_monthly_flow_chart(flow_data)
         
