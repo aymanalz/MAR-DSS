@@ -20,7 +20,9 @@ try:
         create_water_levels_content, 
         create_recharge_content, 
         create_quality_content, 
-        create_export_content
+        create_export_content,
+        create_scenarios_content,
+        create_ai_decision_content
     )
 except ImportError:
     # Fallback to relative imports (when run directly)
@@ -31,7 +33,9 @@ except ImportError:
         create_water_levels_content, 
         create_recharge_content, 
         create_quality_content, 
-        create_export_content
+        create_export_content,
+        create_scenarios_content,
+        create_ai_decision_content
     )
 
 
@@ -427,10 +431,12 @@ class DashboardApp:
              Input("nav-water-levels", "n_clicks"),
              Input("nav-recharge", "n_clicks"),
              Input("nav-quality", "n_clicks"),
+             Input("nav-scenarios", "n_clicks"),
+             Input("nav-ai-decision", "n_clicks"),
              Input("nav-export", "n_clicks")]
         )
         def update_main_content(active_tab, dash_clicks, water_clicks, 
-                              recharge_clicks, quality_clicks, export_clicks):
+                              recharge_clicks, quality_clicks, scenarios_clicks, ai_clicks, export_clicks):
             """Update main content based on navigation."""
             ctx = dash.callback_context
             
@@ -469,6 +475,10 @@ class DashboardApp:
                     return create_recharge_content()
                 elif button_id == "nav-quality":
                     return create_quality_content()
+                elif button_id == "nav-scenarios":
+                    return create_scenarios_content()
+                elif button_id == "nav-ai-decision":
+                    return create_ai_decision_content()
                 elif button_id == "nav-export":
                     return create_export_content()
             
@@ -542,21 +552,25 @@ class DashboardApp:
              Output("nav-water-levels", "active"),
              Output("nav-recharge", "active"),
              Output("nav-quality", "active"),
+             Output("nav-scenarios", "active"),
+             Output("nav-ai-decision", "active"),
              Output("nav-export", "active")],
             [Input("nav-dashboard", "n_clicks"),
              Input("nav-water-levels", "n_clicks"),
              Input("nav-recharge", "n_clicks"),
              Input("nav-quality", "n_clicks"),
+             Input("nav-scenarios", "n_clicks"),
+             Input("nav-ai-decision", "n_clicks"),
              Input("nav-export", "n_clicks")]
         )
         def update_sidebar_active_states(dash_clicks, water_clicks, 
                                        recharge_clicks, quality_clicks, 
-                                       export_clicks):
+                                       scenarios_clicks, ai_clicks, export_clicks):
             """Update sidebar navigation active states."""
             ctx = dash.callback_context
             
             if not ctx.triggered:
-                return True, False, False, False, False
+                return True, False, False, False, False, False, False
             
             button_id = ctx.triggered[0]["prop_id"].split(".")[0]
             
@@ -565,6 +579,8 @@ class DashboardApp:
                 button_id == "nav-water-levels",
                 button_id == "nav-recharge",
                 button_id == "nav-quality",
+                button_id == "nav-scenarios",
+                button_id == "nav-ai-decision",
                 button_id == "nav-export"
             )
         
