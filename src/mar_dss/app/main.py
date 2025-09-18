@@ -16,27 +16,25 @@ try:
     from mar_dss.app.water_source_tab import create_general_tab_content
     from mar_dss.app.reports_tab import create_reports_tab_content
     from mar_dss.app.settings_tab import create_settings_tab_content
-    from mar_dss.app.sidebar_content import (
-        create_water_levels_content, 
-        create_recharge_content, 
-        create_quality_content, 
-        create_export_content,
-        create_scenarios_content,
-        create_ai_decision_content
-    )
+    from mar_dss.app.dashboard_tab import create_dashboard_content
+    from mar_dss.app.dss_algorithm_tab import create_dss_algorithm_content
+    from mar_dss.app.decision_sensitivity_tab import create_decision_sensitivity_content
+    from mar_dss.app.decision_interpretation_tab import create_decision_interpretation_content
+    from mar_dss.app.scenarios_comparison_tab import create_scenarios_comparison_content
+    from mar_dss.app.ai_generated_decision_tab import create_ai_generated_decision_content
+    from mar_dss.app.data_export_tab import create_data_export_content
 except ImportError:
     # Fallback to relative imports (when run directly)
     from .water_source_tab import create_general_tab_content
     from .reports_tab import create_reports_tab_content
     from .settings_tab import create_settings_tab_content
-    from .sidebar_content import (
-        create_water_levels_content, 
-        create_recharge_content, 
-        create_quality_content, 
-        create_export_content,
-        create_scenarios_content,
-        create_ai_decision_content
-    )
+    from .dashboard_tab import create_dashboard_content
+    from .dss_algorithm_tab import create_dss_algorithm_content
+    from .decision_sensitivity_tab import create_decision_sensitivity_content
+    from .decision_interpretation_tab import create_decision_interpretation_content
+    from .scenarios_comparison_tab import create_scenarios_comparison_content
+    from .ai_generated_decision_tab import create_ai_generated_decision_content
+    from .data_export_tab import create_data_export_content
 
 
 class DashboardApp:
@@ -179,7 +177,7 @@ class DashboardApp:
     def create_mar_purpose_section(self):
         """Create MAR Project Purpose section for overview."""
         return dbc.Card([
-            dbc.CardHeader("MAR Project Purpose", className="fw-bold bg-success text-white"),
+            dbc.CardHeader("MAR Project Purpose", className="fw-bold bg-primary text-white"),
             dbc.CardBody([
                 html.Label("Project Name:", className="fw-bold"),
                 dbc.Input(
@@ -231,7 +229,7 @@ class DashboardApp:
             from .water_source_tab import create_location_map
         
         return dbc.Card([
-            dbc.CardHeader("Project Location - Sacramento, California, United States", id="location-card-header", className="fw-bold bg-success text-white"),
+            dbc.CardHeader("Project Location - Sacramento, California, United States", id="location-card-header", className="fw-bold bg-primary text-white"),
             dbc.CardBody([
                 dcc.Graph(
                     figure=create_location_map(),
@@ -273,7 +271,7 @@ class DashboardApp:
                                           "font-size": "2.75rem", 
                                           "font-weight": "700",
                                           "color": "#2C3E50",
-                                          "background-color": "#FFFFFF",
+                                          "background-color": "transparent",
                                           "padding": "0px",
                                           "border-radius": "8px",
                                           "border": "none",
@@ -469,18 +467,20 @@ class DashboardApp:
                             ], width=6)
                         ], className="mb-4")
                     ]
+                elif button_id == "nav-dashboard":
+                    return create_dashboard_content()
                 elif button_id == "nav-water-levels":
-                    return create_water_levels_content()
+                    return create_dss_algorithm_content()
                 elif button_id == "nav-recharge":
-                    return create_recharge_content()
+                    return create_decision_sensitivity_content()
                 elif button_id == "nav-quality":
-                    return create_quality_content()
+                    return create_decision_interpretation_content()
                 elif button_id == "nav-scenarios":
-                    return create_scenarios_content()
+                    return create_scenarios_comparison_content()
                 elif button_id == "nav-ai-decision":
-                    return create_ai_decision_content()
+                    return create_ai_generated_decision_content()
                 elif button_id == "nav-export":
-                    return create_export_content()
+                    return create_data_export_content()
             
             # Handle top tab navigation - check if it's a top tab change
             if "top-tabs" in ctx.triggered[0]["prop_id"] or ctx.triggered[0]["prop_id"] == "top-tabs.active_tab":
@@ -651,6 +651,153 @@ class DashboardApp:
                 from .water_source_tab import create_monthly_flow_chart
             
             return create_monthly_flow_chart(flow_data)
+        
+        # Unified callback for both adding and deleting layers
+        @self.app.callback(
+            [Output("stratigraphy-profile", "children"),
+             Output("profile-summary", "children"),
+             Output("stratigraphy-data-store", "data")],
+            [Input("add-layer-btn", "n_clicks"),
+             Input({"type": "delete-layer", "index": dash.dependencies.ALL}, "n_clicks")],
+            [dash.dependencies.State("layer-thickness-input", "value"),
+             dash.dependencies.State("layer-type-select", "value"),
+             dash.dependencies.State("layer-conductivity", "value"),
+             dash.dependencies.State("layer-porosity", "value"),
+             dash.dependencies.State("stratigraphy-data-store", "data")]
+        )
+        def manage_stratigraphy_layers(add_clicks, delete_clicks, thickness, layer_type, 
+                                      conductivity, porosity, current_data):
+            """Manage adding and deleting stratigraphy layers."""
+            ctx = dash.callback_context
+            
+            if not ctx.triggered:
+                # Initial state
+                if not current_data:
+                    return [
+                        html.Div([
+                            html.P("No layers added yet. Use the form on the left to add layers.", 
+                                   className="text-muted text-center p-3")
+                        ])
+                    ], [
+                        html.P("Total Depth: 0 m", className="mb-1"),
+                        html.P("Aquifer Layers: 0", className="mb-1"),
+                        html.P("Aquitard Layers: 0", className="mb-0")
+                    ], []
+            
+            # Get current data
+            layers_data = current_data or []
+            
+            # Check if this is an add operation
+            if "add-layer-btn" in ctx.triggered[0]["prop_id"]:
+                if thickness and layer_type:
+                    import time
+                    new_layer_data = {
+                        'id': len(layers_data),
+                        'timestamp': time.time(),
+                        'thickness': float(thickness),
+                        'layer_type': layer_type,
+                        'conductivity': conductivity or 0,
+                        'porosity': porosity or 0
+                    }
+                    layers_data.append(new_layer_data)
+            
+            # Check if this is a delete operation
+            elif "delete-layer" in ctx.triggered[0]["prop_id"]:
+                try:
+                    import json
+                    triggered_id = ctx.triggered[0]["prop_id"].split('.')[0]
+                    component_id = json.loads(triggered_id)
+                    delete_index = component_id["index"]
+                    
+                    if 0 <= delete_index < len(layers_data):
+                        layers_data = [layer for i, layer in enumerate(layers_data) if i != delete_index]
+                except (ValueError, KeyError, IndexError):
+                    pass
+            
+            # Render the profile
+            if not layers_data:
+                return [
+                    html.Div([
+                        html.P("No layers added yet. Use the form on the left to add layers.", 
+                               className="text-muted text-center p-3")
+                    ])
+                ], [
+                    html.P("Total Depth: 0 m", className="mb-1"),
+                    html.P("Aquifer Layers: 0", className="mb-1"),
+                    html.P("Aquitard Layers: 0", className="mb-0")
+                ], layers_data
+            
+            # Create layer cards
+            layer_cards = []
+            layer_type_colors = {
+                'aquifer': '#28a745',
+                'aquitard': '#ffc107', 
+                'confining': '#dc3545',
+                'bedrock': '#6c757d',
+                'topsoil': '#8b4513',
+                'clay': '#8b4513',
+                'silt': '#a0522d'
+            }
+            
+            layer_display_names = {
+                'aquifer': 'Aquifer (High Permeability)',
+                'aquitard': 'Aquitard (Low Permeability)',
+                'confining': 'Confining Layer',
+                'bedrock': 'Bedrock',
+                'topsoil': 'Topsoil',
+                'clay': 'Clay Lens',
+                'silt': 'Silt Layer'
+            }
+            
+            total_depth = 0
+            aquifer_count = 0
+            aquitard_count = 0
+            
+            for i, layer_data in enumerate(layers_data):
+                layer_type = layer_data.get('layer_type', 'aquifer')
+                thickness = layer_data.get('thickness', 0)
+                color = layer_type_colors.get(layer_type, '#6c757d')
+                display_name = layer_display_names.get(layer_type, layer_type.title())
+                
+                # Create layer card
+                layer_card = dbc.Card([
+                    dbc.CardBody([
+                        dbc.Row([
+                            dbc.Col([
+                                html.H6(display_name, className="mb-1 fw-bold"),
+                                html.P(f"Thickness: {thickness} m", className="mb-1 small"),
+                                html.P(f"Type: {layer_type.title()}", className="mb-0 small text-muted")
+                            ], width=8),
+                            dbc.Col([
+                                dbc.Button(
+                                    html.I(className="fas fa-trash"),
+                                    id={"type": "delete-layer", "index": i},
+                                    color="outline-danger",
+                                    size="sm",
+                                    className="float-end"
+                                )
+                            ], width=4)
+                        ])
+                    ])
+                ], className="mb-2", style={"border-left": f"4px solid {color}"})
+                
+                layer_cards.append(layer_card)
+                
+                # Update summary
+                total_depth += thickness
+                if layer_type == 'aquifer':
+                    aquifer_count += 1
+                elif layer_type in ['aquitard', 'confining']:
+                    aquitard_count += 1
+            
+            # Create summary
+            summary = [
+                html.P(f"Total Depth: {total_depth:.1f} m", className="mb-1"),
+                html.P(f"Aquifer Layers: {aquifer_count}", className="mb-1"),
+                html.P(f"Aquitard Layers: {aquitard_count}", className="mb-0")
+            ]
+            
+            return layer_cards, summary, layers_data
         
     def get_theme_css(self, theme_name):
         """Get CSS for the selected theme."""

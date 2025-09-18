@@ -212,7 +212,7 @@ def create_general_tab_content():
         dbc.Row([
             dbc.Col([
                 dbc.Card([
-                    dbc.CardHeader("Water Source", className="fw-bold bg-success text-white"),
+                    dbc.CardHeader("Water Source", className="fw-bold bg-primary text-white"),
                     dbc.CardBody([
                         dbc.Row([
                             dbc.Col([
@@ -289,7 +289,7 @@ def create_general_tab_content():
         dbc.Row([
             dbc.Col([
                 dbc.Card([
-                    dbc.CardHeader("Volume Estimates", className="fw-bold bg-success text-white"),
+                    dbc.CardHeader("Volume Estimates", className="fw-bold bg-primary text-white"),
                     dbc.CardBody([
                         dbc.Row([
                             dbc.Col([
@@ -321,7 +321,7 @@ def create_general_tab_content():
         dbc.Row([
             dbc.Col([
                 dbc.Card([
-                    dbc.CardHeader("Water Quality", className="fw-bold bg-success text-white"),
+                    dbc.CardHeader("Water Quality", className="fw-bold bg-primary text-white"),
                     dbc.CardBody([
                         dbc.Row([
                             # Physical Parameters
