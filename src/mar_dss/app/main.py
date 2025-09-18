@@ -15,7 +15,7 @@ try:
     # Try absolute imports first (when run as module)
     from mar_dss.app.water_source_tab import create_general_tab_content
     from mar_dss.app.reports_tab import create_reports_tab_content
-    from mar_dss.app.settings_tab import create_settings_tab_content
+    from mar_dss.app.hydro_tab import create_settings_tab_content
     from mar_dss.app.dashboard_tab import create_dashboard_content
     from mar_dss.app.dss_algorithm_tab import create_dss_algorithm_content
     from mar_dss.app.decision_sensitivity_tab import create_decision_sensitivity_content
