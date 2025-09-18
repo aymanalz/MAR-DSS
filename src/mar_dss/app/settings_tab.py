@@ -159,8 +159,8 @@ def create_settings_tab_content():
                                 "background-color": "#f8f9fa"
                             }
                         ),
-                        # Hidden store to maintain layer data
-                        dcc.Store(id="stratigraphy-data-store", data=[]),
+                        # Local data store as fallback
+                        dcc.Store(id="stratigraphy-data-store-local", data=[], storage_type='memory'),
                         html.Hr(),
                         html.H6("Profile Summary", className="fw-bold mb-3"),
                         html.Div(

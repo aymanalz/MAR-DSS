@@ -416,7 +416,10 @@ class DashboardApp:
                     ])
                 ], width=9)
             ])
-        ], fluid=True, id="app-container")
+        ], fluid=True, id="app-container"),
+        
+        # Global data store for stratigraphy layers
+        dcc.Store(id="stratigraphy-data-store", data=[], storage_type='memory')
         ])
     
     def setup_callbacks(self):
@@ -656,23 +659,29 @@ class DashboardApp:
         @self.app.callback(
             [Output("stratigraphy-profile", "children"),
              Output("profile-summary", "children"),
-             Output("stratigraphy-data-store", "data")],
+             Output("stratigraphy-data-store", "data", allow_duplicate=True),
+             Output("stratigraphy-data-store-local", "data", allow_duplicate=True)],
             [Input("add-layer-btn", "n_clicks"),
              Input({"type": "delete-layer", "index": dash.dependencies.ALL}, "n_clicks")],
             [dash.dependencies.State("layer-thickness-input", "value"),
              dash.dependencies.State("layer-type-select", "value"),
              dash.dependencies.State("layer-conductivity", "value"),
              dash.dependencies.State("layer-porosity", "value"),
-             dash.dependencies.State("stratigraphy-data-store", "data")]
+             dash.dependencies.State("stratigraphy-data-store", "data"),
+             dash.dependencies.State("stratigraphy-data-store-local", "data")],
+            prevent_initial_call=True
         )
         def manage_stratigraphy_layers(add_clicks, delete_clicks, thickness, layer_type, 
-                                      conductivity, porosity, current_data):
+                                      conductivity, porosity, current_data, local_data):
             """Manage adding and deleting stratigraphy layers."""
             ctx = dash.callback_context
             
+            # Use whichever data store has data
+            layers_data = current_data or local_data or []
+            
             if not ctx.triggered:
-                # Initial state
-                if not current_data:
+                # Initial state - preserve existing data
+                if not layers_data:
                     return [
                         html.Div([
                             html.P("No layers added yet. Use the form on the left to add layers.", 
@@ -682,10 +691,7 @@ class DashboardApp:
                         html.P("Total Depth: 0 m", className="mb-1"),
                         html.P("Aquifer Layers: 0", className="mb-1"),
                         html.P("Aquitard Layers: 0", className="mb-0")
-                    ], []
-            
-            # Get current data
-            layers_data = current_data or []
+                    ], layers_data, layers_data
             
             # Check if this is an add operation
             if "add-layer-btn" in ctx.triggered[0]["prop_id"]:
@@ -725,7 +731,7 @@ class DashboardApp:
                     html.P("Total Depth: 0 m", className="mb-1"),
                     html.P("Aquifer Layers: 0", className="mb-1"),
                     html.P("Aquitard Layers: 0", className="mb-0")
-                ], layers_data
+                ], layers_data, layers_data
             
             # Create layer cards
             layer_cards = []
@@ -764,9 +770,9 @@ class DashboardApp:
                     dbc.CardBody([
                         dbc.Row([
                             dbc.Col([
-                                html.H6(display_name, className="mb-1 fw-bold"),
-                                html.P(f"Thickness: {thickness} m", className="mb-1 small"),
-                                html.P(f"Type: {layer_type.title()}", className="mb-0 small text-muted")
+                                html.H6(display_name, className="mb-0 fw-bold", style={"font-size": "0.9rem"}),
+                                html.P(f"Thickness: {thickness} m", className="mb-0 small", style={"font-size": "0.75rem"}),
+                                html.P(f"Type: {layer_type.title()}", className="mb-0 small text-muted", style={"font-size": "0.7rem"})
                             ], width=8),
                             dbc.Col([
                                 dbc.Button(
@@ -774,12 +780,13 @@ class DashboardApp:
                                     id={"type": "delete-layer", "index": i},
                                     color="outline-danger",
                                     size="sm",
-                                    className="float-end"
+                                    className="float-end",
+                                    style={"padding": "2px 6px", "font-size": "0.7rem"}
                                 )
                             ], width=4)
                         ])
-                    ])
-                ], className="mb-2", style={"border-left": f"4px solid {color}"})
+                    ], style={"padding": "8px 12px"})
+                ], className="mb-1", style={"border-left": f"4px solid {color}", "border-radius": "4px"})
                 
                 layer_cards.append(layer_card)
                 
@@ -797,7 +804,106 @@ class DashboardApp:
                 html.P(f"Aquitard Layers: {aquitard_count}", className="mb-0")
             ]
             
-            return layer_cards, summary, layers_data
+            return layer_cards, summary, layers_data, layers_data
+        
+        # Add callback to trigger stratigraphy rendering when hydrogeology tab is active
+        @self.app.callback(
+            [Output("stratigraphy-profile", "children", allow_duplicate=True),
+             Output("profile-summary", "children", allow_duplicate=True)],
+            [Input("top-tabs", "active_tab")],
+            [dash.dependencies.State("stratigraphy-data-store-local", "data")],
+            prevent_initial_call=True
+        )
+        def refresh_stratigraphy_on_tab_change(active_tab, layers_data):
+            """Refresh stratigraphy display when hydrogeology tab becomes active."""
+            if active_tab == "settings":  # settings tab is the hydrogeology tab
+                # Trigger the main stratigraphy callback by returning the current data
+                # This will cause the main callback to re-render with existing data
+                if layers_data:
+                    # Re-render existing layers
+                    layer_cards = []
+                    layer_type_colors = {
+                        'aquifer': '#28a745',
+                        'aquitard': '#ffc107', 
+                        'confining': '#dc3545',
+                        'bedrock': '#6c757d',
+                        'topsoil': '#8b4513',
+                        'clay': '#8b4513',
+                        'silt': '#a0522d'
+                    }
+                    
+                    layer_display_names = {
+                        'aquifer': 'Aquifer (High Permeability)',
+                        'aquitard': 'Aquitard (Low Permeability)',
+                        'confining': 'Confining Layer',
+                        'bedrock': 'Bedrock',
+                        'topsoil': 'Topsoil',
+                        'clay': 'Clay Lens',
+                        'silt': 'Silt Layer'
+                    }
+                    
+                    total_depth = 0
+                    aquifer_count = 0
+                    aquitard_count = 0
+                    
+                    for i, layer_data in enumerate(layers_data):
+                        layer_type = layer_data.get('layer_type', 'aquifer')
+                        thickness = layer_data.get('thickness', 0)
+                        color = layer_type_colors.get(layer_type, '#6c757d')
+                        display_name = layer_display_names.get(layer_type, layer_type.title())
+                        
+                        # Create layer card
+                        layer_card = dbc.Card([
+                            dbc.CardBody([
+                                dbc.Row([
+                                    dbc.Col([
+                                        html.H6(display_name, className="mb-0 fw-bold", style={"font-size": "0.9rem"}),
+                                        html.P(f"Thickness: {thickness} m", className="mb-0 small", style={"font-size": "0.75rem"}),
+                                        html.P(f"Type: {layer_type.title()}", className="mb-0 small text-muted", style={"font-size": "0.7rem"})
+                                    ], width=8),
+                                    dbc.Col([
+                                        dbc.Button(
+                                            html.I(className="fas fa-trash"),
+                                            id={"type": "delete-layer", "index": i},
+                                            color="outline-danger",
+                                            size="sm",
+                                            className="float-end",
+                                            style={"padding": "2px 6px", "font-size": "0.7rem"}
+                                        )
+                                    ], width=4)
+                                ])
+                            ], style={"padding": "8px 12px"})
+                        ], className="mb-1", style={"border-left": f"4px solid {color}", "border-radius": "4px"})
+                        
+                        layer_cards.append(layer_card)
+                        
+                        # Update summary
+                        total_depth += thickness
+                        if layer_type == 'aquifer':
+                            aquifer_count += 1
+                        elif layer_type in ['aquitard', 'confining']:
+                            aquitard_count += 1
+                    
+                    # Create summary
+                    summary = [
+                        html.P(f"Total Depth: {total_depth:.1f} m", className="mb-1"),
+                        html.P(f"Aquifer Layers: {aquifer_count}", className="mb-1"),
+                        html.P(f"Aquitard Layers: {aquitard_count}", className="mb-0")
+                    ]
+                    
+                    return layer_cards, summary
+                else:
+                    return [
+                        html.Div([
+                            html.P("No layers added yet. Use the form on the left to add layers.", 
+                                   className="text-muted text-center p-3")
+                        ])
+                    ], [
+                        html.P("Total Depth: 0 m", className="mb-1"),
+                        html.P("Aquifer Layers: 0", className="mb-1"),
+                        html.P("Aquitard Layers: 0", className="mb-0")
+                    ]
+            return dash.no_update, dash.no_update
         
     def get_theme_css(self, theme_name):
         """Get CSS for the selected theme."""
