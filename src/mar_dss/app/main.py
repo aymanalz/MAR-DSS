@@ -27,7 +27,7 @@ except ImportError:
     # Fallback to relative imports (when run directly)
     from .water_source_tab import create_general_tab_content
     from .reports_tab import create_reports_tab_content
-    from .settings_tab import create_settings_tab_content
+    from .hydro_tab import create_settings_tab_content
     from .dashboard_tab import create_dashboard_content
     from .dss_algorithm_tab import create_dss_algorithm_content
     from .decision_sensitivity_tab import create_decision_sensitivity_content
@@ -265,6 +265,16 @@ class DashboardApp:
                     html.Div([
                         # Title
                         html.Div([
+                            html.Img(
+                                src="assets/logo2.png",
+                                alt="MAR DSS Logo 2",
+                                style={
+                                    "height": "100px",
+                                    "width": "auto",
+                                    "margin-right": "12px",
+                                    "vertical-align": "middle"
+                                }
+                            ),
                             html.H1("Managed Aquifer Recharge Decision Support System", 
                                    className="text-left mb-4",
                                    style={"font-family": "'Segoe UI', Tahoma, sans-serif", 
