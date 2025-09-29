@@ -265,30 +265,51 @@ class DashboardApp:
                     html.Div([
                         # Title
                         html.Div([
-                            html.Img(
-                                src="assets/logo2.png",
-                                alt="MAR DSS Logo 2",
-                                style={
-                                    "height": "100px",
-                                    "width": "auto",
-                                    "margin-right": "12px",
-                                    "vertical-align": "middle"
-                                }
-                            ),
-                            html.H1("Managed Aquifer Recharge Decision Support System", 
-                                   className="text-left mb-4",
-                                   style={"font-family": "'Segoe UI', Tahoma, sans-serif", 
-                                          "font-size": "2.75rem", 
-                                          "font-weight": "700",
-                                          "color": "#2C3E50",
-                                          "background-color": "transparent",
-                                          "padding": "0px",
-                                          "border-radius": "8px",
-                                          "border": "none",
-                                          "width": "fit-content",
-                                          "display": "inline-block",
-                                          "vertical-align": "middle"})
-                        ], style={"display": "flex", "align-items": "center", "justify-content": "flex-start"}),
+                            # Left-pinned logo
+                            html.Div([
+                                html.Img(
+                                    src="assets/logo2.png",
+                                    alt="MAR DSS Logo 2",
+                                    style={
+                                        "height": "100px",
+                                        "width": "auto",
+                                        "vertical-align": "middle"
+                                    }
+                                )
+                            ], style={
+                                "position": "absolute",
+                                "left": "0",
+                                "top": "50%",
+                                "transform": "translateY(-50%)"
+                            }),
+                            # Centered title across full width
+                            html.Div([
+                                html.H1([
+                                    "Managed Aquifer Recharge",
+                                    html.Br(),
+                                    "Decision Support System"
+                                ], 
+                                       className="text-center mb-4",
+                                       style={"font-family": "'Segoe UI', Tahoma, sans-serif", 
+                                              "font-size": "2.75rem", 
+                                              "font-weight": "700",
+                                              "color": "#2C3E50",
+                                              "background-color": "transparent",
+                                              "padding": "0px",
+                                              "border-radius": "8px",
+                                              "border": "none",
+                                              "vertical-align": "middle"})
+                            ], style={
+                                "width": "100%",
+                                "display": "flex",
+                                "align-items": "center",
+                                "justify-content": "center"
+                            })
+                        ], style={
+                            "position": "relative",
+                            "min-height": "100px",
+                            "width": "100%"
+                        }),
                         
                         # Action Icons Row
                         html.Div([
@@ -344,9 +365,49 @@ class DashboardApp:
                 ])
             ]),
             
-            # Main Content Area with Sidebar and Tabs
+            # Main Content Area with Tabs and Sidebar
             dbc.Row([
-                # Left Sidebar
+                # Left Content Area with Tabs
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader([
+                            dbc.Tabs([
+                                dbc.Tab(label="(1) Overview", tab_id="overview"),
+                                dbc.Tab(label="(2) Water Source", tab_id="analysis"),
+                                dbc.Tab(label="(3) Hydrogeology", tab_id="settings"),
+                                dbc.Tab(label="(4) Environmental Impact", tab_id="environmental"),
+                                dbc.Tab(label="(5) Legal Constraints", tab_id="legal"),
+                                dbc.Tab(label="(6) Reports", tab_id="reports")
+                            ], id="top-tabs", active_tab="overview")
+                        ]),
+                        dbc.CardBody([
+                            # Main Content Area - switches based on navigation
+                            html.Div(id="main-content", children=[
+                                # Default content (overview)
+                                dbc.Row([
+                                    dbc.Col(card, width=4) for card in self.summary_cards
+                                ], className="mb-4"),
+                                
+                                dbc.Row([
+                                    dbc.Col([
+                                        dcc.Graph(figure=self.water_level_chart)
+                                    ], width=6),
+                                    dbc.Col([
+                                        dcc.Graph(figure=self.recharge_chart)
+                                    ], width=6)
+                                ]),
+                                
+                                dbc.Row([
+                                    dbc.Col([
+                                        dcc.Graph(figure=self.quality_chart)
+                                    ], width=12)
+                                ], className="mt-4")
+                            ])
+                        ])
+                    ])
+                ], width=9, style={"flex": "0 0 80%", "maxWidth": "80%"}),
+                
+                # Right Sidebar (Analysis)
                 dbc.Col([
                     dbc.Card([
                         dbc.CardHeader("Analysis", className="fw-bold"),
@@ -383,48 +444,7 @@ class DashboardApp:
                             ], vertical=True, pills=True)
                         ])
                     ])
-                ], width=3),
-                
-                # Right Content Area with Tabs
-                dbc.Col([
-                    # Top Navigation Tabs (now on the right)
-                    dbc.Card([
-                        dbc.CardHeader([
-                            dbc.Tabs([
-                                dbc.Tab(label="Overview", tab_id="overview"),
-                                dbc.Tab(label="Water Source", tab_id="analysis"),
-                                dbc.Tab(label="Hydrogeology", tab_id="settings"),
-                                dbc.Tab(label="Environmental Impact", tab_id="environmental"),
-                                dbc.Tab(label="Legal Constraints", tab_id="legal"),
-                                dbc.Tab(label="Reports", tab_id="reports")
-                            ], id="top-tabs", active_tab="overview")
-                        ]),
-                        dbc.CardBody([
-                            # Main Content Area - switches based on navigation
-                            html.Div(id="main-content", children=[
-                                # Default content (overview)
-                                dbc.Row([
-                                    dbc.Col(card, width=4) for card in self.summary_cards
-                                ], className="mb-4"),
-                                
-                                dbc.Row([
-                                    dbc.Col([
-                                        dcc.Graph(figure=self.water_level_chart)
-                                    ], width=6),
-                                    dbc.Col([
-                                        dcc.Graph(figure=self.recharge_chart)
-                                    ], width=6)
-                                ]),
-                                
-                                dbc.Row([
-                                    dbc.Col([
-                                        dcc.Graph(figure=self.quality_chart)
-                                    ], width=12)
-                                ], className="mt-4")
-                            ])
-                        ])
-                    ])
-                ], width=9)
+                ], width=3, style={"flex": "0 0 20%", "maxWidth": "20%"})
             ])
         ], fluid=True, id="app-container"),
         
