@@ -48,7 +48,7 @@ mar_dss = "mar_dss.cli:app"
 # rules.TY015 = "warn"  # For invalid-argument-type, warn instead of error.
 
 [tool.ruff]
-line-length = 120
+line-length = 80
 
 [tool.ruff.lint]
 select = [

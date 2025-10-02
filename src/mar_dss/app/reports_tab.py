@@ -2,8 +2,8 @@
 Reports tab content for MAR DSS dashboard.
 """
 
-from dash import html
 import dash_bootstrap_components as dbc
+from dash import html
 
 
 def create_reports_tab_content():
@@ -11,6 +11,5 @@ def create_reports_tab_content():
     return [
         html.H3("Reports"),
         html.P("Generate and download reports here."),
-        dbc.Button("Generate Report", color="primary", 
-                 className="mt-3")
+        dbc.Button("Generate Report", color="primary", className="mt-3"),
     ]
