@@ -2,7 +2,6 @@
 General tab content for MAR DSS dashboard.
 """
 
-
 import dash_bootstrap_components as dbc
 import dash_table
 import numpy as np
