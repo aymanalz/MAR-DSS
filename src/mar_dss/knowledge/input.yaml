@@ -27,7 +27,7 @@ inputs:
     type: categorical
     value: "Unconfined"
     default: "Unconfined"
-    allowed_values: ["Confined", "Unconfined"]
+    allowed_values: ["Confined", "Unconfined", "Semi-confined"]
     certainty: 1.0
     group: "Aquifer Properties"
 
@@ -65,7 +65,7 @@ inputs:
 
   - id: "Hmax"
     name: "Maximum Allowable Head Change"
-    description: "Maximum allowable hydraulic head change in confined aquifers to prevent too much land uplift and environmental impacts"
+    description: "Maximum allowable hydraulic head change in confined aquifers to prevent too much land uplift, fracturing, ord environmental impacts"
     type: numeric
     units: "m"
     value: 2.0
@@ -84,3 +84,24 @@ inputs:
     range: [0.01, 0.60]
     certainty: 0.9
     group: "Aquifer Properties"
+
+  - id: "UnSatClay"
+    name: "Clay Layer in Vadose Zone"
+    description: "Whether a clay layer exists in the vadose zone"
+    type: boolean
+    units: "-"
+    value: false
+    default: false
+    certainty: 0.9
+    group: "Vadose Zone"
+  
+  - id: "UnSatClayDepth"
+    name: "Clay Layer Depth"
+    description: "Depth of the clay layer in the vadose zone"
+    type: numeric
+    units: "m"
+    value: 0.0
+    default: 0.0
+    range: [0.0, 100.0]
+    certainty: 0.9
+    group: "Vadose Zone"

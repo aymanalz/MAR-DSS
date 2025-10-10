@@ -44,3 +44,12 @@ def compute_available_storage(Dgw, Dgw_min, Aqtype, Ss, Hmax):
         return Ss * Hmax
     else:
         raise ValueError(f"Unknown aquifer type: {Aqtype}")
+
+def compute_infiltration_rate(Ks, UnSatClay, UnSatClayDepth):
+    """
+    Compute the infiltration rate of the aquifer.
+    """
+    if UnSatClay:
+        return Ks * (1 - UnSatClayDepth)
+    else:
+        return Ks
