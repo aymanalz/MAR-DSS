@@ -52,6 +52,7 @@ class DashboardApp:
 
     def __init__(self):
         """Initialize the dashboard application."""
+        # 
         self.app = dash.Dash(
             __name__,
             external_stylesheets=[
