@@ -29,7 +29,7 @@ try:
     from mar_dss.app.components.dss_algorithm_tab import (
         create_dss_algorithm_content,
     )
-    from mar_dss.app.components.hydro_tab import create_hydro_tab_content
+    from mar_dss.app.components.hydro_tab import create_hydro_tab_content, _build_stratigraphy_row
     from mar_dss.app.components.reports_tab import create_reports_tab_content
     from mar_dss.app.components.scenarios_comparison_tab import (
         create_scenarios_comparison_content,
@@ -1035,6 +1035,293 @@ class DashboardApp:
                         html.P("Aquitard Layers: 0", className="mb-0"),
                     ]
             return dash.no_update, dash.no_update
+
+        # Callback for stratigraphy table management
+        @self.app.callback(
+            [
+                Output("stratigraphy-table-body", "children"),
+                Output("stratigraphy-table-data", "data"),
+                Output("remove-stratigraphy-row-btn", "disabled"),
+            ],
+            [
+                Input("add-stratigraphy-row-btn", "n_clicks"),
+                Input("remove-stratigraphy-row-btn", "n_clicks"),
+                Input({"type": "remove-stratigraphy-row", "index": dash.dependencies.ALL}, "n_clicks"),
+                Input({"type": "move-stratigraphy-up", "index": dash.dependencies.ALL}, "n_clicks"),
+                Input({"type": "move-stratigraphy-down", "index": dash.dependencies.ALL}, "n_clicks"),
+            ],
+            [
+                dash.dependencies.State("stratigraphy-table-data", "data"),
+            ],
+            prevent_initial_call=True,
+        )
+        def manage_stratigraphy_table(
+            add_clicks,
+            remove_clicks,
+            individual_remove_clicks,
+            move_up_clicks,
+            move_down_clicks,
+            table_data,
+        ):
+            """Manage adding and removing rows from the stratigraphy table."""
+            import pandas as pd
+            
+            ctx = dash.callback_context
+
+            # Initialize DataFrame if needed
+            if not table_data or not isinstance(table_data, dict):
+                df = pd.DataFrame({
+                    "parameter": ["Top Soil Thickness", "Water Table Depth", "Bedrock Depth"],
+                    "depth": ["1", "20", "50"]
+                })
+            else:
+                df = pd.DataFrame(table_data)
+                # Ensure mandatory rows exist
+                mandatory_params = ["Top Soil Thickness", "Water Table Depth", "Bedrock Depth"]
+                existing_params = df["parameter"].tolist()
+                
+                # Add missing mandatory parameters
+                for param in mandatory_params:
+                    if param not in existing_params:
+                        new_row = pd.DataFrame({
+                            "parameter": [param],
+                            "depth": [""]
+                        })
+                        df = pd.concat([df, new_row], ignore_index=True)
+
+            if not ctx.triggered:
+                # Initial state
+                rows = []
+                for i in range(len(df)):
+                    row_data = {
+                        "parameter": df.iloc[i]["parameter"],
+                        "depth": df.iloc[i]["depth"]
+                    }
+                    rows.append(_build_stratigraphy_row(i, len(df), row_data))
+                return rows, df.to_dict('list'), len(df) <= 1
+
+            # Check if this is an add operation
+            if "add-stratigraphy-row-btn" in ctx.triggered[0]["prop_id"]:
+                # Find the position to insert (above Bedrock Depth, below Top Soil Thickness)
+                bedrock_idx = None
+                for i, param in enumerate(df["parameter"]):
+                    if param == "Bedrock Depth":
+                        bedrock_idx = i
+                        break
+                
+                # Insert new row above Bedrock Depth (or at end if Bedrock Depth not found)
+                insert_position = bedrock_idx if bedrock_idx is not None else len(df)
+                
+                new_row = pd.DataFrame({
+                    "parameter": ["Sand Layer Thickness"],
+                    "depth": ["50"]
+                })
+                
+                # Insert at the calculated position
+                if insert_position == 0:
+                    # Insert at beginning (after Top Soil Thickness)
+                    df = pd.concat([df.iloc[:1], new_row, df.iloc[1:]], ignore_index=True)
+                else:
+                    # Insert at the calculated position
+                    df = pd.concat([df.iloc[:insert_position], new_row, df.iloc[insert_position:]], ignore_index=True)
+                
+                # Build all rows
+                rows = []
+                for i in range(len(df)):
+                    row_data = {
+                        "parameter": df.iloc[i]["parameter"],
+                        "depth": df.iloc[i]["depth"]
+                    }
+                    rows.append(_build_stratigraphy_row(i, len(df), row_data))
+                
+                return rows, df.to_dict('list'), len(df) <= 1
+
+            # Check if this is a remove last row operation
+            elif "remove-stratigraphy-row-btn" in ctx.triggered[0]["prop_id"]:
+                if len(df) > 1:
+                    df = df.iloc[:-1]
+                
+                # Build all rows
+                rows = []
+                for i in range(len(df)):
+                    row_data = {
+                        "parameter": df.iloc[i]["parameter"],
+                        "depth": df.iloc[i]["depth"]
+                    }
+                    rows.append(_build_stratigraphy_row(i, len(df), row_data))
+                
+                return rows, df.to_dict('list'), len(df) <= 1
+
+            # Check if this is an individual row removal
+            elif "remove-stratigraphy-row" in ctx.triggered[0]["prop_id"]:
+                try:
+                    import json
+                    triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
+                    component_id = json.loads(triggered_id)
+                    remove_index = component_id["index"]
+                    
+                    if 0 <= remove_index < len(df):
+                        # Check if trying to remove a mandatory row
+                        param_to_remove = df.iloc[remove_index]["parameter"]
+                        mandatory_params = ["Top Soil Thickness", "Water Table Depth", "Bedrock Depth"]
+                        
+                        if param_to_remove not in mandatory_params:
+                            df = df.drop(df.index[remove_index]).reset_index(drop=True)
+                        
+                        # Rebuild rows with new indices
+                        rows = []
+                        for i in range(len(df)):
+                            row_data = {
+                                "parameter": df.iloc[i]["parameter"],
+                                "depth": df.iloc[i]["depth"]
+                            }
+                            rows.append(_build_stratigraphy_row(i, len(df), row_data))
+                        
+                        return rows, df.to_dict('list'), len(df) <= 1
+                except (ValueError, KeyError, IndexError):
+                    pass
+
+            # Check if this is a move up operation
+            elif "move-stratigraphy-up" in ctx.triggered[0]["prop_id"]:
+                try:
+                    import json
+                    triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
+                    component_id = json.loads(triggered_id)
+                    move_index = component_id["index"]
+                    
+                    if move_index > 0 and move_index < len(df):
+                        param_to_move = df.iloc[move_index]["parameter"]
+                        param_above = df.iloc[move_index - 1]["parameter"]
+                        
+                        # Prevent moving "Bedrock Depth" up
+                        # Prevent moving anything above "Top Soil Thickness"
+                        if (param_to_move != "Bedrock Depth" and 
+                            param_above != "Top Soil Thickness"):
+                            # Swap rows in DataFrame
+                            df.iloc[move_index], df.iloc[move_index - 1] = \
+                                df.iloc[move_index - 1].copy(), df.iloc[move_index].copy()
+                        
+                        # Rebuild rows with new order
+                        rows = []
+                        for i in range(len(df)):
+                            row_data = {
+                                "parameter": df.iloc[i]["parameter"],
+                                "depth": df.iloc[i]["depth"]
+                            }
+                            rows.append(_build_stratigraphy_row(i, len(df), row_data))
+                        
+                        return rows, df.to_dict('list'), len(df) <= 1
+                except (ValueError, KeyError, IndexError):
+                    pass
+
+            # Check if this is a move down operation
+            elif "move-stratigraphy-down" in ctx.triggered[0]["prop_id"]:
+                try:
+                    import json
+                    triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
+                    component_id = json.loads(triggered_id)
+                    move_index = component_id["index"]
+                    
+                    if move_index >= 0 and move_index < len(df) - 1:
+                        param_to_move = df.iloc[move_index]["parameter"]
+                        param_below = df.iloc[move_index + 1]["parameter"]
+                        
+                        # Prevent moving "Top Soil Thickness" down
+                        # Prevent moving anything below "Bedrock Depth"
+                        if (param_to_move != "Top Soil Thickness" and 
+                            param_below != "Bedrock Depth"):
+                            # Swap rows in DataFrame
+                            df.iloc[move_index], df.iloc[move_index + 1] = \
+                                df.iloc[move_index + 1].copy(), df.iloc[move_index].copy()
+                        
+                        # Rebuild rows with new order
+                        rows = []
+                        for i in range(len(df)):
+                            row_data = {
+                                "parameter": df.iloc[i]["parameter"],
+                                "depth": df.iloc[i]["depth"]
+                            }
+                            rows.append(_build_stratigraphy_row(i, len(df), row_data))
+                        
+                        return rows, df.to_dict('list'), len(df) <= 1
+                except (ValueError, KeyError, IndexError):
+                    pass
+
+            # Ensure correct order: Top Soil Thickness first, Bedrock Depth last
+            def enforce_order(df):
+                """Ensure Top Soil Thickness is first and Bedrock Depth is last."""
+                if len(df) == 0:
+                    return df
+                
+                # Find indices of mandatory parameters
+                top_soil_idx = None
+                bedrock_idx = None
+                
+                for i, param in enumerate(df["parameter"]):
+                    if param == "Top Soil Thickness":
+                        top_soil_idx = i
+                    elif param == "Bedrock Depth":
+                        bedrock_idx = i
+                
+                # Move Top Soil Thickness to first position if it exists
+                if top_soil_idx is not None and top_soil_idx != 0:
+                    top_soil_row = df.iloc[top_soil_idx].copy()
+                    df = df.drop(df.index[top_soil_idx]).reset_index(drop=True)
+                    df = pd.concat([pd.DataFrame([top_soil_row]), df], ignore_index=True)
+                    # Update bedrock index if it was affected
+                    if bedrock_idx is not None and bedrock_idx > top_soil_idx:
+                        bedrock_idx -= 1
+                
+                # Move Bedrock Depth to last position if it exists
+                if bedrock_idx is not None and bedrock_idx != len(df) - 1:
+                    bedrock_row = df.iloc[bedrock_idx].copy()
+                    df = df.drop(df.index[bedrock_idx]).reset_index(drop=True)
+                    df = pd.concat([df, pd.DataFrame([bedrock_row])], ignore_index=True)
+                
+                return df
+            
+            # Apply order enforcement
+            df = enforce_order(df)
+            
+            # Default fallback
+            rows = []
+            for i in range(len(df)):
+                row_data = {
+                    "parameter": df.iloc[i]["parameter"],
+                    "depth": df.iloc[i]["depth"]
+                }
+                rows.append(_build_stratigraphy_row(i, len(df), row_data))
+            return rows, df.to_dict('list'), len(df) <= 1
+
+        # Callback to update table data when inputs change
+        @self.app.callback(
+            Output("stratigraphy-table-data", "data", allow_duplicate=True),
+            [
+                Input({"type": "stratigraphy-parameter", "index": dash.dependencies.ALL}, "value"),
+                Input({"type": "stratigraphy-depth", "index": dash.dependencies.ALL}, "value"),
+            ],
+            [
+                dash.dependencies.State("stratigraphy-table-data", "data"),
+            ],
+            prevent_initial_call=True,
+        )
+        def update_stratigraphy_data(parameter_values, depth_values, table_data):
+            """Update table data when parameter or depth values change."""
+            import pandas as pd
+            
+            if not table_data or not isinstance(table_data, dict):
+                return table_data
+            
+            # Convert to DataFrame
+            df = pd.DataFrame(table_data)
+            
+            # Update the data with new values
+            for i, (param_val, depth_val) in enumerate(zip(parameter_values, depth_values)):
+                if i < len(df):
+                    df.iloc[i, df.columns.get_loc("parameter")] = param_val or "Top Soil Thickness"
+                    df.iloc[i, df.columns.get_loc("depth")] = depth_val or ""
+            
+            return df.to_dict('list')
 
     def get_theme_css(self, theme_name):
         """Get CSS for the selected theme."""

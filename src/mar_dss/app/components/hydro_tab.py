@@ -19,7 +19,9 @@ def _build_hydro_tab_header():
     """Build the hydrogeology tab header."""
     return [
         html.H3("Hydrogeology"),
-        html.P("Configure hydrogeological parameters for MAR project analysis."),
+        html.P(
+            "Configure hydrogeological parameters for MAR project analysis."
+        ),
     ]
 
 
@@ -33,6 +35,8 @@ def _build_aquifer_geometry_card():
             ),
             dbc.CardBody(
                 [
+                    *_build_stratigraphy_table(),
+                    html.Hr(),
                     _build_water_table_section(),
                     html.Hr(),
                     *_build_stratigraphy_section(),
@@ -112,6 +116,164 @@ def _build_additional_parameters_card():
 # Helper functions for aquifer geometry card
 # ------------------------------
 
+
+def _build_stratigraphy_table():
+    """Build the stratigraphy table with add/remove functionality."""
+    return [
+        html.H5(
+            "Stratigraphy: Aquifer and Aquitard Layers",
+            className="fw-bold mb-3"
+        ),
+        dbc.Table(
+            [
+                html.Thead(
+                    html.Tr([
+                        html.Th("Parameter", className="fw-bold"),
+                        html.Th("Elevation/Depth (m)", className="fw-bold"),
+                        html.Th("Actions", className="fw-bold text-center"),
+                    ])
+                ),
+                html.Tbody(
+                    id="stratigraphy-table-body",
+                    children=[
+                        _build_stratigraphy_row(0, 3, {"parameter": "Top Soil Thickness", "depth": "1"}),
+                        _build_stratigraphy_row(1, 3, {"parameter": "Water Table Depth", "depth": "20"}),
+                        _build_stratigraphy_row(2, 3, {"parameter": "Bedrock Depth", "depth": "50"})
+                    ]
+                )
+            ],
+            striped=True,
+            bordered=True,
+            hover=True,
+            responsive=True,
+            className="mb-3"
+        ),
+        dbc.Row([
+            dbc.Col([
+                dbc.Button(
+                    [html.I(className="fas fa-plus me-2"), "Add Row"],
+                    id="add-stratigraphy-row-btn",
+                    color="success",
+                    size="sm",
+                    className="me-2"
+                ),
+                dbc.Button(
+                    [html.I(className="fas fa-trash me-2"), "Remove Last Row"],
+                    id="remove-stratigraphy-row-btn",
+                    color="danger",
+                    size="sm",
+                    disabled=True
+                )
+            ], width=12)
+        ]),
+        dcc.Store(
+            id="stratigraphy-table-data",
+            data={
+                "parameter": ["Top Soil Thickness", "Water Table Depth", "Bedrock Depth"],
+                "depth": ["1", "20", "50"]
+            },
+            storage_type="memory"
+        )
+    ]
+
+
+def _build_stratigraphy_row(index, total_rows=1, row_data=None):
+    """Build a single row for the stratigraphy table."""
+    if row_data is None:
+        row_data = {"parameter": "Top Soil Thickness", "depth": ""}
+    
+    # Define mandatory parameters that cannot be removed
+    mandatory_params = ["Top Soil Thickness", "Water Table Depth", "Bedrock Depth"]
+    is_mandatory = row_data.get("parameter") in mandatory_params
+    
+    # Determine button states based on parameter type and position
+    can_move_up = not (row_data.get("parameter") == "Top Soil Thickness")
+    can_move_down = not (row_data.get("parameter") == "Bedrock Depth")
+    can_remove = not is_mandatory
+    
+    return html.Tr([
+        html.Td([
+            dbc.Select(
+                id={"type": "stratigraphy-parameter", "index": index},
+                options=[
+                    {
+                        "label": "Top Soil Thickness",
+                        "value": "Top Soil Thickness"
+                    },
+                    {
+                        "label": "Water Table Depth",
+                        "value": "Water Table Depth"
+                    },
+                    {
+                        "label": "Bedrock Depth",
+                        "value": "Bedrock Depth"
+                    },
+                    {
+                        "label": "Gravel Layer Thickness",
+                        "value": "Gravel Layer Thickness"
+                    },
+                    {
+                        "label": "Sand Layer Thickness",
+                        "value": "Sand Layer Thickness"
+                    },
+                    {
+                        "label": "Silt Layer Thickness",
+                        "value": "Silt Layer Thickness"
+                    },
+                    {
+                        "label": "Loam Layer Thickness",
+                        "value": "Loam Layer Thickness"
+                    },
+                    {
+                        "label": "Clay Layer Thickness",
+                        "value": "Clay Layer Thickness"
+                    },
+                ],
+                value=row_data.get("parameter", "Top Soil Thickness"),
+                size="sm"
+            )
+        ]),
+        html.Td([
+            dbc.Input(
+                id={"type": "stratigraphy-depth", "index": index},
+                type="number",
+                placeholder="e.g., 2.5",
+                step="0.1",
+                min="0",
+                size="sm",
+                value=row_data.get("depth", "")
+            )
+        ]),
+        html.Td([
+            dbc.ButtonGroup([
+                dbc.Button(
+                    [html.I(className="fas fa-arrow-up")],
+                    id={"type": "move-stratigraphy-up", "index": index},
+                    color="secondary",
+                    size="sm",
+                    className="btn-sm",
+                    disabled=(not can_move_up or index == 0)
+                ),
+                dbc.Button(
+                    [html.I(className="fas fa-arrow-down")],
+                    id={"type": "move-stratigraphy-down", "index": index},
+                    color="secondary",
+                    size="sm",
+                    className="btn-sm",
+                    disabled=(not can_move_down or index == total_rows - 1)
+                ),
+                dbc.Button(
+                    [html.I(className="fas fa-trash")],
+                    id={"type": "remove-stratigraphy-row", "index": index},
+                    color="danger",
+                    size="sm",
+                    className="btn-sm",
+                    disabled=(not can_remove)
+                )
+            ], size="sm")
+        ], className="text-center")
+    ])
+
 def _build_water_table_section():
     """Build the water table depth and aquifer thickness section."""
     return dbc.Row(
@@ -159,7 +321,9 @@ def _build_water_table_inputs():
             className="mb-3",
         ),
         html.P(
-            "Enter the seasonal variation in water table depth. High values typically occur during wet seasons, low values during dry seasons.",
+            "Enter the seasonal variation in water table depth. "
+            "High values typically occur during wet seasons, "
+            "low values during dry seasons.",
             className="text-muted small",
         ),
     ]
@@ -188,7 +352,8 @@ def _build_aquifer_thickness_inputs():
             className="mb-3",
         ),
         html.P(
-            "Total thickness of the saturated aquifer zone available for recharge.",
+            "Total thickness of the saturated aquifer zone "
+            "available for recharge.",
             className="text-muted small",
         ),
     ]
