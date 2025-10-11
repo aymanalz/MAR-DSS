@@ -13,38 +13,50 @@ from dash import Input, Output, dcc, html
 
 try:
     # Try absolute imports first (when run as module)
-    from mar_dss.app.ai_generated_decision_tab import (
+    from mar_dss.app.components.ai_generated_decision_tab import (
         create_ai_generated_decision_content,
     )
-    from mar_dss.app.dashboard_tab import create_dashboard_content
-    from mar_dss.app.data_export_tab import create_data_export_content
-    from mar_dss.app.decision_interpretation_tab import (
+    from mar_dss.app.components.dashboard_tab import create_dashboard_content
+    from mar_dss.app.components.data_export_tab import (
+        create_data_export_content,
+    )
+    from mar_dss.app.components.decision_interpretation_tab import (
         create_decision_interpretation_content,
     )
-    from mar_dss.app.decision_sensitivity_tab import (
+    from mar_dss.app.components.decision_sensitivity_tab import (
         create_decision_sensitivity_content,
     )
-    from mar_dss.app.dss_algorithm_tab import create_dss_algorithm_content
-    from mar_dss.app.hydro_tab import create_settings_tab_content
-    from mar_dss.app.reports_tab import create_reports_tab_content
-    from mar_dss.app.scenarios_comparison_tab import (
+    from mar_dss.app.components.dss_algorithm_tab import (
+        create_dss_algorithm_content,
+    )
+    from mar_dss.app.components.hydro_tab import create_settings_tab_content
+    from mar_dss.app.components.reports_tab import create_reports_tab_content
+    from mar_dss.app.components.scenarios_comparison_tab import (
         create_scenarios_comparison_content,
     )
-    from mar_dss.app.water_source_tab import create_general_tab_content
+    from mar_dss.app.components.water_source_tab import (
+        create_general_tab_content,
+    )
 except ImportError:
     # Fallback to relative imports (when run directly)
-    from .ai_generated_decision_tab import create_ai_generated_decision_content
-    from .dashboard_tab import create_dashboard_content
-    from .data_export_tab import create_data_export_content
-    from .decision_interpretation_tab import (
+    from .components.ai_generated_decision_tab import (
+        create_ai_generated_decision_content,
+    )
+    from .components.dashboard_tab import create_dashboard_content
+    from .components.data_export_tab import create_data_export_content
+    from .components.decision_interpretation_tab import (
         create_decision_interpretation_content,
     )
-    from .decision_sensitivity_tab import create_decision_sensitivity_content
-    from .dss_algorithm_tab import create_dss_algorithm_content
-    from .hydro_tab import create_settings_tab_content
-    from .reports_tab import create_reports_tab_content
-    from .scenarios_comparison_tab import create_scenarios_comparison_content
-    from .water_source_tab import create_general_tab_content
+    from .components.decision_sensitivity_tab import (
+        create_decision_sensitivity_content,
+    )
+    from .components.dss_algorithm_tab import create_dss_algorithm_content
+    from .components.hydro_tab import create_settings_tab_content
+    from .components.reports_tab import create_reports_tab_content
+    from .components.scenarios_comparison_tab import (
+        create_scenarios_comparison_content,
+    )
+    from .components.water_source_tab import create_general_tab_content
 
 
 class DashboardApp:
@@ -292,11 +304,13 @@ class DashboardApp:
 
     def create_location_map_section(self):
         """Create location map section for overview."""
-        # Import the function from water_source_tab
+        # Import the function from components.water_source_tab
         try:
-            from mar_dss.app.water_source_tab import create_location_map
+            from mar_dss.app.components.water_source_tab import (
+                create_location_map,
+            )
         except ImportError:
-            from .water_source_tab import create_location_map
+            from .components.water_source_tab import create_location_map
 
         return dbc.Card(
             [
@@ -547,13 +561,13 @@ class DashboardApp:
                 lat = center["lat"]
                 lon = center["lon"]
 
-                # Import the function from water_source_tab
+                # Import the function from components.water_source_tab
                 try:
-                    from mar_dss.app.water_source_tab import (
+                    from mar_dss.app.components.water_source_tab import (
                         get_location_details,
                     )
                 except ImportError:
-                    from .water_source_tab import get_location_details
+                    from .components.water_source_tab import get_location_details
 
                 location_name = get_location_details(lat, lon)
                 return f"Project Location - {location_name}"
@@ -569,11 +583,13 @@ class DashboardApp:
         def create_flow_table(flow_data):
             """Create the editable flow table."""
             try:
-                from mar_dss.app.water_source_tab import (
+                from mar_dss.app.components.water_source_tab import (
                     create_editable_flow_table,
                 )
             except ImportError:
-                from .water_source_tab import create_editable_flow_table
+                from .components.water_source_tab import (
+                    create_editable_flow_table,
+                )
 
             return create_editable_flow_table()
 
@@ -587,11 +603,13 @@ class DashboardApp:
             if not table_data:
                 # Return default chart if no data
                 try:
-                    from mar_dss.app.water_source_tab import (
+                    from mar_dss.app.components.water_source_tab import (
                         create_monthly_flow_chart,
                     )
                 except ImportError:
-                    from .water_source_tab import create_monthly_flow_chart
+                    from .components.water_source_tab import (
+                        create_monthly_flow_chart,
+                    )
                 return create_monthly_flow_chart()
 
             # Extract flow data from table
@@ -603,11 +621,13 @@ class DashboardApp:
 
             # Create chart with the data
             try:
-                from mar_dss.app.water_source_tab import (
+                from mar_dss.app.components.water_source_tab import (
                     create_monthly_flow_chart,
                 )
             except ImportError:
-                from .water_source_tab import create_monthly_flow_chart
+                from .components.water_source_tab import (
+                    create_monthly_flow_chart,
+                )
 
             return create_monthly_flow_chart(flow_data)
 

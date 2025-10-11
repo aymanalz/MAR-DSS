@@ -35,3 +35,5 @@ def create_dashboard_content():
             ),
         ]
     )
+
+

@@ -95,8 +95,8 @@ def create_ai_generated_decision_content():
                         "Technical Feasibility: Good (85% score, 88% confidence)"
                     ),
                     html.Li(
-                        "Social Acceptance: Fair (82% score, 85% confidence)"
-                    ),
+                        "Social Acceptance: Fair (82% score, 85% confidence)")
+                    ,
                 ]
             ),
             html.Hr(),
@@ -106,3 +106,5 @@ def create_ai_generated_decision_content():
             ),
         ]
     )
+
+

@@ -444,7 +444,9 @@ def create_settings_tab_content():
                                         ),
                                         dbc.Textarea(
                                             id="impermeable-layers",
-                                            placeholder="Describe any other impermeable layers:\n- Silt layer at 8m\n- Dense clay at 18m",
+                                            placeholder=(
+                                                "Describe any other impermeable layers:\n- Silt layer at 8m\n- Dense clay at 18m"
+                                            ),
                                             rows=3,
                                         ),
                                     ],
@@ -524,3 +526,5 @@ def create_settings_tab_content():
             ]
         ),
     ]
+
+

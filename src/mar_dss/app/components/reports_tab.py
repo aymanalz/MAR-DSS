@@ -13,3 +13,5 @@ def create_reports_tab_content():
         html.P("Generate and download reports here."),
         dbc.Button("Generate Report", color="primary", className="mt-3"),
     ]
+
+

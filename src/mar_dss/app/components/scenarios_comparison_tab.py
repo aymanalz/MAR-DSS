@@ -123,3 +123,5 @@ def create_scenarios_comparison_content():
             ),
         ]
     )
+
+
