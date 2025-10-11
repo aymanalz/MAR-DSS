@@ -29,7 +29,7 @@ try:
     from mar_dss.app.components.dss_algorithm_tab import (
         create_dss_algorithm_content,
     )
-    from mar_dss.app.components.hydro_tab import create_settings_tab_content
+    from mar_dss.app.components.hydro_tab import create_hydro_tab_content
     from mar_dss.app.components.reports_tab import create_reports_tab_content
     from mar_dss.app.components.scenarios_comparison_tab import (
         create_scenarios_comparison_content,
@@ -51,7 +51,7 @@ except ImportError:
         create_decision_sensitivity_content,
     )
     from .components.dss_algorithm_tab import create_dss_algorithm_content
-    from .components.hydro_tab import create_settings_tab_content
+    from .components.hydro_tab import create_hydro_tab_content
     from .components.reports_tab import create_reports_tab_content
     from .components.scenarios_comparison_tab import (
         create_scenarios_comparison_content,
@@ -448,7 +448,7 @@ class DashboardApp:
                 elif active_tab == "reports":
                     return create_reports_tab_content()
                 elif active_tab == "settings":
-                    return create_settings_tab_content()
+                    return create_hydro_tab_content()
 
             # Fallback: handle based on active_tab value regardless of trigger
             if active_tab == "overview":
@@ -470,7 +470,7 @@ class DashboardApp:
             elif active_tab == "reports":
                 return create_reports_tab_content()
             elif active_tab == "settings":
-                return create_settings_tab_content()
+                return create_hydro_tab_content()
 
             # Default fallback
             return []

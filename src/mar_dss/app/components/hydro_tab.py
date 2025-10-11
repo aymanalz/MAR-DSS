@@ -6,7 +6,7 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html
 
 
-def create_settings_tab_content():
+def create_hydro_tab_content():
     """Create the content for the Hydrogeology tab."""
     return [
         html.H3("Hydrogeology"),
