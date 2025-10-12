@@ -19,3 +19,8 @@ def from_json():
     """Load data from a json file"""
     with open("data.json", "r") as f:
         _data_storage = json.load(f)
+
+def clear_data():
+    """Clear all data from storage"""
+    global _data_storage
+    _data_storage.clear()

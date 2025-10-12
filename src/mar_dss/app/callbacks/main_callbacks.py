@@ -492,3 +492,118 @@ def setup_main_callbacks(app, dashboard_instance):
 
         return layer_cards, summary, layers_data, layers_data
 
+    # Callback for Open button - load project from file
+    @app.callback(
+        Output("main-content", "children", allow_duplicate=True),
+        [Input("btn-open", "n_clicks")],
+        prevent_initial_call=True
+    )
+    def handle_open_project(n_clicks):
+        """Handle opening a project from file."""
+        if n_clicks:
+            # For now, show a simple message - in a real app, this would open a file dialog
+            import dash_bootstrap_components as dbc
+            return [
+                dbc.Alert(
+                    "Open Project functionality - This would typically open a file dialog to load a saved project.",
+                    color="info",
+                    className="mb-3"
+                ),
+                create_overview_content()[0]  # Show overview content
+            ]
+        return dash.no_update
+
+    # Callback for Save button - save current project
+    @app.callback(
+        Output("main-content", "children", allow_duplicate=True),
+        [Input("btn-save", "n_clicks")],
+        prevent_initial_call=True
+    )
+    def handle_save_project(n_clicks):
+        """Handle saving the current project."""
+        if n_clicks:
+            # Save current data to storage
+            try:
+                # Get current data from storage
+                data = dash_storage.get_data("all_data")
+                if not data:
+                    data = {}
+                
+                # Add timestamp
+                from datetime import datetime
+                data["last_saved"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                
+                # Save to storage
+                dash_storage.set_data("all_data", data)
+                
+                import dash_bootstrap_components as dbc
+                return [
+                    dbc.Alert(
+                        f"Project saved successfully at {data['last_saved']}",
+                        color="success",
+                        className="mb-3"
+                    ),
+                    create_overview_content()[0]  # Show overview content
+                ]
+            except Exception as e:
+                import dash_bootstrap_components as dbc
+                return [
+                    dbc.Alert(
+                        f"Error saving project: {str(e)}",
+                        color="danger",
+                        className="mb-3"
+                    ),
+                    create_overview_content()[0]  # Show overview content
+                ]
+        return dash.no_update
+
+    # Callback for New button - create new project
+    @app.callback(
+        Output("main-content", "children", allow_duplicate=True),
+        [Input("btn-new", "n_clicks")],
+        prevent_initial_call=True
+    )
+    def handle_new_project(n_clicks):
+        """Handle creating a new project."""
+        if n_clicks:
+            # Clear all data storage
+            dash_storage.clear_data()
+            
+            # Reset to default values
+            dash_storage.set_data("project_name", "")
+            dash_storage.set_data("analysis_date", "")
+            dash_storage.set_data("mar_purpose", ["secure_water_supply"])
+            
+            import dash_bootstrap_components as dbc
+            return [
+                dbc.Alert(
+                    "New project created! All data has been reset to defaults.",
+                    color="info",
+                    className="mb-3"
+                ),
+                create_overview_content()[0]  # Show overview content
+            ]
+        return dash.no_update
+
+    # Callback for Save As button - save project with new name
+    @app.callback(
+        Output("main-content", "children", allow_duplicate=True),
+        [Input("btn-save-as", "n_clicks")],
+        prevent_initial_call=True
+    )
+    def handle_save_as_project(n_clicks):
+        """Handle saving the project with a new name."""
+        if n_clicks:
+            # For now, show a message about Save As functionality
+            # In a real app, this would open a dialog to enter a new filename
+            import dash_bootstrap_components as dbc
+            return [
+                dbc.Alert(
+                    "Save As functionality - This would typically open a dialog to enter a new filename and save the project with that name.",
+                    color="warning",
+                    className="mb-3"
+                ),
+                create_overview_content()[0]  # Show overview content
+            ]
+        return dash.no_update
+

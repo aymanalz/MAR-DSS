@@ -166,6 +166,14 @@ def _build_action_buttons() -> dbc.ButtonGroup:
                 style={"padding": "4px 8px"},
             ),
             dbc.Button(
+                [html.I(className=("fas fa-save me-1")), "Save As"],
+                id="btn-save-as",
+                color="outline-warning",
+                size="sm",
+                className="me-1",
+                style={"padding": "4px 8px"},
+            ),
+            dbc.Button(
                 [html.I(className=("fas fa-plus me-1")), "New"],
                 id="btn-new",
                 color="outline-info",
