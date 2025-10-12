@@ -7,6 +7,8 @@ the provided application context (the main DashboardApp instance).
 
 import dash_bootstrap_components as dbc
 from dash import dcc, html
+from mar_dss.app.utils.defaults import defaults
+import mar_dss.app.utils.data_storage as dash_storage
 
 
 def setup_layout(app_ctx):
