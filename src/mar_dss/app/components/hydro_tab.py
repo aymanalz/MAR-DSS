@@ -10,6 +10,7 @@ def create_hydro_tab_content():
     """Create the content for the Hydrogeology tab."""
     return [
         *_build_hydro_tab_header(),
+        _build_geometry_and_view_cards(),
         _build_aquifer_geometry_card(),
         _build_additional_parameters_card(),
     ]
@@ -23,6 +24,338 @@ def _build_hydro_tab_header():
             "Configure hydrogeological parameters for MAR project analysis."
         ),
     ]
+
+
+def _build_geometry_and_view_cards():
+    """Build the Geometry and View cards side by side."""
+    return dbc.Row(
+        [
+            dbc.Col(
+                dbc.Card(
+                    [
+                        dbc.CardHeader(
+                            "Geometry",
+                            className="fw-bold bg-primary text-white",
+                        ),
+                        dbc.CardBody(
+                            [
+                                html.Div(
+                                    [
+                                        html.Label("Aquifer Type:", className="fw-bold mb-2"),
+                                        dbc.RadioItems(
+                                            id="aquifer-type-radio",
+                                            options=[
+                                                {"label": "Unconfined", "value": "unconfined"},
+                                                {"label": "Confined", "value": "confined"},
+                                                {"label": "Semi-Confined", "value": "semi-confined"},
+                                            ],
+                                            value="unconfined",
+                                            inline=True,
+                                            className="mb-3"
+                                        )
+                                    ],
+                                    className="mb-3"
+                                ),
+                                dbc.Tabs(
+                                    id="geometry-tabs",
+                                    children=[
+                                        dbc.Tab(
+                                            label="Stratigraphy",
+                                            tab_id="stratigraphy-tab",
+                                            children=[
+                                                html.Div(
+                                                    [
+                                                        dbc.Table(
+                                                            [
+                                                                html.Thead(
+                                                                    html.Tr(
+                                                                        [
+                                                                            html.Th("Parameter", className="fw-bold text-white", style={"background-color": "#2c3e50"}),
+                                                                            html.Th("Depth/Thickness (ft)", className="fw-bold text-white", style={"background-color": "#2c3e50"}),
+                                                                            html.Th("Hydraulic Conductivity", className="fw-bold text-white", style={"background-color": "#2c3e50"}),
+                                                                            html.Th("Storage Term", className="fw-bold text-white", style={"background-color": "#2c3e50"}),
+                                                                        ]
+                                                                    )
+                                                                ),
+                                                                html.Tbody(
+                                                                    [
+                                                                        html.Tr(
+                                                                            [
+                                                                                html.Td("Ground Surface Elevation", className="fw-bold", style={"background-color": "#ecf0f1"}),
+                                                                                html.Td(
+                                                                                    dbc.Input(
+                                                                                        id="ground-surface-depth",
+                                                                                        type="number",
+                                                                                        placeholder="0.0",
+                                                                                        size="sm",
+                                                                                        className="border-0"
+                                                                                    ),
+                                                                                    style={"background-color": "#ecf0f1"}
+                                                                                ),
+                                                                                html.Td(
+                                                                                    dbc.Input(
+                                                                                        id="ground-surface-conductivity",
+                                                                                        type="number",
+                                                                                        placeholder="0.0",
+                                                                                        size="sm",
+                                                                                        className="border-0"
+                                                                                    ),
+                                                                                    style={"background-color": "#ecf0f1"}
+                                                                                ),
+                                                                                html.Td(
+                                                                                    dbc.Input(
+                                                                                        id="ground-surface-storage",
+                                                                                        type="number",
+                                                                                        placeholder="0.0",
+                                                                                        size="sm",
+                                                                                        className="border-0"
+                                                                                    ),
+                                                                                    style={"background-color": "#ecf0f1"}
+                                                                                ),
+                                                                            ],
+                                                                            style={"background-color": "#ecf0f1"}
+                                                                        ),
+                                                                        html.Tr(
+                                                                            [
+                                                                                html.Td("Top of MAR Storage Zone", className="fw-bold", style={"background-color": "#d5dbdb"}),
+                                                                                html.Td(
+                                                                                    dbc.Input(
+                                                                                        id="mar-storage-depth",
+                                                                                        type="number",
+                                                                                        placeholder="0.0",
+                                                                                        size="sm",
+                                                                                        className="border-0"
+                                                                                    ),
+                                                                                    style={"background-color": "#d5dbdb"}
+                                                                                ),
+                                                                                html.Td(
+                                                                                    dbc.Input(
+                                                                                        id="mar-storage-conductivity",
+                                                                                        type="number",
+                                                                                        placeholder="0.0",
+                                                                                        size="sm",
+                                                                                        className="border-0"
+                                                                                    ),
+                                                                                    style={"background-color": "#d5dbdb"}
+                                                                                ),
+                                                                                html.Td(
+                                                                                    dbc.Input(
+                                                                                        id="mar-storage-storage",
+                                                                                        type="number",
+                                                                                        placeholder="0.0",
+                                                                                        size="sm",
+                                                                                        className="border-0"
+                                                                                    ),
+                                                                                    style={"background-color": "#d5dbdb"}
+                                                                                ),
+                                                                            ],
+                                                                            style={"background-color": "#d5dbdb"}
+                                                                        ),
+                                                                        html.Tr(
+                                                                            [
+                                                                                html.Td("Max. Groundwater Table Elevation", className="fw-bold", style={"background-color": "#ecf0f1"}),
+                                                                                html.Td(
+                                                                                    dbc.Input(
+                                                                                        id="max-gw-depth",
+                                                                                        type="number",
+                                                                                        placeholder="0.0",
+                                                                                        size="sm",
+                                                                                        className="border-0"
+                                                                                    ),
+                                                                                    style={"background-color": "#ecf0f1"}
+                                                                                ),
+                                                                                html.Td(
+                                                                                    dbc.Input(
+                                                                                        id="max-gw-conductivity",
+                                                                                        type="number",
+                                                                                        placeholder="0.0",
+                                                                                        size="sm",
+                                                                                        className="border-0"
+                                                                                    ),
+                                                                                    style={"background-color": "#ecf0f1"}
+                                                                                ),
+                                                                                html.Td(
+                                                                                    dbc.Input(
+                                                                                        id="max-gw-storage",
+                                                                                        type="number",
+                                                                                        placeholder="0.0",
+                                                                                        size="sm",
+                                                                                        className="border-0"
+                                                                                    ),
+                                                                                    style={"background-color": "#ecf0f1"}
+                                                                                ),
+                                                                            ],
+                                                                            style={"background-color": "#ecf0f1"}
+                                                                        ),
+                                                                        html.Tr(
+                                                                            [
+                                                                                html.Td("Average Groundwater Table Elevation", className="fw-bold", style={"background-color": "#d5dbdb"}),
+                                                                                html.Td(
+                                                                                    dbc.Input(
+                                                                                        id="avg-gw-depth",
+                                                                                        type="number",
+                                                                                        placeholder="0.0",
+                                                                                        size="sm",
+                                                                                        className="border-0"
+                                                                                    ),
+                                                                                    style={"background-color": "#d5dbdb"}
+                                                                                ),
+                                                                                html.Td(
+                                                                                    dbc.Input(
+                                                                                        id="avg-gw-conductivity",
+                                                                                        type="number",
+                                                                                        placeholder="0.0",
+                                                                                        size="sm",
+                                                                                        className="border-0"
+                                                                                    ),
+                                                                                    style={"background-color": "#d5dbdb"}
+                                                                                ),
+                                                                                html.Td(
+                                                                                    dbc.Input(
+                                                                                        id="avg-gw-storage",
+                                                                                        type="number",
+                                                                                        placeholder="0.0",
+                                                                                        size="sm",
+                                                                                        className="border-0"
+                                                                                    ),
+                                                                                    style={"background-color": "#d5dbdb"}
+                                                                                ),
+                                                                            ],
+                                                                            style={"background-color": "#d5dbdb"}
+                                                                        ),
+                                                                        html.Tr(
+                                                                            [
+                                                                                html.Td("Min Groundwater Table Elevation", className="fw-bold", style={"background-color": "#ecf0f1"}),
+                                                                                html.Td(
+                                                                                    dbc.Input(
+                                                                                        id="min-gw-depth",
+                                                                                        type="number",
+                                                                                        placeholder="0.0",
+                                                                                        size="sm",
+                                                                                        className="border-0"
+                                                                                    ),
+                                                                                    style={"background-color": "#ecf0f1"}
+                                                                                ),
+                                                                                html.Td(
+                                                                                    dbc.Input(
+                                                                                        id="min-gw-conductivity",
+                                                                                        type="number",
+                                                                                        placeholder="0.0",
+                                                                                        size="sm",
+                                                                                        className="border-0"
+                                                                                    ),
+                                                                                    style={"background-color": "#ecf0f1"}
+                                                                                ),
+                                                                                html.Td(
+                                                                                    dbc.Input(
+                                                                                        id="min-gw-storage",
+                                                                                        type="number",
+                                                                                        placeholder="0.0",
+                                                                                        size="sm",
+                                                                                        className="border-0"
+                                                                                    ),
+                                                                                    style={"background-color": "#ecf0f1"}
+                                                                                ),
+                                                                            ],
+                                                                            style={"background-color": "#ecf0f1"}
+                                                                        ),
+                                                                        html.Tr(
+                                                                            [
+                                                                                html.Td("Bedrock", className="fw-bold", style={"background-color": "#a9a9a9", "color": "white"}),
+                                                                                html.Td(
+                                                                                    dbc.Input(
+                                                                                        id="bedrock-depth",
+                                                                                        type="number",
+                                                                                        placeholder="0.0",
+                                                                                        size="sm",
+                                                                                        className="border-0"
+                                                                                    ),
+                                                                                    style={"background-color": "#a9a9a9"}
+                                                                                ),
+                                                                                html.Td(
+                                                                                    dbc.Input(
+                                                                                        id="bedrock-conductivity",
+                                                                                        type="number",
+                                                                                        placeholder="0.0",
+                                                                                        size="sm",
+                                                                                        className="border-0"
+                                                                                    ),
+                                                                                    style={"background-color": "#a9a9a9"}
+                                                                                ),
+                                                                                html.Td(
+                                                                                    dbc.Input(
+                                                                                        id="bedrock-storage",
+                                                                                        type="number",
+                                                                                        placeholder="0.0",
+                                                                                        size="sm",
+                                                                                        className="border-0"
+                                                                                    ),
+                                                                                    style={"background-color": "#a9a9a9"}
+                                                                                ),
+                                                                            ],
+                                                                            style={"background-color": "#a9a9a9"}
+                                                                        ),
+                                                                    ]
+                                                                )
+                                                            ],
+                                                            striped=True,
+                                                            bordered=True,
+                                                            hover=True,
+                                                            responsive=True,
+                                                            className="mb-3"
+                                                        )
+                                                    ],
+                                                    id="stratigraphy-content"
+                                                )
+                                            ]
+                                        ),
+                                        dbc.Tab(
+                                            label="Horizontal Extension",
+                                            tab_id="horizontal-extension-tab",
+                                            children=[
+                                                html.Div(
+                                                    [
+                                                        html.P(
+                                                            "Horizontal extension configuration will be added here.",
+                                                            className="text-muted text-center mt-3"
+                                                        )
+                                                    ],
+                                                    id="horizontal-extension-content"
+                                                )
+                                            ]
+                                        ),
+                                    ],
+                                    active_tab="stratigraphy-tab"
+                                )
+                            ]
+                        ),
+                    ],
+                    className="mb-4",
+                ),
+                width=6
+            ),
+            dbc.Col(
+                dbc.Card(
+                    [
+                        dbc.CardHeader(
+                            "View",
+                            className="fw-bold bg-secondary text-white",
+                        ),
+                        dbc.CardBody(
+                            [
+                                html.P(
+                                    "View options will be added here.",
+                                    className="text-muted text-center"
+                                )
+                            ]
+                        ),
+                    ],
+                    className="mb-4",
+                ),
+                width=6
+            ),
+        ]
+    )
 
 
 def _build_aquifer_geometry_card():
