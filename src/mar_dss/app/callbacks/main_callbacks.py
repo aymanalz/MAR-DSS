@@ -33,6 +33,9 @@ try:
     from mar_dss.app.components.water_source_tab import (
         create_general_tab_content,
     )
+    from mar_dss.app.components.overview_tab import (
+        create_overview_content,
+    )
 except ImportError:
     from .components.ai_generated_decision_tab import (
         create_ai_generated_decision_content,
@@ -52,10 +55,19 @@ except ImportError:
         create_scenarios_comparison_content,
     )
     from .components.water_source_tab import create_general_tab_content
+    from .components.overview_tab import create_overview_content
 
 
 def setup_main_callbacks(app, dashboard_instance):
     """Set up all main dashboard callbacks."""
+    
+    # Import and set up overview callbacks
+    try:
+        from mar_dss.app.callbacks.overview_callbacks import setup_overview_callbacks
+    except ImportError:
+        from .overview_callbacks import setup_overview_callbacks
+    
+    setup_overview_callbacks(app)
     
     @app.callback(
         Output("main-content", "children"),
@@ -85,19 +97,7 @@ def setup_main_callbacks(app, dashboard_instance):
 
         if not ctx.triggered:
             # Default content (overview)
-            return [
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            [dashboard_instance.create_mar_purpose_section()], width=6
-                        ),
-                        dbc.Col(
-                            [dashboard_instance.create_location_map_section()], width=6
-                        ),
-                    ],
-                    className="mb-4",
-                )
-            ]
+            return create_overview_content()
 
         # Check if sidebar navigation was triggered
         if ctx.triggered[0]["prop_id"].startswith("nav-"):
@@ -105,20 +105,7 @@ def setup_main_callbacks(app, dashboard_instance):
 
             if button_id == "nav-dashboard":
                 # Show overview content
-                return [
-                    dbc.Row(
-                        [
-                            dbc.Col(
-                                [dashboard_instance.create_mar_purpose_section()], width=6
-                            ),
-                            dbc.Col(
-                                [dashboard_instance.create_location_map_section()],
-                                width=6,
-                            ),
-                        ],
-                        className="mb-4",
-                    )
-                ]
+                return create_overview_content()
             elif button_id == "nav-dashboard":
                 return create_dashboard_content()
             elif button_id == "nav-water-levels":
@@ -140,20 +127,7 @@ def setup_main_callbacks(app, dashboard_instance):
             or ctx.triggered[0]["prop_id"] == "top-tabs.active_tab"
         ):
             if active_tab == "overview":
-                return [
-                    dbc.Row(
-                        [
-                            dbc.Col(
-                                [dashboard_instance.create_mar_purpose_section()], width=6
-                            ),
-                            dbc.Col(
-                                [dashboard_instance.create_location_map_section()],
-                                width=6,
-                            ),
-                        ],
-                        className="mb-4",
-                    )
-                ]
+                return create_overview_content()
             elif active_tab == "analysis":
                 return create_general_tab_content()
             elif active_tab == "reports":
@@ -163,19 +137,7 @@ def setup_main_callbacks(app, dashboard_instance):
 
         # Fallback: handle based on active_tab value regardless of trigger
         if active_tab == "overview":
-            return [
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            [dashboard_instance.create_mar_purpose_section()], width=6
-                        ),
-                        dbc.Col(
-                            [dashboard_instance.create_location_map_section()], width=6
-                        ),
-                    ],
-                    className="mb-4",
-                )
-            ]
+            return create_overview_content()
         elif active_tab == "analysis":
             return create_general_tab_content()
         elif active_tab == "reports":
@@ -260,31 +222,6 @@ def setup_main_callbacks(app, dashboard_instance):
             button_id == "nav-export",
         )
 
-    # Add callback for map interactions to update location title
-    @app.callback(
-        Output("location-card-header", "children"),
-        [Input("location-map", "relayoutData")],
-    )
-    def update_location_title(relayout_data):
-        """Update the location card title based on map interactions."""
-        if relayout_data and "mapbox.center" in relayout_data:
-            center = relayout_data["mapbox.center"]
-            lat = center["lat"]
-            lon = center["lon"]
-
-            # Import the function from components.water_source_tab
-            try:
-                from mar_dss.app.components.water_source_tab import (
-                    get_location_details,
-                )
-            except ImportError:
-                from .components.water_source_tab import get_location_details
-
-            location_name = get_location_details(lat, lon)
-            return f"Project Location - {location_name}"
-
-        # Default fallback
-        return "Project Location - Sacramento, California, United States"
 
     # Add callback to create the editable table
     @app.callback(
@@ -555,100 +492,3 @@ def setup_main_callbacks(app, dashboard_instance):
 
         return layer_cards, summary, layers_data, layers_data
 
-    # Combined callback for project name input - handles all triggers
-    @app.callback(
-        Output("project-name-input", "value"),
-        [
-            Input("project-name-input", "value"),
-            Input("project-name-input", "n_blur"),
-            Input("project-name-input", "n_submit"),
-            Input("project-name-input", "id")
-        ],
-        prevent_initial_call=False
-    )
-    def handle_project_name(value, n_blur, n_submit, component_id):
-        """Handle project name input for all triggers: value change, blur, submit, and load."""
-        ctx = dash.callback_context
-        
-        if not ctx.triggered:
-            # Initial load - get saved project name
-            data = dash_storage.get_data("project_name")
-            project_name = data.get("project_name", "") if data else ""
-            return project_name
-        
-        # Get the current value from the input
-        current_value = value if value else ""
-        
-        # Determine which trigger caused the callback
-        trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
-        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1]
-        
-        # Save project name for all triggers except initial load
-        if trigger_prop != "id" and current_value:
-            dash_storage.set_data("project_name", current_value)
-            
-        
-        return current_value
-
-    # Callback for MAR purpose checklist - saves selections to data storage
-    @app.callback(
-        Output("mar-purpose-checklist", "value"),
-        [
-            Input("mar-purpose-checklist", "value"),
-            Input("mar-purpose-checklist", "id")
-        ],
-        prevent_initial_call=False
-    )
-    def handle_mar_purpose_selections(value, component_id):
-        """Handle MAR purpose checklist selections and save to data storage."""
-        ctx = dash.callback_context
-        
-        if not ctx.triggered:
-            # Initial load - get saved MAR purpose selections
-            data = dash_storage.get_data("mar_purpose")
-            mar_purpose = data.get("mar_purpose", ["secure_water_supply"]) if data else ["secure_water_supply"]
-            return mar_purpose
-        
-        # Get the current selections
-        current_selections = value if value else []
-        
-        # Save MAR purpose selections to data storage
-        if current_selections:
-            dash_storage.set_data("mar_purpose", current_selections)
-        
-        return current_selections
-
-    # Combined callback for analysis date input - handles all triggers
-    @app.callback(
-        Output("analysis-date-input", "value"),
-        [
-            Input("analysis-date-input", "value"),
-            Input("analysis-date-input", "n_blur"),
-            Input("analysis-date-input", "n_submit"),
-            Input("analysis-date-input", "id")
-        ],
-        prevent_initial_call=False
-    )
-    def handle_analysis_date(value, n_blur, n_submit, component_id):
-        """Handle analysis date input for all triggers: value change, blur, submit, and load."""
-        ctx = dash.callback_context
-        
-        if not ctx.triggered:
-            # Initial load - get saved analysis date
-            data = dash_storage.get_data("analysis_date")
-            analysis_date = data.get("analysis_date", "") if data else ""
-            return analysis_date
-        
-        # Get the current value from the input
-        current_value = value if value else ""
-        
-        # Determine which trigger caused the callback
-        trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
-        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1]
-        
-        # Save analysis date for all triggers except initial load
-        if trigger_prop != "id" and current_value:
-            dash_storage.set_data("analysis_date", current_value)
-            
-        
-        return current_value
