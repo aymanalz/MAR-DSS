@@ -24,3 +24,7 @@ def clear_data():
     """Clear all data from storage"""
     global _data_storage
     _data_storage.clear()
+
+def get_data_storage():
+    """Get the entire data storage dictionary"""
+    return _data_storage

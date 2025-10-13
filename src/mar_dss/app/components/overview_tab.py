@@ -31,6 +31,28 @@ def create_mar_purpose_section():
                         value="",
                         style={"margin-bottom": "15px"},
                     ),
+                    dbc.Row([
+                        dbc.Col([
+                            html.Label("Workspace:", className="fw-bold"),
+                            dbc.Input(
+                                id="workspace-input",
+                                type="text",
+                                placeholder="Enter workspace path...",
+                                value="",
+                                style={"margin-bottom": "15px"},
+                            )
+                        ], width=6),
+                        dbc.Col([
+                            html.Label("File Name:", className="fw-bold"),
+                            dbc.Input(
+                                id="filename-input",
+                                type="text",
+                                placeholder="Enter filename...",
+                                value="",
+                                style={"margin-bottom": "15px"},
+                            )
+                        ], width=6)
+                    ]),
                     html.Label("Analysis Date:", className="fw-bold"),
                     dbc.Input(
                         id="analysis-date-input",
@@ -110,6 +132,7 @@ def create_location_map_section():
 def create_overview_content():
     """Create the complete overview tab content."""
     return [
+        # MAR Project Purpose and Project Location side by side
         dbc.Row(
             [
                 dbc.Col([create_mar_purpose_section()], width=6),

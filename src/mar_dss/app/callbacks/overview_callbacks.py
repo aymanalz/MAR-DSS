@@ -132,3 +132,71 @@ def setup_overview_callbacks(app):
 
         # Default fallback
         return "Project Location - Sacramento, California, United States"
+
+    # Callback for workspace input - saves to data storage
+    @app.callback(
+        Output("workspace-input", "value"),
+        [
+            Input("workspace-input", "value"),
+            Input("workspace-input", "n_blur"),
+            Input("workspace-input", "n_submit"),
+            Input("workspace-input", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_workspace_input(value, n_blur, n_submit, component_id):
+        """Handle workspace input for all triggers: value change, blur, submit, and load."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved workspace
+            data = dash_storage.get_data("workspace")
+            workspace = data.get("workspace", "") if data else ""
+            return workspace
+        
+        # Get the current value from the input
+        current_value = value if value else ""
+        
+        # Determine which trigger caused the callback
+        trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1]
+        
+        # Save workspace for all triggers except initial load
+        if trigger_prop != "id" and current_value:
+            dash_storage.set_data("workspace", current_value)
+        
+        return current_value
+
+    # Callback for filename input - saves to data storage
+    @app.callback(
+        Output("filename-input", "value"),
+        [
+            Input("filename-input", "value"),
+            Input("filename-input", "n_blur"),
+            Input("filename-input", "n_submit"),
+            Input("filename-input", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_filename_input(value, n_blur, n_submit, component_id):
+        """Handle filename input for all triggers: value change, blur, submit, and load."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved filename
+            data = dash_storage.get_data("filename")
+            filename = data.get("filename", "") if data else ""
+            return filename
+        
+        # Get the current value from the input
+        current_value = value if value else ""
+        
+        # Determine which trigger caused the callback
+        trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1]
+        
+        # Save filename for all triggers except initial load
+        if trigger_prop != "id" and current_value:
+            dash_storage.set_data("filename", current_value)
+        
+        return current_value

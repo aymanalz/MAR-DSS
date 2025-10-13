@@ -594,16 +594,108 @@ def setup_main_callbacks(app, dashboard_instance):
     def handle_save_as_project(n_clicks):
         """Handle saving the project with a new name."""
         if n_clicks:
-            # For now, show a message about Save As functionality
-            # In a real app, this would open a dialog to enter a new filename
+            # Create a file dialog using dcc.Upload component
             import dash_bootstrap_components as dbc
+            from dash import dcc
+            from datetime import datetime
+            
+            # Create a clean, serializable data structure
+            project_data = {
+                "project_name": dash_storage.get_data("project_name") or "",
+                "analysis_date": dash_storage.get_data("analysis_date") or "",
+                "mar_purpose": dash_storage.get_data("mar_purpose") or ["secure_water_supply"],
+                "last_saved": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "version": "1.0",
+                "description": "MAR DSS Project File"
+            }
+            
+            # Create JSON string for download
+            project_data = dash_storage.get_data_storage()
+            
+            # Create a clean, serializable copy to avoid circular references
+            clean_data = {}
+            for key, value in project_data.items():
+                try:
+                    # Test if the value can be serialized
+                    json.dumps(value)
+                    clean_data[key] = value
+                except (TypeError, ValueError):
+                    # Skip values that can't be serialized
+                    continue
+            
+            import json
+            json_string = json.dumps(clean_data, indent=2)
+            
+            # Create a download interface with file save dialog
+            from dash import dcc
             return [
                 dbc.Alert(
-                    "Save As functionality - This would typically open a dialog to enter a new filename and save the project with that name.",
-                    color="warning",
+                    "Save As - Click the download button below to save your project. The browser will open a file save dialog.",
+                    color="info",
                     className="mb-3"
                 ),
+                dbc.Card([
+                    dbc.CardBody([
+                        html.H5("Save Project As", className="card-title"),
+                        html.P("Your project data will be saved as a JSON file that you can load later using the Open button."),
+                        dbc.Button(
+                            [html.I(className="fas fa-download me-2"), "Download Project File"],
+                            id="download-project-btn",
+                            color="success",
+                            className="mb-3"
+                        ),
+                        dcc.Download(
+                            id="download-project-file",
+                            data=dict(content=json_string, filename="mar_project.json")
+                        )
+                    ])
+                ], className="mb-3"),
                 create_overview_content()[0]  # Show overview content
             ]
         return dash.no_update
+
+    # Callback for download button - trigger file download
+    @app.callback(
+        Output("download-project-file", "data"),
+        [Input("download-project-btn", "n_clicks")],
+        prevent_initial_call=True
+    )
+    def trigger_download(n_clicks):
+        """Trigger the project file download."""
+        if n_clicks:
+            # Create a clean, serializable data structure
+            # project_data = {
+            #     "project_name": dash_storage.get_data("project_name") or "",
+            #     "analysis_date": dash_storage.get_data("analysis_date") or "",
+            #     "mar_purpose": dash_storage.get_data("mar_purpose") or ["secure_water_supply"],
+            #     "last_saved": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            #     "version": "1.0",
+            #     "description": "MAR DSS Project File"
+            # }
+            
+            # Create JSON string for download
+            project_data = dash_storage.get_data_storage()
+            
+            # Create a clean, serializable copy to avoid circular references
+            clean_data = {}
+            for key, value in project_data.items():
+                try:
+                    # Test if the value can be serialized
+                    json.dumps(value)
+                    clean_data[key] = value
+                except (TypeError, ValueError):
+                    # Skip values that can't be serialized
+                    continue
+            
+            import json
+            json_string = json.dumps(clean_data, indent=2)
+            
+            # Generate filename with timestamp
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"mar_project_{timestamp}.json"
+            
+            return dict(content=json_string, filename=filename)
+        return dash.no_update
+
 
