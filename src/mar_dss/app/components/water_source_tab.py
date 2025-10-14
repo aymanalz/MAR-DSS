@@ -9,6 +9,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import requests
 from dash import dcc, html
+from .runoff_calculator_tab import create_runoff_calculator_tab
 
 
 def get_location_details(lat, lon):
@@ -212,8 +213,8 @@ def create_editable_flow_table():
     return table
 
 
-def create_general_tab_content():
-    """Create the content for the General tab."""
+def create_water_source_info_tab():
+    """Create the content for the Water Source Information tab."""
     return [
         html.H3("Water Source Information"),
         html.P("Water source details and configuration for your MAR project."),
@@ -548,6 +549,50 @@ def create_general_tab_content():
             ],
             className="mt-3",
         ),
+    ]
+
+
+def create_general_tab_content():
+    """Create the main tab structure with Water Source Information and Runoff Calculator tabs."""
+    return [
+        dbc.Tabs(
+            [
+                dbc.Tab(
+                    label="Water Source Information",
+                    tab_id="water-source-info",
+                    children=create_water_source_info_tab(),
+                    label_style={
+                        "color": "#ffffff", 
+                        "fontWeight": "bold",
+                        "backgroundColor": "#2c5aa0",
+                        "border": "1px solid #2c5aa0"
+                    },
+                    active_label_style={
+                        "color": "#ffffff", 
+                        "backgroundColor": "#1e3d72",
+                        "border": "1px solid #1e3d72"
+                    },
+                ),
+                dbc.Tab(
+                    label="Runoff Calculator",
+                    tab_id="runoff-calculator",
+                    children=create_runoff_calculator_tab(),
+                    label_style={
+                        "color": "#ffffff", 
+                        "fontWeight": "bold",
+                        "backgroundColor": "#dc3545",
+                        "border": "1px solid #dc3545"
+                    },
+                    active_label_style={
+                        "color": "#ffffff", 
+                        "backgroundColor": "#a71e2a",
+                        "border": "1px solid #a71e2a"
+                    },
+                ),
+            ],
+            id="water-source-tabs",
+            active_tab="water-source-info",
+        )
     ]
 
 

@@ -699,3 +699,11 @@ def setup_main_callbacks(app, dashboard_instance):
         return dash.no_update
 
 
+    # Client-side resize to force Leaflet to re-render when tab becomes visible
+    app.clientside_callback(
+        "return window.dash_clientside.clientside.resizeMapOnTab(activeTab);",
+        Output("runoff-map", "id"),  # dummy output; will always return no_update
+        Input("water-source-tabs", "active_tab"),
+        prevent_initial_call=True,
+    )
+
