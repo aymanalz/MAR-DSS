@@ -25,14 +25,14 @@ except ImportError:
 
 
 def create_analysis_tab_content():
-    """Create the Analysis tab with all analysis sub-tabs."""
+    """Create the Analysis tab with lazy-loaded sub-tabs."""
     return [
         dbc.Tabs(
             [
                 dbc.Tab(
                     label="Dashboard",
                     tab_id="analysis-dashboard",
-                    children=create_dashboard_content(),
+                    children=create_dashboard_content(),  # Load immediately
                     label_style={
                         "color": "#ffffff", 
                         "fontWeight": "bold",
@@ -48,7 +48,7 @@ def create_analysis_tab_content():
                 dbc.Tab(
                     label="DSS Algorithm",
                     tab_id="analysis-dss-algorithm",
-                    children=create_dss_algorithm_content(),
+                    children=[html.Div(id="analysis-dss-algorithm-content", children="Loading...")],  # Lazy load
                     label_style={
                         "color": "#ffffff", 
                         "fontWeight": "bold",
@@ -64,7 +64,7 @@ def create_analysis_tab_content():
                 dbc.Tab(
                     label="Decision Sensitivity",
                     tab_id="analysis-decision-sensitivity",
-                    children=create_decision_sensitivity_content(),
+                    children=[html.Div(id="analysis-decision-sensitivity-content", children="Loading...")],  # Lazy load
                     label_style={
                         "color": "#ffffff", 
                         "fontWeight": "bold",
@@ -80,7 +80,7 @@ def create_analysis_tab_content():
                 dbc.Tab(
                     label="Decision Interpretation",
                     tab_id="analysis-decision-interpretation",
-                    children=create_decision_interpretation_content(),
+                    children=[html.Div(id="analysis-decision-interpretation-content", children="Loading...")],  # Lazy load
                     label_style={
                         "color": "#ffffff", 
                         "fontWeight": "bold",
@@ -96,7 +96,7 @@ def create_analysis_tab_content():
                 dbc.Tab(
                     label="Scenarios Comparison",
                     tab_id="analysis-scenarios-comparison",
-                    children=create_scenarios_comparison_content(),
+                    children=[html.Div(id="analysis-scenarios-comparison-content", children="Loading...")],  # Lazy load
                     label_style={
                         "color": "#ffffff", 
                         "fontWeight": "bold",
@@ -112,7 +112,7 @@ def create_analysis_tab_content():
                 dbc.Tab(
                     label="AI Generated Decision",
                     tab_id="analysis-ai-decision",
-                    children=create_ai_generated_decision_content(),
+                    children=[html.Div(id="analysis-ai-decision-content", children="Loading...")],  # Lazy load
                     label_style={
                         "color": "#ffffff", 
                         "fontWeight": "bold",
@@ -128,7 +128,7 @@ def create_analysis_tab_content():
                 dbc.Tab(
                     label="Data Export",
                     tab_id="analysis-data-export",
-                    children=create_data_export_content(),
+                    children=[html.Div(id="analysis-data-export-content", children="Loading...")],  # Lazy load
                     label_style={
                         "color": "#ffffff", 
                         "fontWeight": "bold",

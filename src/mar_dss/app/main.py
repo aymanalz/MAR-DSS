@@ -92,6 +92,15 @@ class DashboardApp:
         except ImportError:
             from .callbacks.runoff_callbacks import setup_runoff_callbacks
         setup_runoff_callbacks(self.app)
+        
+        # Set up analysis tab lazy loading callbacks
+        try:
+            from mar_dss.app.callbacks.analysis_callbacks import (
+                setup_analysis_callbacks,
+            )
+        except ImportError:
+            from .callbacks.analysis_callbacks import setup_analysis_callbacks
+        setup_analysis_callbacks(self.app)
 
     def create_sample_data(self):
         """Create sample data for demonstration."""
