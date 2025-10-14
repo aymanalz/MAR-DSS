@@ -74,80 +74,41 @@ def setup_main_callbacks(app, dashboard_instance):
         Output("main-content", "children"),
         [
             Input("top-tabs", "active_tab"),
-            Input("nav-dashboard", "n_clicks"),
-            Input("nav-water-levels", "n_clicks"),
-            Input("nav-recharge", "n_clicks"),
-            Input("nav-quality", "n_clicks"),
-            Input("nav-scenarios", "n_clicks"),
-            Input("nav-ai-decision", "n_clicks"),
-            Input("nav-export", "n_clicks"),
         ],
     )
-    def update_main_content(
-        active_tab,
-        dash_clicks,
-        water_clicks,
-        recharge_clicks,
-        quality_clicks,
-        scenarios_clicks,
-        ai_clicks,
-        export_clicks,
-    ):
+    def update_main_content(active_tab):
         """Update main content based on navigation."""
-        ctx = dash.callback_context
-
-        if not ctx.triggered:
-            # Default content (overview)
-            return create_overview_content()
-
-        # Check if sidebar navigation was triggered
-        if ctx.triggered[0]["prop_id"].startswith("nav-"):
-            button_id = ctx.triggered[0]["prop_id"].split(".")[0]
-
-            if button_id == "nav-dashboard":
-                # Show overview content
-                return create_overview_content()
-            elif button_id == "nav-dashboard":
-                return create_dashboard_content()
-            elif button_id == "nav-water-levels":
-                return create_dss_algorithm_content()
-            elif button_id == "nav-recharge":
-                return create_decision_sensitivity_content()
-            elif button_id == "nav-quality":
-                return create_decision_interpretation_content()
-            elif button_id == "nav-scenarios":
-                return create_scenarios_comparison_content()
-            elif button_id == "nav-ai-decision":
-                return create_ai_generated_decision_content()
-            elif button_id == "nav-export":
-                return create_data_export_content()
-
-        # Handle top tab navigation - check if it's a top tab change
-        if (
-            "top-tabs" in ctx.triggered[0]["prop_id"]
-            or ctx.triggered[0]["prop_id"] == "top-tabs.active_tab"
-        ):
-            if active_tab == "overview":
-                return create_overview_content()
-            elif active_tab == "analysis":
-                return create_general_tab_content()
-            elif active_tab == "reports":
-                return create_reports_tab_content()
-            elif active_tab == "settings":
-                return create_hydro_tab_content()
-
-        # Fallback: handle based on active_tab value regardless of trigger
         if active_tab == "overview":
             return create_overview_content()
-        elif active_tab == "analysis":
+        elif active_tab == "water-source":
             return create_general_tab_content()
+        elif active_tab == "hydrogeology":
+            return create_hydro_tab_content()
+        elif active_tab == "environmental":
+            # Import environmental impact tab content
+            try:
+                from mar_dss.app.components.environmental_impact_tab import create_environmental_impact_content
+            except ImportError:
+                from ..components.environmental_impact_tab import create_environmental_impact_content
+            return create_environmental_impact_content()
+        elif active_tab == "legal":
+            # Import legal constraints tab content
+            try:
+                from mar_dss.app.components.legal_constraints_tab import create_legal_constraints_content
+            except ImportError:
+                from ..components.legal_constraints_tab import create_legal_constraints_content
+            return create_legal_constraints_content()
+        elif active_tab == "analysis":
+            # Import analysis tab content
+            try:
+                from mar_dss.app.components.analysis_tab import create_analysis_tab_content
+            except ImportError:
+                from ..components.analysis_tab import create_analysis_tab_content
+            return create_analysis_tab_content()
         elif active_tab == "reports":
             return create_reports_tab_content()
-        elif active_tab == "settings":
-            return create_hydro_tab_content()
-
-        # Default fallback
-        return []
+        else:
+            return create_overview_content()
 
     @app.callback(
         [Output("theme-selector", "value"), Output("theme-css", "href")],

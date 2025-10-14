@@ -232,11 +232,12 @@ def _build_tabs() -> dbc.Tabs:
     return dbc.Tabs(
         [
             dbc.Tab(label="(1) Overview", tab_id="overview"),
-            dbc.Tab(label=("(2) Water Source"), tab_id="analysis"),
-            dbc.Tab(label=("(3) Hydrogeology"), tab_id="settings"),
+            dbc.Tab(label=("(2) Water Source"), tab_id="water-source"),
+            dbc.Tab(label=("(3) Hydrogeology"), tab_id="hydrogeology"),
             dbc.Tab(label=("(4) Environmental Impact"), tab_id="environmental"),
             dbc.Tab(label=("(5) Legal Constraints"), tab_id="legal"),
-            dbc.Tab(label="(6) Reports", tab_id="reports"),
+            dbc.Tab(label="(6) Analysis", tab_id="analysis"),
+            dbc.Tab(label="(7) Reports", tab_id="reports"),
         ],
         id="top-tabs",
         active_tab="overview",
@@ -354,10 +355,8 @@ def _build_content_area(app_ctx) -> dbc.Row:
         [
             dbc.Col(
                 [_build_main_card(app_ctx)],
-                width=9,
-                style={"flex": "0 0 80%", "maxWidth": "80%"},
+                width=12,  # Full width since sidebar is removed
             ),
-            _build_sidebar(),
         ]
     )
 
