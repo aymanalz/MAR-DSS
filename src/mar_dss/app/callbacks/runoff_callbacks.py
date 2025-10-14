@@ -153,6 +153,9 @@ def setup_runoff_callbacks(app):
             try:
                 ws = streamstats.Watershed(lat=lat, lon=lon)
                 watershed_geojson = ws.boundary
+                print(f"Watershed parameters count: {len(ws.parameters)}")
+                print(f"Watershed parameters: {ws.parameters}")
+                
                 df_data = []
                 for par in ws.parameters:
                     name = par['name']
@@ -160,10 +163,14 @@ def setup_runoff_callbacks(app):
                     code = par['code']
                     unit = par['unit'] 
                     value = par['value']
+                    print(f"Parameter: {name} = {value} {unit}")
                     df_data.append([name, description, code, unit, value])
                 
                 # Create DataFrame
                 df = pd.DataFrame(df_data, columns=['Name', 'Description', 'Code', 'Unit', 'Value'])
+                print(f"DataFrame created with {len(df)} rows")
+                print(f"DataFrame columns: {df.columns.tolist()}")
+                print(f"DataFrame data: {df.to_dict('records')}")
                 
                 # Create watershed layer for the map
                 watershed_layer = dl.GeoJSON(
@@ -174,6 +181,7 @@ def setup_runoff_callbacks(app):
                 # Generate table from df with error handling
                 try:
                     if df.empty:
+                        print("DataFrame is empty!")
                         table = html.P("No watershed parameters available.", className="text-orange-500 italic")
                     else:
                         table = dash_table.DataTable(
@@ -201,7 +209,7 @@ def setup_runoff_callbacks(app):
                                     'backgroundColor': '#f8f9fa'
                                 }
                             ],
-                            page_size=0,  # Set to 0 to disable pagination
+                            page_size=len(df),  # Show all rows on one page
                             sort_action="native",
                             filter_action="native",
                             export_format="csv"

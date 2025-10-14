@@ -104,9 +104,9 @@ def create_runoff_calculator_tab():
                 dbc.Card([
                     dbc.CardHeader("Runoff Calculation Results", className="fw-bold bg-primary text-white"),
                     dbc.CardBody([
-                        html.Div(id="runoff-calculation-output")
+                        html.Div(id="runoff-calculation-output", style={'minHeight': '400px', 'overflow': 'auto'})
                     ])
-                ])
+                ], style={'minHeight': '500px'})
             ])
         ])
     ]
