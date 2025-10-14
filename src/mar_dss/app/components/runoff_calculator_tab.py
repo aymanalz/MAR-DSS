@@ -56,41 +56,8 @@ def create_runoff_calculator_tab():
                             color="info",
                             className="mb-3"
                         ),
+                        html.Div(id="status-message", className="mt-3 mb-3"),
                         html.Hr(),
-                        html.Label("Watershed Area (acres):", className="fw-bold"),
-                        dbc.Input(
-                            id="watershed-area-input",
-                            type="number",
-                            value=1000,
-                            min=1,
-                            max=100000,
-                            step=10,
-                            style={"margin-bottom": "15px"}
-                        ),
-
-                        html.Label("Land Use Type:", className="fw-bold"),
-                        dcc.Dropdown(
-                            id="land-use-dropdown",
-                            options=[
-                                {"label": "Urban", "value": "urban"},
-                                {"label": "Agricultural", "value": "agricultural"},
-                                {"label": "Forest", "value": "forest"},
-                                {"label": "Mixed", "value": "mixed"}
-                            ],
-                            value="mixed",
-                            style={"margin-bottom": "15px"}
-                        ),
-
-                        html.Label("Rainfall (inches/year):", className="fw-bold"),
-                        dbc.Input(
-                            id="rainfall-input",
-                            type="number",
-                            value=25,
-                            min=1,
-                            max=200,
-                            step=1,
-                            style={"margin-bottom": "15px"}
-                        ),
 
                         html.Label("Selected Latitude:", className="fw-bold"),
                         dbc.Input(

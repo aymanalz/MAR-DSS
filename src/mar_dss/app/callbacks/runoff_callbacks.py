@@ -96,32 +96,46 @@ def setup_runoff_callbacks(app):
         # Center the map on the new coordinates when they change
         return [marker], [lat, lon]
 
-    # Callback 3: Handle "Obtain nearby streams" button (exact same as open3.py)
+    # Callback 3: Handle "Obtain nearby streams" button with working message
     @app.callback(
-        Output('stations-layer', 'children'),
+        [Output('stations-layer', 'children'),
+         Output('status-message', 'children')],
         [Input('obtain-streams-btn', 'n_clicks')],
         [State('selected-latitude', 'value'),
-         State('selected-longitude', 'value')]
+         State('selected-longitude', 'value')],
+        prevent_initial_call=True
     )
     def update_streams(n_clicks, lat, lon):
         if n_clicks and n_clicks > 0 and lat is not None and lon is not None:
             print(f"Searching streams for: {lat}, {lon}")
+            
+            # Show working message first
+            working_msg = html.Div("Working on obtaining nearby streams...", 
+                                  className="alert alert-info", role="alert")
+            
             # The distance is set in the function call to 16093 meters (approx 10 miles)
             streams = get_streams_near_point(lat, lon) 
             geojson_data = streams_to_geojson(streams)
             
             if geojson_data and 'features' in geojson_data and len(geojson_data['features']) > 0:
+                # Show completion message
+                done_msg = html.Div("Done!", className="alert alert-success", role="alert")
                 return [dl.GeoJSON(
                     data=geojson_data, 
                     style={'color': 'blue', 'weight': 3, 'opacity': 0.8}
-                )]
+                )], done_msg
+            else:
+                # Show completion message even if no streams found
+                done_msg = html.Div("Done! (No streams found)", className="alert alert-warning", role="alert")
+                return [], done_msg
         
-        return []
+        return [], html.Div("")
 
-    # Callback 4: Handle "Get Watershed Info" button (exact same as open3.py)
+    # Callback 4: Handle "Get Watershed Info" button with working message
     @app.callback(
         [Output('watershed-layer', 'children'),
-         Output('runoff-calculation-output', 'children')],
+         Output('runoff-calculation-output', 'children'),
+         Output('status-message', 'children', allow_duplicate=True)],
         [Input('get-watershed-btn', 'n_clicks')],
         [State('selected-latitude', 'value'),
          State('selected-longitude', 'value')],
@@ -130,6 +144,10 @@ def setup_runoff_callbacks(app):
     def get_watershed_info(n_clicks, lat, lon):
         if n_clicks and n_clicks > 0 and lat is not None and lon is not None:
             print(f"Getting watershed info for: {lat}, {lon}")
+            
+            # Show working message first
+            working_msg = html.Div("Working on obtaining watershed info...", 
+                                  className="alert alert-info", role="alert")
             
             # Get watershed data for the map
             try:
@@ -192,12 +210,16 @@ def setup_runoff_callbacks(app):
                     print(f"Error creating table: {table_error}")
                     table = html.P(f"Error creating table: {str(table_error)}", className="text-red-500")
                 print(f"Table generated with {len(df)} rows")
-                return [watershed_layer], table
+                
+                # Show completion message
+                done_msg = html.Div("Done!", className="alert alert-success", role="alert")
+                return [watershed_layer], table, done_msg
                 
             except Exception as e:
                 print(f"Error getting watershed data: {e}")
-                return [], html.P(f"Error getting watershed data: {str(e)}", className="text-red-500")
+                error_msg = html.Div("Error getting watershed data", className="alert alert-danger", role="alert")
+                return [], html.P(f"Error getting watershed data: {str(e)}", className="text-red-500"), error_msg
         
-        return [], html.Div("Click 'Get Watershed Info' to retrieve watershed data.")
+        return [], html.Div("Click 'Get Watershed Info' to retrieve watershed data."), html.Div("")
 
 
