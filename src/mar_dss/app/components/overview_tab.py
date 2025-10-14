@@ -44,13 +44,21 @@ def create_mar_purpose_section():
                         ], width=6),
                         dbc.Col([
                             html.Label("File Name:", className="fw-bold"),
-                            dbc.Input(
-                                id="filename-input",
-                                type="text",
-                                placeholder="Enter filename...",
-                                value="",
-                                style={"margin-bottom": "15px"},
-                            )
+                            dbc.InputGroup([
+                                dbc.Input(
+                                    id="filename-input",
+                                    type="text",
+                                    placeholder="Enter filename...",
+                                    value="",
+                                ),
+                                dbc.Button(
+                                    [html.I(className="fas fa-upload me-1"), "Load"],
+                                    id="btn-open",
+                                    color="outline-primary",
+                                    size="sm",
+                                    style={"padding": "4px 8px"},
+                                )
+                            ], style={"margin-bottom": "15px"})
                         ], width=6)
                     ]),
                     html.Label("Analysis Date:", className="fw-bold"),

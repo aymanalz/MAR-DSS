@@ -150,25 +150,9 @@ def _build_action_buttons() -> dbc.ButtonGroup:
     return dbc.ButtonGroup(
         [
             dbc.Button(
-                [html.I(className=("fas fa-folder-open me-1")), "Open"],
-                id="btn-open",
-                color=("outline-primary"),
-                size="sm",
-                className="me-1",
-                style={"padding": "4px 8px"},
-            ),
-            dbc.Button(
                 [html.I(className=("fas fa-save me-1")), "Save"],
                 id="btn-save",
                 color=("outline-success"),
-                size="sm",
-                className="me-1",
-                style={"padding": "4px 8px"},
-            ),
-            dbc.Button(
-                [html.I(className=("fas fa-save me-1")), "Save As"],
-                id="btn-save-as",
-                color="outline-warning",
                 size="sm",
                 className="me-1",
                 style={"padding": "4px 8px"},
