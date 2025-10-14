@@ -3,12 +3,11 @@ General tab content and utilities for MAR DSS dashboard (Water Source).
 """
 
 import dash_bootstrap_components as dbc
-import dash_table
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import requests
-from dash import dcc, html
+from dash import dcc, dash_table, html
 from .runoff_calculator_tab import create_runoff_calculator_tab
 
 

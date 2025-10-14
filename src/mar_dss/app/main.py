@@ -83,6 +83,15 @@ class DashboardApp:
         
         # Set up hydrogeology callbacks
         setup_hydro_callbacks(self.app)
+        
+        # Set up runoff calculator callbacks
+        try:
+            from mar_dss.app.callbacks.runoff_callbacks import (
+                setup_runoff_callbacks,
+            )
+        except ImportError:
+            from .callbacks.runoff_callbacks import setup_runoff_callbacks
+        setup_runoff_callbacks(self.app)
 
     def create_sample_data(self):
         """Create sample data for demonstration."""

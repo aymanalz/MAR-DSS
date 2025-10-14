@@ -5,6 +5,7 @@ Main dashboard callbacks for MAR DSS.
 import dash
 import dash_bootstrap_components as dbc
 from dash import Input, Output, html, dependencies
+from dash.dependencies import ClientsideFunction
 import mar_dss.app.utils.data_storage as dash_storage
 
 # Import content creation functions
@@ -699,9 +700,9 @@ def setup_main_callbacks(app, dashboard_instance):
         return dash.no_update
 
 
-    # Client-side resize to force Leaflet to re-render when tab becomes visible
+    # Client-side resize to force Leaflet/Mapbox to re-render when tab becomes visible
     app.clientside_callback(
-        "return window.dash_clientside.clientside.resizeMapOnTab(activeTab);",
+        ClientsideFunction(namespace="clientside", function_name="resizeMapOnTab"),
         Output("runoff-map", "id"),  # dummy output; will always return no_update
         Input("water-source-tabs", "active_tab"),
         prevent_initial_call=True,
