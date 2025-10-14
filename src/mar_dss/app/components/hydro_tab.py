@@ -4,6 +4,11 @@ Hydrogeology tab content for MAR DSS dashboard.
 
 import dash_bootstrap_components as dbc
 from dash import dcc, html
+import pandas as pd
+
+columns=["parameter", "Depth/Thickness (ft)", "Hydraulic Conductivity", "Storage Term"]
+default_stratigraphy_unconfined = pd.DataFrame(columns=columns)
+parameters = ["Depth of No MAR Storage Zone", "MAR Storage Zone", "Max. Groundwater Table Elevation", "Average Groundwater Table Elevation", "Min Groundwater Table Elevation", "Bedrock Depth"]
 
 
 def create_hydro_tab_content():
@@ -176,8 +181,72 @@ def _build_stratigraphy_tab():
         tab_id="stratigraphy-tab",
         children=[
             html.Div(
-                [_build_stratigraphy_table()],
+                [
+                    html.H5("Stratigraphy Configuration", className="mb-3"),
+                    html.P("Configure soil layers and their hydrogeological properties.", className="mb-4"),
+                    
+                    # Table controls
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.ButtonGroup([
+                                dbc.Button("Add Layer", id="add-layer-btn", color="success", size="sm"),
+                                dbc.Button("Delete Selected", id="delete-layer-btn", color="danger", size="sm"),
+                                dbc.Button("Move Up", id="move-up-btn", color="info", size="sm"),
+                                dbc.Button("Move Down", id="move-down-btn", color="info", size="sm"),
+                            ])
+                        ], width=8),
+                        dbc.Col([
+                            html.Small("Select rows to delete or move", className="text-muted")
+                        ], width=4)
+                    ], className="mb-3"),
+                    
+                    # Stratigraphy table
+                    dbc.Table(
+                        [
+                            html.Thead([
+                                html.Tr([
+                                    html.Th("Select", style={"width": "5%"}),
+                                    html.Th("Layer", style={"width": "25%"}),
+                                    html.Th("Hydraulic Conductivity (ft/day)", style={"width": "25%"}),
+                                    html.Th("Specific Storage (1/ft)", style={"width": "25%"}),
+                                    html.Th("Specific Yield", style={"width": "20%"})
+                                ])
+                            ]),
+                            html.Tbody(id="stratigraphy-table-body")
+                        ],
+                        striped=True,
+                        bordered=True,
+                        hover=True,
+                        responsive=True,
+                        className="mb-3"
+                    ),
+                    
+                    # Store for table data
+                    dcc.Store(id="stratigraphy-data-store", data=[
+                        {"layer": "Sand", "conductivity": 10.0, "storage": 0.0001, "yield": 0.25, "selected": False},
+                        {"layer": "Silt", "conductivity": 0.01, "storage": 0.0001, "yield": 0.10, "selected": False},
+                        {"layer": "Gravel", "conductivity": 100.0, "storage": 0.0001, "yield": 0.30, "selected": False}
+                    ])
+                ],
                 id="stratigraphy-content"
+            )
+        ]
+    )
+
+
+def _build_groundwater_level_tab():
+    """Build the groundwater level tab content."""
+    return dbc.Tab(
+        label="Groundwater Level",
+        tab_id="groundwater-level-tab",
+        children=[
+            html.Div(
+                [
+                    html.H5("Groundwater Level Configuration", className="mb-3"),
+                    html.P("Groundwater level parameters will be configured here.", className="text-muted"),
+                    html.Small("This section is currently under development.", className="text-muted")
+                ],
+                id="groundwater-level-content"
             )
         ]
     )
@@ -208,6 +277,7 @@ def _build_geometry_tabs():
         id="geometry-tabs",
         children=[
             _build_stratigraphy_tab(),
+            _build_groundwater_level_tab(),
             _build_horizontal_extension_tab(),
         ],
         active_tab="stratigraphy-tab"
