@@ -366,10 +366,71 @@ def _build_horizontal_extension_tab():
         children=[
             html.Div(
                 [
-                    html.P(
-                        "Horizontal extension configuration will be added here.",
-                        className="text-muted text-center mt-3"
-                    )
+                    html.H5("Horizontal Extension Configuration", className="mb-3"),
+                    html.P("Configure the horizontal extension parameters for MAR project analysis.", className="mb-4"),
+                    
+                    # Input fields in two columns
+                    dbc.Row([
+                        dbc.Col([
+                            html.Label("Length (ft):", className="fw-bold mb-2"),
+                            dbc.Input(
+                                id="extension-length",
+                                type="number",
+                                value=100.0,
+                                step=0.1,
+                                placeholder="Enter length"
+                            )
+                        ], width=6),
+                        dbc.Col([
+                            html.Label("Width (ft):", className="fw-bold mb-2"),
+                            dbc.Input(
+                                id="extension-width",
+                                type="number",
+                                value=50.0,
+                                step=0.1,
+                                placeholder="Enter width"
+                            )
+                        ], width=6)
+                    ], className="mb-3"),
+                    
+                    dbc.Row([
+                        dbc.Col([
+                            html.Label("Rotation from North (degrees):", className="fw-bold mb-2"),
+                            dbc.Input(
+                                id="extension-rotation",
+                                type="number",
+                                value=0.0,
+                                step=1.0,
+                                placeholder="Enter rotation angle"
+                            )
+                        ], width=6),
+                        dbc.Col([
+                            html.Label("Upstream Head (ft):", className="fw-bold mb-2"),
+                            dbc.Input(
+                                id="upstream-head",
+                                type="number",
+                                value=10.0,
+                                step=0.1,
+                                placeholder="Enter upstream head"
+                            )
+                        ], width=6)
+                    ], className="mb-3"),
+                    
+                    dbc.Row([
+                        dbc.Col([
+                            html.Label("Downstream Head (ft):", className="fw-bold mb-2"),
+                            dbc.Input(
+                                id="downstream-head",
+                                type="number",
+                                value=5.0,
+                                step=0.1,
+                                placeholder="Enter downstream head"
+                            )
+                        ], width=6),
+                        dbc.Col([
+                            # Empty column for spacing
+                        ], width=6)
+                    ], className="mb-3")
                 ],
                 id="horizontal-extension-content"
             )
@@ -488,9 +549,11 @@ def _build_view_card():
                                         [
                                             html.H6("XY View", className="mb-3"),
                                             html.P("Plan view visualization of hydrogeological features.", className="mb-3"),
-                                            html.Div(
-                                                "XY view visualization will be implemented here.",
-                                                className="text-muted text-center p-4 border rounded"
+                                            
+                                            # XY View plot
+                                            dcc.Graph(
+                                                id="xy-view-plot",
+                                                style={'height': '500px'}
                                             )
                                         ],
                                         id="xy-view-content"

@@ -30,7 +30,7 @@ def create_analysis_tab_content():
         dbc.Tabs(
             [
                 dbc.Tab(
-                    label="Dashboard",
+                    label="Feasible MAR Technologies",
                     tab_id="analysis-dashboard",
                     children=create_dashboard_content(),  # Load immediately
                     label_style={

@@ -522,3 +522,186 @@ def setup_hydro_callbacks(app):
         fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgray')
         
         return fig
+    
+    # XY View Plot Callback
+    @app.callback(
+        Output("xy-view-plot", "figure"),
+        [Input("extension-length", "value"),
+         Input("extension-width", "value"),
+         Input("extension-rotation", "value"),
+         Input("upstream-head", "value"),
+         Input("downstream-head", "value")],
+        prevent_initial_call=False
+    )
+    def update_xy_view_plot(length, width, rotation, upstream_head, downstream_head):
+        """Update the XY view plot with rectangle and contour lines."""
+        import numpy as np
+        
+        # Default values if inputs are None
+        if length is None:
+            length = 100.0
+        if width is None:
+            width = 50.0
+        if rotation is None:
+            rotation = 0.0
+        if upstream_head is None:
+            upstream_head = 10.0
+        if downstream_head is None:
+            downstream_head = 5.0
+        
+        # Create the plot
+        fig = go.Figure()
+        
+        # Convert rotation to radians
+        rotation_rad = np.radians(rotation)
+        
+        # Define rectangle corners (centered at origin, then rotated)
+        half_length = length / 2
+        half_width = width / 2
+        
+        # Original rectangle corners (before rotation)
+        corners = np.array([
+            [-half_length, -half_width],
+            [half_length, -half_width],
+            [half_length, half_width],
+            [-half_length, half_width],
+            [-half_length, -half_width]  # Close the rectangle
+        ])
+        
+        # Rotation matrix
+        cos_rot = np.cos(rotation_rad)
+        sin_rot = np.sin(rotation_rad)
+        rotation_matrix = np.array([[cos_rot, -sin_rot], [sin_rot, cos_rot]])
+        
+        # Rotate the rectangle
+        rotated_corners = corners @ rotation_matrix.T
+        
+        # Add rectangle outline
+        fig.add_trace(go.Scatter(
+            x=rotated_corners[:, 0],
+            y=rotated_corners[:, 1],
+            mode='lines',
+            line=dict(color='black', width=3),
+            name='MAR Project Area',
+            hovertemplate='<b>MAR Project Area</b><br>Length: %{x:.1f} ft<br>Width: %{y:.1f} ft<extra></extra>',
+            showlegend=True
+        ))
+        
+        # Add filled rectangle
+        fig.add_trace(go.Scatter(
+            x=rotated_corners[:, 0],
+            y=rotated_corners[:, 1],
+            fill='toself',
+            fillcolor='rgba(0, 123, 255, 0.3)',
+            line=dict(color='rgba(255,255,255,0)'),
+            name='Project Area',
+            showlegend=False,
+            hoverinfo='skip'
+        ))
+        
+        # Create contour lines (10 lines parallel to width, from upstream to downstream)
+        n_contours = 10
+        head_values = np.linspace(upstream_head, downstream_head, n_contours)
+        
+        # Define color scale from blue (high head) to red (low head)
+        colors = ['#0000FF', '#0080FF', '#00FFFF', '#00FF80', '#00FF00', 
+                 '#80FF00', '#FFFF00', '#FF8000', '#FF4000', '#FF0000']
+        
+        for i, head in enumerate(head_values):
+            # Create contour line parallel to the width (perpendicular to length)
+            # The contour lines run from one width side to the other
+            t = np.linspace(-half_width, half_width, 50)
+            
+            # Create points along the width at different positions along the length
+            # Position varies from -half_length to +half_length
+            length_position = (i / (n_contours - 1) - 0.5) * 2 * half_length
+            
+            # Create points along the width
+            contour_x = np.full_like(t, length_position)
+            contour_y = t
+            
+            # Rotate the contour line
+            contour_points = np.column_stack([contour_x, contour_y])
+            rotated_contour = contour_points @ rotation_matrix.T
+            
+            # Add contour line with color based on head value
+            fig.add_trace(go.Scatter(
+                x=rotated_contour[:, 0],
+                y=rotated_contour[:, 1],
+                mode='lines',
+                line=dict(color=colors[i], width=2, dash='dash'),
+                name=f'Head: {head:.1f} ft',
+                hovertemplate=f'<b>Head: {head:.1f} ft</b><extra></extra>',
+                showlegend=False
+            ))
+            
+            # Add label for contour line (at the middle of the line)
+            label_position = np.array([length_position, 0]) @ rotation_matrix.T
+            fig.add_annotation(
+                x=label_position[0],
+                y=label_position[1],
+                text=f'{head:.1f}',
+                showarrow=False,
+                font=dict(size=10, color='black', family="Arial Black"),
+                bgcolor="rgba(255,255,255,0.8)",
+                bordercolor="black",
+                borderwidth=1
+            )
+        
+        # Add upstream and downstream labels
+        # Upstream (higher head)
+        upstream_center = np.array([-half_length, 0]) @ rotation_matrix.T
+        fig.add_annotation(
+            x=upstream_center[0],
+            y=upstream_center[1],
+            text=f"Upstream<br>{upstream_head:.1f} ft",
+            showarrow=True,
+            arrowhead=2,
+            arrowcolor="green",
+            font=dict(size=10, color="green"),
+            bgcolor="rgba(255,255,255,0.8)",
+            bordercolor="green"
+        )
+        
+        # Downstream (lower head)
+        downstream_center = np.array([half_length, 0]) @ rotation_matrix.T
+        fig.add_annotation(
+            x=downstream_center[0],
+            y=downstream_center[1],
+            text=f"Downstream<br>{downstream_head:.1f} ft",
+            showarrow=True,
+            arrowhead=2,
+            arrowcolor="red",
+            font=dict(size=10, color="red"),
+            bgcolor="rgba(255,255,255,0.8)",
+            bordercolor="red"
+        )
+        
+        # Update layout
+        fig.update_layout(
+            title={
+                'text': 'XY View - MAR Project Area with Head Contours',
+                'x': 0.5,
+                'xanchor': 'center',
+                'font': {'size': 16}
+            },
+            xaxis_title="Distance (ft)",
+            yaxis_title="Distance (ft)",
+            template="plotly_white",
+            height=500,
+            margin=dict(l=50, r=50, t=60, b=50),
+            showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor="top",
+                y=-0.1,
+                xanchor="center",
+                x=0.5
+            ),
+            xaxis=dict(scaleanchor="y", scaleratio=1),  # Equal aspect ratio
+            yaxis=dict(scaleanchor="x", scaleratio=1)
+        )
+        
+        # No grid lines for cleaner appearance
+        
+        return fig

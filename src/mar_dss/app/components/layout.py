@@ -231,13 +231,111 @@ def _build_header() -> dbc.Row:
 def _build_tabs() -> dbc.Tabs:
     return dbc.Tabs(
         [
-            dbc.Tab(label="(1) Overview", tab_id="overview"),
-            dbc.Tab(label=("(2) Water Source"), tab_id="water-source"),
-            dbc.Tab(label=("(3) Hydrogeology"), tab_id="hydrogeology"),
-            dbc.Tab(label=("(4) Environmental Impact"), tab_id="environmental"),
-            dbc.Tab(label=("(5) Legal Constraints"), tab_id="legal"),
-            dbc.Tab(label="(6) Analysis", tab_id="analysis"),
-            dbc.Tab(label="(7) Reports", tab_id="reports"),
+            dbc.Tab(
+                label="(1) Overview", 
+                tab_id="overview",
+                label_style={
+                    "color": "#ffffff", 
+                    "fontWeight": "bold",
+                    "backgroundColor": "#6f42c1",
+                    "border": "1px solid #6f42c1"
+                },
+                active_label_style={
+                    "color": "#ffffff", 
+                    "backgroundColor": "#5a32a3",
+                    "border": "1px solid #5a32a3"
+                }
+            ),
+            dbc.Tab(
+                label=("(2) Water Source"), 
+                tab_id="water-source",
+                label_style={
+                    "color": "#ffffff", 
+                    "fontWeight": "bold",
+                    "backgroundColor": "#8e44ad",
+                    "border": "1px solid #8e44ad"
+                },
+                active_label_style={
+                    "color": "#ffffff", 
+                    "backgroundColor": "#7d3c98",
+                    "border": "1px solid #7d3c98"
+                }
+            ),
+            dbc.Tab(
+                label=("(3) Hydrogeology"), 
+                tab_id="hydrogeology",
+                label_style={
+                    "color": "#ffffff", 
+                    "fontWeight": "bold",
+                    "backgroundColor": "#a569bd",
+                    "border": "1px solid #a569bd"
+                },
+                active_label_style={
+                    "color": "#ffffff", 
+                    "backgroundColor": "#9b59b6",
+                    "border": "1px solid #9b59b6"
+                }
+            ),
+            dbc.Tab(
+                label=("(4) Environmental Impact"), 
+                tab_id="environmental",
+                label_style={
+                    "color": "#ffffff", 
+                    "fontWeight": "bold",
+                    "backgroundColor": "#3498db",
+                    "border": "1px solid #3498db"
+                },
+                active_label_style={
+                    "color": "#ffffff", 
+                    "backgroundColor": "#2980b9",
+                    "border": "1px solid #2980b9"
+                }
+            ),
+            dbc.Tab(
+                label=("(5) Legal Constraints"), 
+                tab_id="legal",
+                label_style={
+                    "color": "#ffffff", 
+                    "fontWeight": "bold",
+                    "backgroundColor": "#5dade2",
+                    "border": "1px solid #5dade2"
+                },
+                active_label_style={
+                    "color": "#ffffff", 
+                    "backgroundColor": "#4a9fd1",
+                    "border": "1px solid #4a9fd1"
+                }
+            ),
+            dbc.Tab(
+                label="(6) Analysis", 
+                tab_id="analysis",
+                label_style={
+                    "color": "#ffffff", 
+                    "fontWeight": "bold",
+                    "backgroundColor": "#85c1e9",
+                    "border": "1px solid #85c1e9"
+                },
+                active_label_style={
+                    "color": "#ffffff", 
+                    "backgroundColor": "#73b3e0",
+                    "border": "1px solid #73b3e0"
+                }
+            ),
+            dbc.Tab(
+                label="(7) Reports", 
+                tab_id="reports",
+                label_style={
+                    "color": "#ffffff", 
+                    "fontWeight": "bold",
+                    "backgroundColor": "#aed6f1",
+                    "border": "1px solid #aed6f1"
+                },
+                active_label_style={
+                    "color": "#ffffff", 
+                    "backgroundColor": "#9bc7e8",
+                    "border": "1px solid #9bc7e8"
+                }
+            ),
         ],
         id="top-tabs",
         active_tab="overview",
