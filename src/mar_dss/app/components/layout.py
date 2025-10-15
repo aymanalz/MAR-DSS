@@ -89,59 +89,83 @@ def _create_charts(app_ctx) -> None:
 def _build_title_block() -> html.Div:
     return html.Div(
         [
-            html.Div(
+            dbc.Row(
                 [
-                    html.Img(
-                        src="assets/logo2.png",
-                        alt="MAR DSS Logo 2",
-                        style={
-                            "height": "100px",
-                            "width": "auto",
-                            "vertical-align": "middle",
-                        },
-                    )
-                ],
-                style={
-                    "position": "absolute",
-                    "left": "0",
-                    "top": "50%",
-                    "transform": "translateY(-50%)",
-                },
-            ),
-            html.Div(
-                [
-                    html.H1(
+                    dbc.Col(
                         [
-                            "Managed Aquifer Recharge",
-                            html.Br(),
-                            "Decision Support System",
+                            html.Img(
+                                src="assets/logo2.png",
+                                alt="MAR DSS Logo 2",
+                                style={
+                                    "height": "100px",
+                                    "width": "auto",
+                                    "vertical-align": "middle",
+                                },
+                            )
                         ],
-                        className=("text-center mb-4"),
-                        style={
-                            "font-family": ("'Segoe UI', Tahoma, sans-serif"),
-                            "font-size": "2.75rem",
-                            "font-weight": "700",
-                            "color": "#2C3E50",
-                            "background-color": "transparent",
-                            "padding": "0px",
-                            "border-radius": "8px",
-                            "border": "none",
-                            "vertical-align": "middle",
-                        },
+                        width=3,
+                        className="d-flex align-items-center justify-content-start"
+                    ),
+                    dbc.Col(
+                        [
+                            html.H1(
+                                [
+                                    "Managed Aquifer Recharge",
+                                    html.Br(),
+                                    "Decision Support System",
+                                ],
+                                className="text-center mb-0",
+                                style={
+                                    "font-family": ("'Segoe UI', Tahoma, sans-serif"),
+                                    "font-size": "2.75rem",
+                                    "font-weight": "700",
+                                    "color": "#2C3E50",
+                                    "background-color": "transparent",
+                                    "padding": "0px",
+                                    "border-radius": "8px",
+                                    "border": "none",
+                                    "vertical-align": "middle",
+                                },
+                            )
+                        ],
+                        width=6,
+                        className="d-flex align-items-center justify-content-center"
+                    ),
+                    dbc.Col(
+                        [
+                            html.Div([
+                                html.Img(
+                                    src="assets/logo.jpg",
+                                    alt="MAR DSS Logo",
+                                    style={
+                                        "height": "104px",
+                                        "width": "auto",
+                                        "vertical-align": "middle",
+                                        "margin-right": "20px",
+                                    },
+                                ),
+                                html.Img(
+                                    src="assets/estcp.png",
+                                    alt="ESTCP Logo",
+                                    style={
+                                        "height": "80px",
+                                        "width": "auto",
+                                        "vertical-align": "middle",
+                                    },
+                                )
+                            ], className="d-flex align-items-center justify-content-center")
+                        ],
+                        width=3,
+                        className="d-flex align-items-center justify-content-center"
                     )
                 ],
-                style={
-                    "width": "100%",
-                    "display": "flex",
-                    "align-items": "center",
-                    "justify-content": "center",
-                },
-            ),
+                className="align-items-center"
+            )
         ],
         style={
-            "position": "relative",
-            "min-height": "100px",
+            "min-height": "120px",
             "width": "100%",
+            "padding": "20px 0",
         },
     )
 
@@ -213,8 +237,7 @@ def _build_header() -> dbc.Row:
             dbc.Col(
                 [
                     html.Div(
-                        [_build_title_block(), _build_action_buttons(),
-                         _build_theme_selector_and_logo()],
+                        [_build_title_block(), _build_action_buttons()],
                         className="position-relative",
                     ),
                     html.Hr(),
@@ -384,7 +407,29 @@ def _build_overview_content(app_ctx) -> list:
 
 def _build_main_card(app_ctx) -> dbc.Card:
     return dbc.Card([
-        dbc.CardHeader([_build_tabs()]),
+        dbc.CardHeader([
+            dbc.Row([
+                dbc.Col([_build_tabs()], width=9),
+                dbc.Col([
+                    html.Div([
+                        html.Label("Theme:", className="me-2"),
+                        dcc.Dropdown(
+                            id="theme-selector",
+                            options=[
+                                {"label": "Cerulean", "value": "CERULEAN"},
+                                {"label": "Darkly", "value": "DARKLY"},
+                                {"label": "Flatly", "value": "FLATLY"},
+                                {"label": "Cyborg", "value": "CYBORG"},
+                                {"label": "Slate", "value": "SLATE"},
+                            ],
+                            value="CERULEAN",
+                            clearable=False,
+                            style={"width": "150px"},
+                        )
+                    ], className="d-flex align-items-center justify-content-end")
+                ], width=3)
+            ])
+        ]),
         dbc.CardBody(_build_overview_content(app_ctx)),
     ])
 
