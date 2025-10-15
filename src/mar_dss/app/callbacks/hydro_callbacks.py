@@ -432,3 +432,93 @@ def setup_hydro_callbacks(app):
         fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgray')
         
         return fig
+    
+    # Stratigraphy Cross Section Plot Callback
+    @app.callback(
+        Output("stratigraphy-cross-section-plot", "figure"),
+        [Input("stratigraphy-data-store", "data")],
+        prevent_initial_call=False
+    )
+    def update_stratigraphy_cross_section(data):
+        """Update the stratigraphy cross-section plot based on table data."""
+        if not data:
+            return go.Figure()
+        
+        # Define colors for different layer types
+        layer_colors = {
+            "Gravel": "#8B4513",      # Brown
+            "Sand": "#F4A460",        # Sandy brown
+            "Silt": "#D2B48C",        # Tan
+            "Loam": "#DEB887",        # Burlywood
+            "Clay": "#A0522D"         # Sienna
+        }
+        
+        # Create the plot
+        fig = go.Figure()
+        
+        # Calculate cumulative depths for layering
+        cumulative_depth = 0
+        layer_names = []
+        layer_depths = []
+        layer_colors_list = []
+        
+        for i, row in enumerate(data):
+            layer_name = row["layer"]
+            thickness = row["thickness"]
+            
+            # Add layer rectangle
+            fig.add_trace(go.Scatter(
+                x=[0, 1, 1, 0, 0],  # Rectangle coordinates
+                y=[cumulative_depth, cumulative_depth, cumulative_depth + thickness, cumulative_depth + thickness, cumulative_depth],
+                fill='toself',
+                fillcolor=layer_colors.get(layer_name, "#808080"),  # Default gray if layer not found
+                line=dict(color='black', width=1),
+                name=layer_name,
+                hovertemplate=f'<b>{layer_name}</b><br>Thickness: {thickness:.1f} ft<br>Depth: {cumulative_depth:.1f} - {cumulative_depth + thickness:.1f} ft<extra></extra>',
+                showlegend=True
+            ))
+            
+            # Add layer label in the middle of the layer
+            fig.add_annotation(
+                x=0.5,
+                y=cumulative_depth + thickness/2,
+                text=layer_name,
+                showarrow=False,
+                font=dict(size=12, color="black")
+            )
+            
+            cumulative_depth += thickness
+        
+        # Update layout
+        fig.update_layout(
+            title={
+                'text': 'Stratigraphy Cross Section',
+                'x': 0.5,
+                'xanchor': 'center',
+                'font': {'size': 16}
+            },
+            xaxis_title="",
+            yaxis_title="Depth (ft)",
+            yaxis=dict(autorange="reversed"),  # Reverse y-axis so surface is at top
+            template="plotly_white",
+            height=500,
+            margin=dict(l=50, r=50, t=60, b=50),
+            showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor="top",
+                y=-0.1,
+                xanchor="center",
+                x=0.5
+            ),
+            xaxis=dict(
+                showgrid=False,
+                showticklabels=False,
+                range=[-0.1, 1.1]
+            )
+        )
+        
+        # Add grid
+        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgray')
+        
+        return fig

@@ -180,6 +180,17 @@ def _build_stratigraphy_tab():
     return dbc.Tab(
         label="Stratigraphy",
         tab_id="stratigraphy-tab",
+        label_style={
+            "color": "#ffffff", 
+            "fontWeight": "bold",
+            "backgroundColor": "#28a745",
+            "border": "1px solid #28a745"
+        },
+        active_label_style={
+            "color": "#ffffff", 
+            "backgroundColor": "#1e7e34",
+            "border": "1px solid #1e7e34"
+        },
         children=[
             html.Div(
                 [
@@ -241,6 +252,17 @@ def _build_groundwater_level_tab():
     return dbc.Tab(
         label="Groundwater Level",
         tab_id="groundwater-level-tab",
+        label_style={
+            "color": "#ffffff", 
+            "fontWeight": "bold",
+            "backgroundColor": "#17a2b8",
+            "border": "1px solid #17a2b8"
+        },
+        active_label_style={
+            "color": "#ffffff", 
+            "backgroundColor": "#138496",
+            "border": "1px solid #138496"
+        },
         children=[
             html.Div(
                 [
@@ -330,6 +352,17 @@ def _build_horizontal_extension_tab():
     return dbc.Tab(
         label="Horizontal Extension",
         tab_id="horizontal-extension-tab",
+        label_style={
+            "color": "#ffffff", 
+            "fontWeight": "bold",
+            "backgroundColor": "#6c757d",
+            "border": "1px solid #6c757d"
+        },
+        active_label_style={
+            "color": "#ffffff", 
+            "backgroundColor": "#545b62",
+            "border": "1px solid #545b62"
+        },
         children=[
             html.Div(
                 [
@@ -362,7 +395,7 @@ def _build_geometry_card():
     return dbc.Card(
         [
             dbc.CardHeader(
-                "Geometry",
+                "Geometry and Stratigraphy",
                 className="fw-bold bg-primary text-white",
             ),
             dbc.CardBody(
@@ -395,9 +428,11 @@ def _build_view_card():
                                         [
                                             html.H6("Stratigraphy Cross Section", className="mb-3"),
                                             html.P("Visual representation of subsurface stratigraphy layers.", className="mb-3"),
-                                            html.Div(
-                                                "Cross-section visualization will be implemented here.",
-                                                className="text-muted text-center p-4 border rounded"
+                                            
+                                            # Cross-section plot
+                                            dcc.Graph(
+                                                id="stratigraphy-cross-section-plot",
+                                                style={'height': '500px'}
                                             )
                                         ],
                                         id="stratigraphy-cross-section-content"
