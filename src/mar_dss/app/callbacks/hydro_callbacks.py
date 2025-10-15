@@ -347,6 +347,39 @@ def setup_hydro_callbacks(app):
             hovertemplate='<b>%{x}</b><br>Elevation: %{y:.1f} ft<extra></extra>'
         ))
         
+        # Add filled area between MAR storage and groundwater if both values are provided
+        if max_storage_depth is not None and ground_elevation is not None:
+            mar_storage_line = ground_elevation - max_storage_depth
+            
+            # Create filled area between MAR storage line and groundwater elevation
+            # We need to create a polygon that fills the area between the two lines
+            months = df['month'].tolist()
+            groundwater_elevations = df['elevation'].tolist()
+            mar_storage_elevations = [mar_storage_line] * len(months)
+            
+            # Create the filled area by combining the lines
+            fig.add_trace(go.Scatter(
+                x=months + months[::-1],  # Forward then reverse for closed polygon
+                y=groundwater_elevations + mar_storage_elevations[::-1],  # Combine both lines
+                fill='toself',
+                fillcolor='rgba(255, 165, 0, 0.3)',  # Orange with transparency
+                line=dict(color='rgba(255,255,255,0)'),  # Transparent line
+                name='Available MAR Storage',
+                hovertemplate='<b>Available MAR Storage Area</b><extra></extra>',
+                showlegend=True
+            ))
+            
+            # Add the MAR storage line as a reference
+            fig.add_trace(go.Scatter(
+                x=months,
+                y=mar_storage_elevations,
+                mode='lines',
+                line=dict(color='red', width=2, dash='dot'),
+                name='MAR Storage Limit',
+                hovertemplate='<b>%{x}</b><br>MAR Storage Limit: %{y:.1f} ft<extra></extra>',
+                showlegend=True
+            ))
+        
         # Add horizontal lines if values are provided
         if ground_elevation is not None:
             # Ground surface elevation line
@@ -382,9 +415,16 @@ def setup_hydro_callbacks(app):
             xaxis_title="Month",
             yaxis_title="Elevation (ft)",
             template="plotly_white",
-            height=400,
-            margin=dict(l=50, r=50, t=60, b=50),
-            showlegend=False
+            height=600,
+            margin=dict(l=50, r=50, t=60, b=100),
+            showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor="top",
+                y=-0.15,
+                xanchor="center",
+                x=0.5
+            )
         )
         
         # Add grid

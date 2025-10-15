@@ -26,6 +26,7 @@ def _build_hydro_tab_header():
         html.P(
             "Configure hydrogeological parameters for MAR project analysis."
         ),
+        _build_aquifer_type_selector(),
     ]
 
 
@@ -243,36 +244,8 @@ def _build_groundwater_level_tab():
         children=[
             html.Div(
                 [
-                    dbc.Row([
-                        dbc.Col([
-                            html.H5("Groundwater Level Configuration", className="mb-3"),
-                            html.P("Configure monthly groundwater level variations.", className="mb-4"),
-                        ], width=8),
-                        dbc.Col([
-                            # Input fields for elevation and storage depth
-                            html.Div([
-                                html.Label("Ground Surface Elevation (ft):", className="fw-bold", style={"fontSize": "12px"}),
-                                dbc.Input(
-                                    id="ground-surface-elevation",
-                                    type="number",
-                                    value=120.0,
-                                    step=0.1,
-                                    placeholder="Enter elevation",
-                                    size="sm",
-                                    className="mb-2"
-                                ),
-                                html.Label("Maximum MAR Storage Depth (ft):", className="fw-bold", style={"fontSize": "12px"}),
-                                dbc.Input(
-                                    id="max-mar-storage-depth",
-                                    type="number",
-                                    value=20.0,
-                                    step=0.1,
-                                    placeholder="Enter storage depth",
-                                    size="sm"
-                                )
-                            ])
-                        ], width=4)
-                    ], className="mb-3"),
+                    html.H5("Groundwater Level Configuration", className="mb-3"),
+                    html.P("Configure monthly groundwater level variations.", className="mb-4"),
                     
                     # Table controls
                     dbc.Row([
@@ -285,8 +258,29 @@ def _build_groundwater_level_tab():
                         ], width=12)
                     ], className="mb-3"),
                     
-                    # Table and plot side by side
+                    # Input fields for elevation and storage depth
                     dbc.Row([
+                        dbc.Col([
+                            html.Label("Ground Surface Elevation (ft):", className="fw-bold", style={"fontSize": "12px"}),
+                            dbc.Input(
+                                id="ground-surface-elevation",
+                                type="number",
+                                value=120.0,
+                                step=0.1,
+                                placeholder="Enter elevation",
+                                size="sm",
+                                className="mb-2"
+                            ),
+                            html.Label("Maximum MAR Storage Depth (ft):", className="fw-bold", style={"fontSize": "12px"}),
+                            dbc.Input(
+                                id="max-mar-storage-depth",
+                                type="number",
+                                value=20.0,
+                                step=0.1,
+                                placeholder="Enter storage depth",
+                                size="sm"
+                            )
+                        ], width=6),
                         dbc.Col([
                             # Groundwater level table
                             dbc.Table(
@@ -306,14 +300,7 @@ def _build_groundwater_level_tab():
                                 responsive=True,
                                 className="mb-3"
                             )
-                        ], width=4),
-                        dbc.Col([
-                            # Groundwater level plot
-                            dcc.Graph(
-                                id="groundwater-plot",
-                                style={'height': '400px'}
-                            )
-                        ], width=8)
+                        ], width=6)
                     ], className="mb-3"),
                     
                     # Store for groundwater data
@@ -380,7 +367,6 @@ def _build_geometry_card():
             ),
             dbc.CardBody(
                 [
-                    _build_aquifer_type_selector(),
                     _build_geometry_tabs(),
                 ]
             ),
@@ -390,18 +376,106 @@ def _build_geometry_card():
 
 
 def _build_view_card():
-    """Build the View card."""
+    """Build the View card with three colored tabs."""
     return dbc.Card(
         [
             dbc.CardHeader(
                 "View",
-                className="fw-bold bg-secondary text-white",
+                className="fw-bold bg-primary text-white",
             ),
             dbc.CardBody(
                 [
-                    html.P(
-                        "View options will be added here.",
-                        className="text-muted text-center"
+                    dbc.Tabs(
+                        [
+                            dbc.Tab(
+                                label="Stratigraphy Cross Section",
+                                tab_id="stratigraphy-cross-section",
+                                children=[
+                                    html.Div(
+                                        [
+                                            html.H6("Stratigraphy Cross Section", className="mb-3"),
+                                            html.P("Visual representation of subsurface stratigraphy layers.", className="mb-3"),
+                                            html.Div(
+                                                "Cross-section visualization will be implemented here.",
+                                                className="text-muted text-center p-4 border rounded"
+                                            )
+                                        ],
+                                        id="stratigraphy-cross-section-content"
+                                    )
+                                ],
+                                label_style={
+                                    "color": "#ffffff", 
+                                    "fontWeight": "bold",
+                                    "backgroundColor": "#dc3545",
+                                    "border": "1px solid #dc3545"
+                                },
+                                active_label_style={
+                                    "color": "#ffffff", 
+                                    "backgroundColor": "#b02a37",
+                                    "border": "1px solid #b02a37"
+                                },
+                            ),
+                            dbc.Tab(
+                                label="Available MAR Storage",
+                                tab_id="available-mar-storage",
+                                children=[
+                                    html.Div(
+                                        [
+                                            html.H6("Available MAR Storage", className="mb-3"),
+                                            html.P("Analysis of available storage capacity for MAR operations.", className="mb-3"),
+                                            
+                                            # Groundwater level plot
+                                            dcc.Graph(
+                                                id="groundwater-plot",
+                                                style={'height': '600px'}
+                                            )
+                                        ],
+                                        id="available-mar-storage-content"
+                                    )
+                                ],
+                                label_style={
+                                    "color": "#ffffff", 
+                                    "fontWeight": "bold",
+                                    "backgroundColor": "#28a745",
+                                    "border": "1px solid #28a745"
+                                },
+                                active_label_style={
+                                    "color": "#ffffff", 
+                                    "backgroundColor": "#1e7e34",
+                                    "border": "1px solid #1e7e34"
+                                },
+                            ),
+                            dbc.Tab(
+                                label="XY View",
+                                tab_id="xy-view",
+                                children=[
+                                    html.Div(
+                                        [
+                                            html.H6("XY View", className="mb-3"),
+                                            html.P("Plan view visualization of hydrogeological features.", className="mb-3"),
+                                            html.Div(
+                                                "XY view visualization will be implemented here.",
+                                                className="text-muted text-center p-4 border rounded"
+                                            )
+                                        ],
+                                        id="xy-view-content"
+                                    )
+                                ],
+                                label_style={
+                                    "color": "#ffffff", 
+                                    "fontWeight": "bold",
+                                    "backgroundColor": "#007bff",
+                                    "border": "1px solid #007bff"
+                                },
+                                active_label_style={
+                                    "color": "#ffffff", 
+                                    "backgroundColor": "#0056b3",
+                                    "border": "1px solid #0056b3"
+                                },
+                            ),
+                        ],
+                        id="view-tabs",
+                        active_tab="stratigraphy-cross-section",
                     )
                 ]
             ),
