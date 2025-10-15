@@ -206,9 +206,10 @@ def _build_stratigraphy_tab():
                             html.Thead([
                                 html.Tr([
                                     html.Th("Select", style={"width": "5%"}),
-                                    html.Th("Layer", style={"width": "25%"}),
-                                    html.Th("Hydraulic Conductivity (ft/day)", style={"width": "25%"}),
-                                    html.Th("Specific Storage (1/ft)", style={"width": "25%"}),
+                                    html.Th("Layer", style={"width": "20%"}),
+                                    html.Th("Thickness (ft)", style={"width": "15%"}),
+                                    html.Th("Hydraulic Conductivity (ft/day)", style={"width": "20%"}),
+                                    html.Th("Specific Storage (1/ft)", style={"width": "20%"}),
                                     html.Th("Specific Yield", style={"width": "20%"})
                                 ])
                             ]),
@@ -223,9 +224,9 @@ def _build_stratigraphy_tab():
                     
                     # Store for table data
                     dcc.Store(id="stratigraphy-data-store", data=[
-                        {"layer": "Sand", "conductivity": 10.0, "storage": 0.0001, "yield": 0.25, "selected": False},
-                        {"layer": "Silt", "conductivity": 0.01, "storage": 0.0001, "yield": 0.10, "selected": False},
-                        {"layer": "Gravel", "conductivity": 100.0, "storage": 0.0001, "yield": 0.30, "selected": False}
+                        {"layer": "Sand", "thickness": 60.0, "conductivity": 10.0, "storage": 0.0001, "yield": 0.25, "selected": False},
+                        {"layer": "Silt", "thickness": 60.0, "conductivity": 0.01, "storage": 0.0001, "yield": 0.10, "selected": False},
+                        {"layer": "Gravel", "thickness": 60.0, "conductivity": 100.0, "storage": 0.0001, "yield": 0.30, "selected": False}
                     ])
                 ],
                 id="stratigraphy-content"
@@ -243,8 +244,92 @@ def _build_groundwater_level_tab():
             html.Div(
                 [
                     html.H5("Groundwater Level Configuration", className="mb-3"),
-                    html.P("Groundwater level parameters will be configured here.", className="text-muted"),
-                    html.Small("This section is currently under development.", className="text-muted")
+                    html.P("Configure monthly groundwater level variations.", className="mb-4"),
+                    
+                    # Table controls
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.ButtonGroup([
+                                dbc.Button("Add Month", id="add-month-btn", color="success", size="sm"),
+                                dbc.Button("Delete Selected", id="delete-month-btn", color="danger", size="sm"),
+                                dbc.Button("Reset to Default", id="reset-gw-btn", color="info", size="sm"),
+                            ])
+                        ], width=8),
+                        dbc.Col([
+                            html.Small("Select rows to delete", className="text-muted")
+                        ], width=4)
+                    ], className="mb-3"),
+                    
+                    # Table and plot side by side
+                    dbc.Row([
+                        dbc.Col([
+                            # Groundwater level table
+                            dbc.Table(
+                                [
+                                    html.Thead([
+                                        html.Tr([
+                                            html.Th("Select", style={"width": "15%"}),
+                                            html.Th("Month", style={"width": "35%"}),
+                                            html.Th("Elevation (ft)", style={"width": "50%"})
+                                        ])
+                                    ]),
+                                    html.Tbody(id="groundwater-table-body")
+                                ],
+                                striped=True,
+                                bordered=True,
+                                hover=True,
+                                responsive=True,
+                                className="mb-3"
+                            )
+                        ], width=6),
+                        dbc.Col([
+                            # Input fields for elevation and storage depth
+                            dbc.Row([
+                                dbc.Col([
+                                    html.Label("Ground Surface Elevation (ft):", className="fw-bold"),
+                                    dbc.Input(
+                                        id="ground-surface-elevation",
+                                        type="number",
+                                        value=120.0,
+                                        step=0.1,
+                                        placeholder="Enter elevation"
+                                    )
+                                ], width=6),
+                                dbc.Col([
+                                    html.Label("Maximum MAR Storage Depth (ft):", className="fw-bold"),
+                                    dbc.Input(
+                                        id="max-mar-storage-depth",
+                                        type="number",
+                                        value=20.0,
+                                        step=0.1,
+                                        placeholder="Enter storage depth"
+                                    )
+                                ], width=6)
+                            ], className="mb-3"),
+                            
+                            # Groundwater level plot
+                            dcc.Graph(
+                                id="groundwater-plot",
+                                style={'height': '400px'}
+                            )
+                        ], width=6)
+                    ], className="mb-3"),
+                    
+                    # Store for groundwater data
+                    dcc.Store(id="groundwater-data-store", data=[
+                        {"month": "January", "elevation": 75.0, "selected": False},
+                        {"month": "February", "elevation": 72.0, "selected": False},
+                        {"month": "March", "elevation": 78.0, "selected": False},
+                        {"month": "April", "elevation": 82.0, "selected": False},
+                        {"month": "May", "elevation": 85.0, "selected": False},
+                        {"month": "June", "elevation": 88.0, "selected": False},
+                        {"month": "July", "elevation": 90.0, "selected": False},
+                        {"month": "August", "elevation": 89.0, "selected": False},
+                        {"month": "September", "elevation": 86.0, "selected": False},
+                        {"month": "October", "elevation": 83.0, "selected": False},
+                        {"month": "November", "elevation": 79.0, "selected": False},
+                        {"month": "December", "elevation": 76.0, "selected": False}
+                    ])
                 ],
                 id="groundwater-level-content"
             )
