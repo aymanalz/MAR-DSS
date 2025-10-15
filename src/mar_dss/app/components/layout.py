@@ -163,7 +163,7 @@ def _build_title_block() -> html.Div:
             )
         ],
         style={
-            "min-height": "120px",
+            "min-height": "80px",
             "width": "100%",
             "padding": "20px 0",
         },
