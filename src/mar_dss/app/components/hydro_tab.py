@@ -243,8 +243,36 @@ def _build_groundwater_level_tab():
         children=[
             html.Div(
                 [
-                    html.H5("Groundwater Level Configuration", className="mb-3"),
-                    html.P("Configure monthly groundwater level variations.", className="mb-4"),
+                    dbc.Row([
+                        dbc.Col([
+                            html.H5("Groundwater Level Configuration", className="mb-3"),
+                            html.P("Configure monthly groundwater level variations.", className="mb-4"),
+                        ], width=8),
+                        dbc.Col([
+                            # Input fields for elevation and storage depth
+                            html.Div([
+                                html.Label("Ground Surface Elevation (ft):", className="fw-bold", style={"fontSize": "12px"}),
+                                dbc.Input(
+                                    id="ground-surface-elevation",
+                                    type="number",
+                                    value=120.0,
+                                    step=0.1,
+                                    placeholder="Enter elevation",
+                                    size="sm",
+                                    className="mb-2"
+                                ),
+                                html.Label("Maximum MAR Storage Depth (ft):", className="fw-bold", style={"fontSize": "12px"}),
+                                dbc.Input(
+                                    id="max-mar-storage-depth",
+                                    type="number",
+                                    value=20.0,
+                                    step=0.1,
+                                    placeholder="Enter storage depth",
+                                    size="sm"
+                                )
+                            ])
+                        ], width=4)
+                    ], className="mb-3"),
                     
                     # Table controls
                     dbc.Row([
@@ -254,10 +282,7 @@ def _build_groundwater_level_tab():
                                 dbc.Button("Delete Selected", id="delete-month-btn", color="danger", size="sm"),
                                 dbc.Button("Reset to Default", id="reset-gw-btn", color="info", size="sm"),
                             ])
-                        ], width=8),
-                        dbc.Col([
-                            html.Small("Select rows to delete", className="text-muted")
-                        ], width=4)
+                        ], width=12)
                     ], className="mb-3"),
                     
                     # Table and plot side by side
@@ -281,38 +306,14 @@ def _build_groundwater_level_tab():
                                 responsive=True,
                                 className="mb-3"
                             )
-                        ], width=6),
+                        ], width=4),
                         dbc.Col([
-                            # Input fields for elevation and storage depth
-                            dbc.Row([
-                                dbc.Col([
-                                    html.Label("Ground Surface Elevation (ft):", className="fw-bold"),
-                                    dbc.Input(
-                                        id="ground-surface-elevation",
-                                        type="number",
-                                        value=120.0,
-                                        step=0.1,
-                                        placeholder="Enter elevation"
-                                    )
-                                ], width=6),
-                                dbc.Col([
-                                    html.Label("Maximum MAR Storage Depth (ft):", className="fw-bold"),
-                                    dbc.Input(
-                                        id="max-mar-storage-depth",
-                                        type="number",
-                                        value=20.0,
-                                        step=0.1,
-                                        placeholder="Enter storage depth"
-                                    )
-                                ], width=6)
-                            ], className="mb-3"),
-                            
                             # Groundwater level plot
                             dcc.Graph(
                                 id="groundwater-plot",
                                 style={'height': '400px'}
                             )
-                        ], width=6)
+                        ], width=8)
                     ], className="mb-3"),
                     
                     # Store for groundwater data
