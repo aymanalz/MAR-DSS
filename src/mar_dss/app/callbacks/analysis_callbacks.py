@@ -25,6 +25,33 @@ except ImportError:
 def setup_analysis_callbacks(app):
     """Set up callbacks for lazy loading analysis tab content."""
     
+    # Callback for MAR technology selection - only feasible technologies are selectable
+    @app.callback(
+        [Output("selected-feasible", "children"),
+         Output("selected-infeasible", "children"),
+         Output("selection-validation", "children"),
+         Output("selection-validation", "color"),
+         Output("generate-report-btn", "disabled")],
+        [Input("feasible-technologies", "value")],
+        prevent_initial_call=True
+    )
+    def handle_technology_selection(feasible_selection):
+        # Update display texts
+        if feasible_selection:
+            feasible_text = f"✅ {feasible_selection.replace('_', ' ').title()}"
+            infeasible_text = "❌ All infeasible technologies listed below"
+            validation_text = "✅ Feasible technology selected. Ready to proceed!"
+            validation_color = "success"
+            button_disabled = False
+        else:
+            feasible_text = "None selected"
+            infeasible_text = "❌ All infeasible technologies listed below"
+            validation_text = "Please select a feasible technology to proceed."
+            validation_color = "warning"
+            button_disabled = True
+        
+        return (feasible_text, infeasible_text, validation_text, validation_color, button_disabled)
+    
     @app.callback(
         Output("analysis-dss-algorithm-content", "children"),
         [Input("analysis-tabs", "active_tab")],
