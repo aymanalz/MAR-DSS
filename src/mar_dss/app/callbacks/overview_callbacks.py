@@ -41,7 +41,7 @@ def setup_overview_callbacks(app):
         
         # Save project name for all triggers except initial load
         if trigger_prop != "id" and current_value:
-            dash_storage.set_data("project_name", current_value)
+            dash_storage.set_data("Project Name", current_value)
         
         return current_value
 
