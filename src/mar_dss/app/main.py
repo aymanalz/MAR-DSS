@@ -13,7 +13,6 @@ import plotly.graph_objects as go
 from dash import Input, Output, dcc, html
 import mar_dss.app.utils.data_storage as dash_storage
 
-dash_storage.set_data('test', 1)
 try:
     # Try absolute imports first (when run as module)
     from mar_dss.app.components.ai_generated_decision_tab import (

@@ -1,6 +1,11 @@
 """
 Main dashboard callbacks for MAR DSS.
 """
+import tempfile
+import os
+from datetime import datetime
+import pandas as pd
+
 
 import dash
 import dash_bootstrap_components as dbc
@@ -491,17 +496,38 @@ def setup_main_callbacks(app, dashboard_instance):
                 if not data:
                     data = {}
                 
-                # Add timestamp
-                from datetime import datetime
+                # Add timestamp                
                 data["last_saved"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                if "workspace" in data:
+                    folder_path = data["workspace"]
+                else:
+                    # Create a temporary folder                    
+                    temp_dir = tempfile.mkdtemp(prefix="mar_dss_temp_")
+                    folder_path = temp_dir
+                if "filename" in data:
+                    filename = data["filename"]
+                else:
+                    # Create filename with timestamp
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    filename = f"mar_dss_project_{timestamp}.csv"
+                fn = os.path.join(folder_path, filename)
+
+                # covert the data to pandas dataframe, keys are in a column called "key" and values are in a column called "value"
+                df_ = []
+                for key, value in data.items():
+                    df_.append([key, value])
+                df = pd.DataFrame(df_, columns=["key", "value"])
+                df.to_csv(fn, index=False)
+
                 
                 # Save to storage
-                dash_storage.set_data("all_data", data)
+                #dash_storage.set_data("all_data", data)
                 
                 import dash_bootstrap_components as dbc
                 return [
                     dbc.Alert(
-                        f"Project saved successfully at {data['last_saved']}",
+                        f"Project saved successfully at {fn}",
                         color="success",
                         className="mb-3"
                     ),
