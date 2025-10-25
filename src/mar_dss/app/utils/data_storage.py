@@ -5,7 +5,10 @@ _data_storage = {}
 
 def get_data(key):
     """Get the global data storage dictionary"""
-    return _data_storage
+    if key in _data_storage.keys():
+        return _data_storage[key]
+    else:
+        return None
 
 def set_data(key, value):
     """Add data to the global storage"""

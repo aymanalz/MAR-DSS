@@ -16,6 +16,15 @@ except ImportError:
 
 def create_mar_purpose_section():
     """Create MAR Project Purpose section for overview."""
+    # Load data from storage
+    project_name = dash_storage.get_data("project_name") 
+    workspace = dash_storage.get_data("workspace")
+    filename = dash_storage.get_data("filename")    
+    analysis_date = dash_storage.get_data("analysis_date")
+    
+    mar_purpose_data = dash_storage.get_data("mar_purpose")
+    mar_purpose = mar_purpose_data.get("mar_purpose", ["secure_water_supply"]) if mar_purpose_data else ["secure_water_supply"]
+    
     return dbc.Card(
         [
             dbc.CardHeader(
@@ -29,7 +38,7 @@ def create_mar_purpose_section():
                         id="project-name-input",
                         type="text",
                         placeholder="Enter your MAR project name...",
-                        value="",
+                        value=project_name,
                         style={"margin-bottom": "15px"},
                     ),
                     dbc.Row([
@@ -39,7 +48,7 @@ def create_mar_purpose_section():
                                 id="workspace-input",
                                 type="text",
                                 placeholder="Enter workspace path...",
-                                value="",
+                                value=workspace,
                                 style={"margin-bottom": "15px"},
                             )
                         ], width=6),
@@ -50,7 +59,7 @@ def create_mar_purpose_section():
                                     id="filename-input",
                                     type="text",
                                     placeholder="Enter filename...",
-                                    value="",
+                                    value=filename,
                                 ),
                                 dbc.Button(
                                     [html.I(className="fas fa-upload me-1"), "Load"],
@@ -66,7 +75,7 @@ def create_mar_purpose_section():
                     dbc.Input(
                         id="analysis-date-input",
                         type="date",
-                        value=datetime.now().strftime("%Y-%m-%d"),
+                        value=analysis_date if analysis_date else datetime.now().strftime("%Y-%m-%d"),
                         style={"margin-bottom": "15px"},
                     ),
                     html.Label("Project Location:", className="fw-bold"),
@@ -106,7 +115,7 @@ def create_mar_purpose_section():
                                 "value": "improve_water_quality",
                             },
                         ],
-                        value=["secure_water_supply"],  # Default selection
+                        value=mar_purpose,  # Load from storage or default
                         inline=False,
                         style={"margin-top": "10px"},
                     ),

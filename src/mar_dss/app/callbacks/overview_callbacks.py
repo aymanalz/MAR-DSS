@@ -6,6 +6,14 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import Input, Output, html, dependencies
 import mar_dss.app.utils.data_storage as dash_storage
+import os
+import pandas as pd
+
+# Import the overview content creation function
+try:
+    from mar_dss.app.components.overview_tab import create_overview_content
+except ImportError:
+    from ..components.overview_tab import create_overview_content
 
 
 def setup_overview_callbacks(app):
@@ -28,8 +36,7 @@ def setup_overview_callbacks(app):
         
         if not ctx.triggered:
             # Initial load - get saved project name
-            data = dash_storage.get_data("project_name")
-            project_name = data.get("project_name", "") if data else ""
+            project_name = dash_storage.get_data("project_name") or ""
             return project_name
         
         # Get the current value from the input
@@ -41,7 +48,7 @@ def setup_overview_callbacks(app):
         
         # Save project name for all triggers except initial load
         if trigger_prop != "id" and current_value:
-            dash_storage.set_data("Project Name", current_value)
+            dash_storage.set_data("project_name", current_value)
         
         return current_value
 
@@ -62,8 +69,7 @@ def setup_overview_callbacks(app):
         
         if not ctx.triggered:
             # Initial load - get saved analysis date
-            data = dash_storage.get_data("analysis_date")
-            analysis_date = data.get("analysis_date", "") if data else ""
+            analysis_date = dash_storage.get_data("analysis_date") or ""
             return analysis_date
         
         # Get the current value from the input
@@ -94,8 +100,7 @@ def setup_overview_callbacks(app):
         
         if not ctx.triggered:
             # Initial load - get saved MAR purpose selections
-            data = dash_storage.get_data("mar_purpose")
-            mar_purpose = data.get("mar_purpose", ["secure_water_supply"]) if data else ["secure_water_supply"]
+            mar_purpose = dash_storage.get_data("mar_purpose") or ["secure_water_supply"]
             return mar_purpose
         
         # Get the current selections
@@ -150,8 +155,7 @@ def setup_overview_callbacks(app):
         
         if not ctx.triggered:
             # Initial load - get saved workspace
-            data = dash_storage.get_data("workspace")
-            workspace = data.get("workspace", "") if data else ""
+            workspace = dash_storage.get_data("workspace") or ""
             return workspace
         
         # Get the current value from the input
@@ -184,8 +188,7 @@ def setup_overview_callbacks(app):
         
         if not ctx.triggered:
             # Initial load - get saved filename
-            data = dash_storage.get_data("filename")
-            filename = data.get("filename", "") if data else ""
+            filename = dash_storage.get_data("filename") or ""
             return filename
         
         # Get the current value from the input
@@ -200,3 +203,76 @@ def setup_overview_callbacks(app):
             dash_storage.set_data("filename", current_value)
         
         return current_value
+
+    # Callback for Open button - load project from file
+    @app.callback(
+        Output("main-content", "children", allow_duplicate=True),
+        [Input("btn-open", "n_clicks")],
+        prevent_initial_call=True
+    )
+    def handle_open_project(n_clicks):
+        """Handle opening a project from file."""
+        if n_clicks:
+            data = dash_storage.get_data_storage()
+            if "workspace" in data.keys():
+                workspace = data["workspace"]
+            else:
+                print("No workspace found")
+                return [
+                    dbc.Alert(
+                        "No workspace found",
+                        color="danger",
+                        className="mb-3"
+                    )
+                ] + create_overview_content()
+            if "filename" in data.keys():
+                filename = data["filename"]
+            else:
+                print("No filename found")
+                return [
+                    dbc.Alert(
+                        "No filename found",
+                        color="danger",
+                        className="mb-3"
+                    )
+                ] + create_overview_content()
+            
+            fn = os.path.join(workspace, filename)
+            if not os.path.exists(fn):
+                print(f"File {fn} does not exist")
+                return [
+                    dbc.Alert(
+                        f"File {fn} does not exist",
+                        color="danger",
+                        className="mb-3"
+                    )
+                ] + create_overview_content()
+            try:
+                df = pd.read_csv(fn)
+                print(f"Loaded CSV with {len(df)} rows")
+                for index, row in df.iterrows():
+                    key = row["key"]
+                    value = row["value"]
+                    print(f"Setting data: {key} = {value}")
+                    dash_storage.set_data(key, value)
+
+                # Return success message and overview content
+                overview_content = create_overview_content()
+                return [
+                    dbc.Alert(
+                        f"Project loaded successfully from {fn}",
+                        color="success",
+                        className="mb-3"
+                    )
+                ] + overview_content
+            except Exception as e:
+                overview_content = create_overview_content()
+                return [
+                    dbc.Alert(
+                        f"Error loading project: {str(e)}",
+                        color="danger",
+                        className="mb-3"
+                    )
+                ] + overview_content
+        return dash.no_update
+
