@@ -6,6 +6,7 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import Input, Output, html, dependencies
 import mar_dss.app.utils.data_storage as dash_storage
+import mar_dss.app.utils.helpers as helpers
 import os
 import pandas as pd
 
@@ -69,8 +70,25 @@ def setup_overview_callbacks(app):
         
         if not ctx.triggered:
             # Initial load - get saved analysis date
-            analysis_date = dash_storage.get_data("analysis_date") or ""
-            return analysis_date
+            analysis_date = dash_storage.get_data("analysis_date")
+            if analysis_date:
+                # Ensure date is in YYYY-MM-DD format
+                try:
+                    if isinstance(analysis_date, str) and len(analysis_date) == 10 and analysis_date[4] == '-' and analysis_date[7] == '-':
+                        return analysis_date
+                    else:
+                        # Try to parse and reformat the date
+                        from datetime import datetime
+                        parsed_date = helpers.parse_unknown_date(analysis_date)
+                        return parsed_date.strftime("%Y-%m-%d")
+                except:
+                    # If parsing fails, use today's date
+                    from datetime import datetime
+                    return datetime.now().strftime("%Y-%m-%d")
+            else:
+                # No data in storage, use today's date
+                from datetime import datetime
+                return datetime.now().strftime("%Y-%m-%d")
         
         # Get the current value from the input
         current_value = value if value else ""
@@ -81,7 +99,20 @@ def setup_overview_callbacks(app):
         
         # Save analysis date for all triggers except initial load
         if trigger_prop != "id" and current_value:
-            dash_storage.set_data("analysis_date", current_value)
+            # Ensure date is in YYYY-MM-DD format before saving
+            try:
+                from datetime import datetime
+                # If it's already in correct format, use it
+                if isinstance(current_value, str) and len(current_value) == 10 and current_value[4] == '-' and current_value[7] == '-':
+                    formatted_date = current_value
+                else:
+                    # Try to parse and reformat
+                    parsed_date = datetime.strptime(str(current_value), "%Y-%m-%d")
+                    formatted_date = parsed_date.strftime("%Y-%m-%d")
+                dash_storage.set_data("analysis_date", formatted_date)
+            except:
+                # If formatting fails, save as is
+                dash_storage.set_data("analysis_date", current_value)
         
         return current_value
 

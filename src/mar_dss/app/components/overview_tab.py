@@ -1,11 +1,12 @@
 """
 Overview tab components for MAR DSS dashboard.
 """
-
+from datetime import datetime
 import dash_bootstrap_components as dbc
 from dash import html, dcc
 from datetime import datetime
 import mar_dss.app.utils.data_storage as dash_storage
+import mar_dss.app.utils.helpers as helpers
 
 # Import the function from components.water_source_tab
 try:
@@ -20,7 +21,24 @@ def create_mar_purpose_section():
     project_name = dash_storage.get_data("project_name") 
     workspace = dash_storage.get_data("workspace")
     filename = dash_storage.get_data("filename")    
-    analysis_date = dash_storage.get_data("analysis_date")
+    analysis_date_raw = dash_storage.get_data("analysis_date")
+    # Ensure date is in YYYY-MM-DD format
+    if analysis_date_raw:
+        try:
+            # If it's already in the correct format, use it
+            if isinstance(analysis_date_raw, str) and len(analysis_date_raw) == 10 and analysis_date_raw[4] == '-' and analysis_date_raw[7] == '-':
+                analysis_date = analysis_date_raw
+            else:
+                # Try to parse and reformat the date
+                
+                parsed_date = helpers.parse_unknown_date(analysis_date_raw)
+                analysis_date = parsed_date.strftime("%Y-%m-%d")
+        except:
+            # If parsing fails, use today's date
+            analysis_date = datetime.now().strftime("%Y-%m-%d")
+    else:
+        # Always provide a default date
+        analysis_date = datetime.now().strftime("%Y-%m-%d")
     project_location = dash_storage.get_data("project_location") or ""
     mar_purpose = dash_storage.get_data("mar_purpose") or ["secure_water_supply"] 
     
@@ -74,7 +92,6 @@ def create_mar_purpose_section():
                     dbc.Input(
                         id="analysis-date-input",
                         type="date",
-                        value=analysis_date if analysis_date else datetime.now().strftime("%Y-%m-%d"),
                         style={"margin-bottom": "15px"},
                     ),
                     html.Label("Project Location:", className="fw-bold"),
