@@ -468,6 +468,50 @@ def setup_main_callbacks(app, dashboard_instance):
     def handle_open_project(n_clicks):
         """Handle opening a project from file."""
         if n_clicks:
+
+            data = dash_storage.get_data_storage()
+            if "workspace" in data.keys():
+                workspace = data["workspace"]
+            else:
+                print("No workspace found")
+                return [
+                    dbc.Alert(
+                        "No workspace found",
+                        color="danger",
+                        className="mb-3"
+                    ),
+                    create_overview_content()[0]  # Show overview content
+                ]
+            if "filename" in data.keys():
+                filename = data["filename"]
+            else:
+                print("No filename found")
+                return [
+                    dbc.Alert(
+                        "No filename found",
+                        color="danger",
+                        className="mb-3"
+                    ),
+                    create_overview_content()[0]  # Show overview content
+                ]
+            
+            fn = os.path.join(workspace, filename)
+            if not os.path.exists(fn):
+                print(f"File {fn} does not exist")
+                return [
+                    dbc.Alert(
+                        f"File {fn} does not exist",
+                        color="danger",
+                        className="mb-3"
+                    ),
+                    create_overview_content()[0]  # Show overview content
+                ]
+            df = pd.read_csv(fn)
+            for index, row in df.iterrows():
+                key = row["key"]
+                value = row["value"]
+                dash_storage.set_data(key, value)
+
             # For now, show a simple message - in a real app, this would open a file dialog
             import dash_bootstrap_components as dbc
             return [
