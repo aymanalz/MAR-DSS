@@ -472,7 +472,7 @@ def setup_main_callbacks(app, dashboard_instance):
             # Save current data to storage
             try:
                 # Get current data from storage
-                data = dash_storage.get_data("all_data")
+                data = dash_storage.get_data_storage()
                 if not data:
                     data = {}
                 

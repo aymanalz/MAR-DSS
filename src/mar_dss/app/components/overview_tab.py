@@ -21,9 +21,8 @@ def create_mar_purpose_section():
     workspace = dash_storage.get_data("workspace")
     filename = dash_storage.get_data("filename")    
     analysis_date = dash_storage.get_data("analysis_date")
-    
-    mar_purpose_data = dash_storage.get_data("mar_purpose")
-    mar_purpose = mar_purpose_data.get("mar_purpose", ["secure_water_supply"]) if mar_purpose_data else ["secure_water_supply"]
+    project_location = dash_storage.get_data("project_location") or ""
+    mar_purpose = dash_storage.get_data("mar_purpose") or ["secure_water_supply"] 
     
     return dbc.Card(
         [
@@ -83,7 +82,7 @@ def create_mar_purpose_section():
                         id="project-location-input",
                         type="text",
                         placeholder="Enter project location (e.g., Sacramento, CA)...",
-                        value="",
+                        value=project_location,
                         style={"margin-bottom": "20px"},
                     ),
                     html.Label("MAR Project Purpose:", className="fw-bold"),
