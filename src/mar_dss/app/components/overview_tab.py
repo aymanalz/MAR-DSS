@@ -1,4 +1,6 @@
 """Overview tab components for MAR DSS dashboard."""
+# todo: make sure the location map is saved to the data storage and get updated.
+
 from datetime import datetime
 import dash_bootstrap_components as dbc
 from dash import html, dcc
