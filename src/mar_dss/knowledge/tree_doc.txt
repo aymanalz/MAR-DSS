@@ -1,0 +1,176 @@
+START: MAR Hydrogeological Feasibility Assessment
+----------------------------------------------------------------------
+RECOMMENDATION LIST: (R-Series)
+----------------------------------------------------------------------
+
+1. Is there a suitable aquifer present?
+   (Non-karstic/non-fractured rock)
+   ├─ NO → NOT FEASIBLE
+   │  (Site lacks adequate hydrogeological conditions for MAR)
+   └─ YES → Continue to 1.1
+
+1.1 Is the site located outside of a protected or restricted area?
+     (e.g., critical wetlands)
+     ├─ NO: SITE NOT FEASIBLE (Constraint)
+     └─ YES: Continue to 1.2
+
+1.2 Is sufficient, accessible land area available for facilities
+     and buffer zones?
+     ├─ NO: SITE NOT FEASIBLE (Physical Constraint)
+     └─ YES: Continue to 2.1
+
+----------------------------------------------------------------------
+SECTION 2: AQUIFER CHARACTERISTICS
+----------------------------------------------------------------------
+
+2.1 What is the aquifer type?
+     ├─ A. UNCONFINED/PHREATIC AQUIFER → Continue to 2.1.1
+     ├─ B. CONFINED/ARTESIAN AQUIFER → Continue to 2.2
+     └─ C. UNSUITABLE (e.g., Karstic/Fractured)
+         → SITE NOT FEASIBLE (Geological Limitation)
+
+2.1.1 (Unconfined) What is the depth to water table?
+         ├─ A. Less than 20m depth (Shallow water table) → Continue to 2.1.2
+         └─ B. Greater than 20m depth (Deep water table) → Continue to 2.1.3
+
+2.1.2 (Shallow) What is the hydraulic conductivity (K)?
+         ├─ K > 33 ft/day (High permeability)
+         │  → HIGHLY FEASIBLE ✓ → Continue to 2.4
+         ├─ K = 3.3 - 33 ft/day (Moderate permeability)
+         │  → FEASIBLE WITH CONDITIONS ⚠ (May require careful design)
+         │  → Continue to 2.4
+         └─ K < 3.3 ft/day (Low permeability)
+            → NOT FEASIBLE ✗ (Poor recharge capacity)
+
+2.1.3 (Deep) FEASIBILITY CHECK: Limiting Infiltration Layer?
+     
+     INPUT REQUIRED: Geological Layer Table (K) and GW Depth.
+     LOGIC: Find K_min among all layers above GW Depth.
+     
+     Is the minimum K in the vadose zone < 0.3 ft/day?
+         
+         ├─ YES - Limiting Infiltration Layer Present
+         │  → Continue to 2.1.3.1 (Mitigation Check)
+         │
+         └─ NO - Permeable Vadose Zone (K_min >= 0.3 ft/day)
+             → FEASIBLE WITH CONDITIONS ⚠ (Surface or deep methods
+             potentially viable) → Continue to 2.1.6 (Determine D_min_GW)
+
+2.1.3.1 (Mitigation Check) Is the limiting layer the TOP layer AND < 3 ft thick?
+         ├─ YES: Conditionally Feasible ⚠ (Earthwork/Removal Viable)
+         │  (Surface spreading viable after low-K layer removal)
+         │  → Continue to 2.1.6 (Determine D_min_GW)
+         └─ NO: Surface Spreading NOT FEASIBLE ✗
+            (Low-K layer is too thick or too deep for economic removal)
+            (Deep injection likely required)
+            → Continue to 2.1.4 (Feasibility Follow-up)
+
+2.1.4 (Feasibility Follow-up) Can deep injection access the target aquifer?
+         ├─ NO: NOT FEASIBLE ✗ (No viable recharge method)
+         └─ YES: Conditionally Feasible ⚠ (Injection required) → Continue to 2.4
+
+2.1.5 DETERMINE MINIMUM ALLOWABLE DEPTH TO GW (D_min_GW)
+     
+     INPUT REQUIRED: User-specified value for D_min_GW.
+     
+     GUIDANCE: This value should represent the shallowest acceptable water table 
+     level to prevent waterlogging, soil instability, or foundation damage. It must be
+     calculated based on site-specific geotechnical reports, land-use
+     requirements, and soil type.
+     
+     Example Calculation (Conceptual): D_min_GW = Depth to foundation base
+     + capillary rise factor + safety margin.
+     
+     Is D_min_GW provided?
+         ├─ NO: FEASIBLE WITH CONDITIONS ⚠
+         │  (Default D_min_GW = 5 ft used)
+         │  → ADD RECOMMENDATION (R1): Perform detailed geotechnical/soil survey 
+         │     to determine site-specific D_min_GW.
+         │  → Continue to 2.1.6 (Potential Storage Estimation)
+         └─ YES: Continue to 2.1.6 (Potential Storage Estimation)
+
+2.1.6 (Potential Storage Estimation) Is the Vadose Zone Storage less than the minimum
+     user-specified storage?
+     
+     INPUT REQUIRED: D_min_GW (from 2.1.5).
+     
+     LOGIC: Calculate Storage (ft/ft²) for the interval bounded by:
+     * Lower Bound: Current GW Level.
+     * Upper Bound: The deepest depth among (a) the first layer UPWARDS
+     where K < 0.3 ft/day, and (b) the Minimum Allowable Depth to GW
+     (D_min_GW) (The shallowest acceptable recharge level).
+     
+     CALCULATION: Storage (ft/ft²) = Sum of (Thickness x Specific Yield)
+     for layers in valid storage zone
+     
+     ├─ YES: FEASIBILITY DOUBTFUL ⚠ (Low Storage Capacity)
+     │  → Continue to 2.4
+     └─ NO: FEASIBLE ✓ (Adequate storage volume) → Continue to 2.4
+
+2.2 (Confined) Is direct aquifer access possible?
+     ├─ NO: NOT FEASIBLE ✗ (Cannot access aquifer economically)
+     └─ YES: Continue to 2.3
+
+2.3 (Confined) Check piezometric head.
+     ├─ Head below ground surface
+     │  → FEASIBLE ✓ (Suitable pressure conditions) → Continue to 2.4
+     └─ Artesian conditions (head above surface)
+         → FEASIBLE WITH CONDITIONS ⚠ (Requires pressure management)
+         → Continue to 2.4
+
+2.4 Is the aquifer storage capacity adequate to
+     justify the MAR investment?
+     ├─ A. Adequate storage volume → Continue to 2.5
+     └─ B. Limited storage capacity → NOT FEASIBLE ✗ (Insufficient volume)
+
+2.5 Are there unacceptable hydrogeological risks?
+     (e.g., salt water intrusion, capture by low-priority receptors)
+     ├─ YES: FEASIBILITY DOUBTFUL (Hydrogeological Conflict)
+     └─ NO: Continue to 3.1
+
+----------------------------------------------------------------------
+SECTION 3: WATER AVAILABILITY AND QUALITY
+----------------------------------------------------------------------
+
+3.1 Is a reliable source of water available in sufficient quantity for
+     long-term MAR operations?
+     ├─ NO: SITE NOT FEASIBLE (Operational Constraint)
+     └─ YES: Continue to 3.2
+
+3.2 Does the source water quality meet recharge standards without expensive
+     treatment (low suspended solids)?
+     ├─ YES: Continue to 3.3
+     └─ NO: FEASIBILITY DOUBTFUL (High Treatment Cost)
+         ├─ Follow-up: Is pre-treatment economically viable?
+         │  ├─ NO: SITE NOT FEASIBLE (Economic/Quality Constraint)
+         │  └─ YES: Conditionally Feasible → Continue to 3.3
+
+3.3 What is the native groundwater quality?
+     ├─ A. Good quality (potable standards) → Continue to 3.4
+     └─ B. Poor quality (saline/contaminated)
+         ├─ Follow-up: Can isolation of injected water be maintained?
+         │  ├─ NO: NOT FEASIBLE ✗ (Excessive mixing expected)
+         │  └─ YES: FEASIBLE WITH CONDITIONS ⚠ (Requires careful recovery and
+         │     buffer management) → Continue to 3.4
+
+3.4 Are there geochemical compatibility concerns?
+     (scaling, clogging, contaminant mobilization)
+     ├─ A. Source and aquifer waters compatible
+     │  → PROCEED TO FINAL DECISION ✓
+     └─ B. Potential incompatibility
+         ├─ Follow-up: Can issues be mitigated by pre-treatment or operational
+         │  changes?
+         │  ├─ NO: SITE NOT FEASIBLE ✗ (Unacceptable Geochemical Risk)
+         │  └─ YES: Conditionally Feasible ⚠ → PROCEED TO FINAL DECISION
+
+----------------------------------------------------------------------
+FINAL DECISION
+----------------------------------------------------------------------
+
+If all paths lead to YES or Conditionally Feasible:
+     → SITE IS HYDROGEOLOGICALLY FEASIBLE
+     
+If any path leads to NOT FEASIBLE:
+     → SITE IS NOT VIABLE
+     
+(Check the RECOMMENDATION LIST for conditional requirements.)

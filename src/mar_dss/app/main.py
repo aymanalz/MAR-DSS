@@ -4,7 +4,7 @@ Main dashboard application for MAR DSS.
 import os
 import json 
 from datetime import datetime
-
+import webbrowser
 import dash
 import dash_bootstrap_components as dbc
 import numpy as np
@@ -299,21 +299,25 @@ class DashboardApp:
         print(f"Dashboard running at: {url}")
         print("Open the URL in your browser to view the dashboard.")
 
-        if open_browser:
-            import webbrowser
-
+        if open_browser:            
             print(f"Opening browser to: {url}")
             webbrowser.open(url)
 
-        self.app.run(debug=debug, port=port)
+        try:
+            self.app.run(debug=debug, port=port, host='127.0.0.1')
+            
+        except OSError as e:
+            if "Address already in use" in str(e):
+                print(f"Port {port} is already in use. Please close other instances or use a different port.")
+            else:
+                raise e
 
 
 def main(port: int = 8050, open_browser: bool = True):
     """Main function to run the dashboard."""
     dashboard = DashboardApp()
-    dashboard.run(port=port, open_browser=open_browser)
+    dashboard.run(debug=True, port=port, open_browser=open_browser)
 
 
 if __name__ == "__main__":
-    port = 8050
-    main(port)
+    main()
