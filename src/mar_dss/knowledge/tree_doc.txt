@@ -6,7 +6,8 @@ INPUT LIST: All Required Data for MAR Feasibility Assessment
 GEOLOGICAL & HYDROGEOLOGICAL DATA:
 - (mar_purpose) MAR Purpose ['Secure Water Supply']
 - (aq_type) Aquifer type classification [unconfined]
-- (stratigraphy_table) Stratigraphy Table [Single layer, thickness:100, K = 10, sy/ss = 0.15]
+- (stratigraphy_table) Stratigraphy Table [Single layer, thickness:100,
+  K = 10, sy/ss = 0.15]
 - (gw_level) Groundwater level measurements [12 values, 50]
 - (gs_elev) Ground surface elevation [0]
 
@@ -70,12 +71,13 @@ CALCULATION PARAMETERS:
 RECOMMENDATION LIST: (R-Series)
 ----------------------------------------------------------------------
 
-1. [ENV_CHECK] Is the site located outside of a protected or restricted area?
+1. [ENV_CHECK] Is the site located outside of a protected or restricted
+     area?
      (e.g., critical wetlands)
      
      INPUT: (env_regs), (prot_areas), (site_coords)
      
-     DEPENDENCIES:
+     DEPENDENCIES: None
      
      LOGIC:
      
@@ -83,17 +85,18 @@ RECOMMENDATION LIST: (R-Series)
      ├─ NO: (NOT_FEASIBLE) (Constraint)
      └─ YES: Continue to 2
 
-2. [LAND_AREA] Is sufficient, accessible land area available for facilities
-     and buffer zones?
+
+2. [LAND_AREA_OK] Is land area suitable?
      
      INPUT: (max_available_area)
      
      DEPENDENCIES:
      
-     LOGIC:
+     LOGIC: 
      
      OUTPUT:
-     ├─ NO: (INJECTION_WELLS) (Small area -remove surfae recharge methods)
+     ├─ NO: (INJECTION_WELLS) (Small area -remove surfae recharge
+     methods)
      │  → Continue to 2.1
      └─ YES: (SURFACE_RECHARGE) (Adequate area for surface recharge)
         → Continue to 2.1
@@ -145,7 +148,8 @@ SECTION 2: AQUIFER CHARACTERISTICS
          └─ K < 3.3 ft/day (Low permeability)
             → (NOT_FEASIBLE) (Poor recharge capacity)
 
-2.1.3 [LIMIT_LAYER] (Deep) FEASIBILITY CHECK: Limiting Infiltration Layer?
+2.1.3 [LIMIT_LAYER] (Deep) FEASIBILITY CHECK: Limiting Infiltration
+Layer?
      
      INPUT: (K_table), (gw_level), (vadose_strat)
      
@@ -159,11 +163,12 @@ SECTION 2: AQUIFER CHARACTERISTICS
          ├─ YES - Limiting Infiltration Layer Present
          │  → Continue to 2.1.3.1 (Mitigation Check)
          │
-         └─ NO - Permeable Vadose Zone (K_min >= 0.3 ft/day)
-             → (FEASIBLE_WITH_CONDITIONS) (Surface or deep methods
-             potentially viable) → Continue to 2.1.5 (Infiltration Rate Calculation)
+        └─ NO - Permeable Vadose Zone (K_min >= 0.3 ft/day)
+            → (FEASIBLE_WITH_CONDITIONS) (Surface or deep methods potentially
+            viable) → Continue to 2.1.5 (Infiltration Rate Calculation)
 
-2.1.3.1 [MITIGATION] (Mitigation Check) Is the limiting layer the TOP layer AND < 3 ft thick?
+2.1.3.1 [MITIGATION] (Mitigation Check) Is the limiting layer the TOP layer
+AND < 3 ft thick?
          
          INPUT: (layer_thick), (excav_cost), (layer_pos)
          
@@ -180,7 +185,8 @@ SECTION 2: AQUIFER CHARACTERISTICS
             (Deep injection likely required)
             → Continue to 2.1.4 (Feasibility Follow-up)
 
-2.1.4 [DEEP_ACCESS] (Feasibility Follow-up) Can deep injection access the target aquifer?
+2.1.4 [DEEP_ACCESS] (Feasibility Follow-up) Can deep injection access the
+target aquifer?
          
          INPUT: (drill_feas), (aq_depth), (well_cost)
          
@@ -192,21 +198,55 @@ SECTION 2: AQUIFER CHARACTERISTICS
          ├─ NO: (NOT_FEASIBLE) (No viable recharge method)
          └─ YES: (FEASIBLE_WITH_CONDITIONS) (Injection required) → Continue to 2.4
 
-2.1.5 [INFIL_RATE] (Infiltration Rate Calculation) Calculate maximum sustainable infiltration rate
+2.1.5 [DESIGN_SPEAD] Calculate recharge area, infiltration rate, 
+       available storage, gw_depth, 
      
      INPUT: (K_min), (recharge_dim), (infil_design), (safety_factor)
      
-     DEPENDENCIES:
+     DEPENDENCIES: SPREAD_AREA, MOUND_HEIGHT
+     
+     LOGIC: 
+     spread_area = source_inflow_rate/k_min     
+     if spead_area > max_available_area:
+            spread_area = max_available_area
+    assume area is square L*L            
+     while True      
+        infl_rate = Hantush67 (D_min_GW, L )
+        if |k_min - infil_rate| > epslion
+            reduce L
+        else:
+            break
+
+       
+       
+     OUTPUT:
+     Is the calculated infiltration rate adequate for the intended recharge
+     volume?
+        ├─ YES: Continue to 2.1.5.1 (Spreading Area Estimation)
+        └─ NO: (FEASIBILITY_DOUBTFUL) (Low infiltration capacity)
+            → Continue to 2.1.5.1 (Spreading Area Estimation)
+
+2.1.5.1 [SPREAD_AREA] (Spreading Area Estimation) Compute the minimum
+required spreading area
+     
+     INPUT: (source_inflow_rate), (K_min), (safety_factor), 
+     (max_available_area),
+     
+     DEPENDENCIES:None
      
      LOGIC:
+     Estimate required area A_req using the governing infiltration capacity:
+         A_req = flow_meas / k_min
+         Apply safety factor: A_req = A_req × (1 + safety_factor)
+     If recharge geometry dictates shape/width constraints, derive practical
+     dimensions from A_req and (recharge_geom) or (recharge_dim).
+     if (A_req > max_available_area) ->A_req = max_available_area
      
      OUTPUT:
-     Is the calculated infiltration rate adequate for the intended recharge volume?
-         ├─ YES: Continue to 2.1.6 (Mound Height Estimation)
-         └─ NO: (FEASIBILITY_DOUBTFUL) (Low infiltration capacity)
-             → Continue to 2.1.6 (Mound Height Estimation)
+     A_req
 
-2.1.6 [MOUND_HEIGHT] (Mound Height Estimation) Estimate groundwater mound height using Hantush 1967 method
+2.1.6 [MOUND_HEIGHT] (Mound Height Estimation) Estimate groundwater mound
+height using Hantush 1967 method
      
      INPUT: (gw_avg), (gw_gradient), (infil_rate), (aq_params), (recharge_geom)
      
@@ -222,7 +262,8 @@ SECTION 2: AQUIFER CHARACTERISTICS
 
 2.1.7 [D_MIN_GW] DETERMINE MINIMUM ALLOWABLE DEPTH TO GW (D_min_GW)
      
-     INPUT: (D_min_GW), (geotech_reports), (landuse_req), (soil_type), (foundation_depth)
+     INPUT: (D_min_GW), (geotech_reports), (landuse_req), (soil_type),
+     (foundation_depth)
      
      DEPENDENCIES:
      
@@ -232,15 +273,16 @@ SECTION 2: AQUIFER CHARACTERISTICS
      Is D_min_GW provided?
          ├─ NO: (FEASIBLE_WITH_CONDITIONS)
          │  (Default D_min_GW = 5 ft used)
-         │  → ADD RECOMMENDATION (R1): Perform detailed geotechnical/soil survey 
-         │     to determine site-specific D_min_GW.
+         │  → ADD RECOMMENDATION (R1): Perform detailed geotechnical/soil
+         │     survey to determine site-specific D_min_GW.
          │  → Continue to 2.1.8 (Potential Storage Estimation)
          └─ YES: Continue to 2.1.8 (Potential Storage Estimation)
 
-2.1.8 [STORAGE_CALC] (Potential Storage Estimation) Is the Vadose Zone Storage less than the minimum
-     user-specified storage?
+2.1.8 [STORAGE_CALC] (Potential Storage Estimation) Is the Vadose Zone
+Storage less than the minimum user-specified storage?
      
-     INPUT: (D_min_GW), (layer_thick), (Sy), (gw_current), (gw_seasonal), (storage_min)
+     INPUT: (D_min_GW), (layer_thick), (Sy), (gw_current), (gw_seasonal),
+     (storage_min)
      
      DEPENDENCIES:
      
@@ -275,11 +317,11 @@ SECTION 2: AQUIFER CHARACTERISTICS
      ├─ Head below ground surface
      │  → (FEASIBLE) (Suitable pressure conditions) → Continue to 2.4
      └─ Artesian conditions (head above surface)
-         → (FEASIBLE_WITH_CONDITIONS) (Requires pressure management)
-         → Continue to 2.4
+        → (FEASIBLE_WITH_CONDITIONS) (Requires pressure management)
+        → Continue to 2.4
 
-2.4 [STORAGE_ADEQ] Is the aquifer storage capacity adequate to
-     justify the MAR investment?
+2.4 [STORAGE_ADEQ] Is the aquifer storage capacity adequate to justify the
+     MAR investment?
      
      INPUT: (storage_vol), (mar_invest), (storage_vol), (econ_analysis)
      
@@ -308,8 +350,8 @@ SECTION 2: AQUIFER CHARACTERISTICS
 SECTION 3: WATER AVAILABILITY AND QUALITY
 ----------------------------------------------------------------------
 
-3.1 [WATER_AVAIL] Is a reliable source of water available in sufficient quantity for
-     long-term MAR operations?
+3.1 [WATER_AVAIL] Is a reliable source of water available in sufficient
+     quantity for long-term MAR operations?
      
      INPUT: (water_avail), (flow_meas), (water_proj), (op_req)
      
@@ -321,8 +363,8 @@ SECTION 3: WATER AVAILABILITY AND QUALITY
      ├─ NO: (NOT_FEASIBLE) (Operational Constraint)
      └─ YES: Continue to 3.2
 
-3.2 [SOURCE_QUALITY] Does the source water quality meet recharge standards without expensive
-     treatment (low suspended solids)?
+3.2 [SOURCE_QUALITY] Does the source water quality meet recharge standards
+     without expensive treatment (low suspended solids)?
      
      INPUT: (source_quality), (recharge_std), (treatment_cost), (suspended_solids)
      
@@ -350,8 +392,8 @@ SECTION 3: WATER AVAILABILITY AND QUALITY
      └─ B. Poor quality (saline/contaminated)
          ├─ Follow-up: Can isolation of injected water be maintained?
          │  ├─ NO: (NOT_FEASIBLE) (Excessive mixing expected)
-         │  └─ YES: (FEASIBLE_WITH_CONDITIONS) (Requires careful recovery and
-         │     buffer management) → Continue to 3.4
+         │  └─ YES: (FEASIBLE_WITH_CONDITIONS) (Requires careful recovery
+         │     and buffer management) → Continue to 3.4
 
 3.4 [GEOCHEM_COMPAT] Are there geochemical compatibility concerns?
      (scaling, clogging, contaminant mobilization)
@@ -366,8 +408,8 @@ SECTION 3: WATER AVAILABILITY AND QUALITY
      ├─ A. Source and aquifer waters compatible
      │  → (PROCEED_TO_FINAL) (Final Decision)
      └─ B. Potential incompatibility
-         ├─ Follow-up: Can issues be mitigated by pre-treatment or operational
-         │  changes?
+         ├─ Follow-up: Can issues be mitigated by pre-treatment or
+         │  operational changes?
          │  ├─ NO: (NOT_FEASIBLE) (Unacceptable Geochemical Risk)
          │  └─ YES: (FEASIBLE_WITH_CONDITIONS) → (PROCEED_TO_FINAL)
 
