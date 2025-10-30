@@ -1,167 +1,375 @@
 START: MAR Hydrogeological Feasibility Assessment
 ----------------------------------------------------------------------
+INPUT LIST: All Required Data for MAR Feasibility Assessment
+----------------------------------------------------------------------
+
+GEOLOGICAL & HYDROGEOLOGICAL DATA:
+- (mar_purpose) MAR Purpose ['Secure Water Supply']
+- (aq_type) Aquifer type classification [unconfined]
+- (stratigraphy_table) Stratigraphy Table [Single layer, thickness:100, K = 10, sy/ss = 0.15]
+- (gw_level) Groundwater level measurements [12 values, 50]
+- (gs_elev) Ground surface elevation [0]
+
+
+ENVIRONMENTAL & REGULATORY DATA:
+- (env_regs) Environmental regulations [none]
+- (prot_areas) Protected area maps [none]
+- (site_coords) Site location coordinates [0,0]
+- (risk_data) Risk assessment data [none]
+- (swi_studies) Salt water intrusion studies [none]
+- (receptor_analysis) Receptor analysis [none]
+- (hydro_model) Hydrogeological modeling results [none]
+
+SITE & FACILITY DATA:
+- (max_available_area) Maximum site area available [0]
+- (recharge_dim) Recharge area dimensions [none]
+- (recharge_geom) Recharge area geometry [none]
+- (foundation_depth) Foundation depth specifications [3]
+- (landuse_req) Land-use requirements [none]
+- (soil_type) Soil type data [sandy_loam]
+
+WATER SOURCE & QUALITY DATA:
+- (water_avail) Water source availability data [none]
+- (flow_meas) Flow measurements [0]
+- (water_proj) Long-term water supply projections [none]
+- (op_req) Operational requirements [none]
+- (source_quality) Source water quality data [none]
+- (recharge_std) Recharge standards [none]
+- (treatment_cost) Treatment cost estimates [0]
+- (suspended_solids) Suspended solids measurements [0]
+- (native_quality) Native groundwater quality data [none]
+- (quality_std) Water quality standards [none]
+- (mixing_analysis) Mixing analysis [none]
+- (isolation_feas) Isolation feasibility studies [none]
+- (geochem_data) Geochemical analysis data [none]
+- (scaling_studies) Scaling potential studies [none]
+- (clogging_risk) Clogging risk assessments [none]
+- (mitigation_feas) Mitigation feasibility studies [none]
+
+CALCULATION PARAMETERS:
+- (feasible_mar_options) Feasible Engineering Options [none]
+- (K_min) Minimum hydraulic conductivity [0.1]
+- (infil_design) Design infiltration rate [0.1]
+- (safety_factor) Safety factor parameters [0.3]
+- (gw_avg) Average GW level below site [10]
+- (gw_gradient) Groundwater gradient [0.001]
+- (infil_rate) Infiltration rate (calculated) [0]
+- (aq_params) Aquifer parameters [none]
+- (gw_current) Current GW level [10]
+- (gw_seasonal) Seasonal GW variations [2]
+- (storage_min) Minimum storage requirements [1000]
+- (D_min_GW) User-specified D_min_GW value [5]
+- (geotech_reports) Geotechnical reports [none]
+- (excav_cost) Excavation cost estimates [0]
+- (layer_pos) Layer position in stratigraphy [0]
+- (mar_invest) MAR investment requirements [0]
+- (storage_vol) Storage volume estimates [0]
+- (econ_analysis) Economic analysis [none]
+
+----------------------------------------------------------------------
 RECOMMENDATION LIST: (R-Series)
 ----------------------------------------------------------------------
 
-1. Is there a suitable aquifer present?
-   (Non-karstic/non-fractured rock)
-   ├─ NO → NOT FEASIBLE
-   │  (Site lacks adequate hydrogeological conditions for MAR)
-   └─ YES → Continue to 1.1
-
-1.1 Is the site located outside of a protected or restricted area?
+1. [ENV_CHECK] Is the site located outside of a protected or restricted area?
      (e.g., critical wetlands)
-     ├─ NO: SITE NOT FEASIBLE (Constraint)
-     └─ YES: Continue to 1.2
+     
+     INPUT: (env_regs), (prot_areas), (site_coords)
+     
+     DEPENDENCIES:
+     
+     LOGIC:
+     
+     OUTPUT:
+     ├─ NO: (NOT_FEASIBLE) (Constraint)
+     └─ YES: Continue to 2
 
-1.2 Is sufficient, accessible land area available for facilities
+2. [LAND_AREA] Is sufficient, accessible land area available for facilities
      and buffer zones?
-     ├─ NO: SITE NOT FEASIBLE (Physical Constraint)
-     └─ YES: Continue to 2.1
+     
+     INPUT: (max_available_area)
+     
+     DEPENDENCIES:
+     
+     LOGIC:
+     
+     OUTPUT:
+     ├─ NO: (INJECTION_WELLS) (Small area -remove surfae recharge methods)
+     │  → Continue to 2.1
+     └─ YES: (SURFACE_RECHARGE) (Adequate area for surface recharge)
+        → Continue to 2.1
 
 ----------------------------------------------------------------------
 SECTION 2: AQUIFER CHARACTERISTICS
 ----------------------------------------------------------------------
 
-2.1 What is the aquifer type?
+2.1 [AQ_TYPE] What is the aquifer type?
+     
+     INPUT: (geo_logs), (aq_char), (hydro_reports)
+     
+     DEPENDENCIES:
+     
+     LOGIC:
+     
+     OUTPUT:
      ├─ A. UNCONFINED/PHREATIC AQUIFER → Continue to 2.1.1
      ├─ B. CONFINED/ARTESIAN AQUIFER → Continue to 2.2
      └─ C. UNSUITABLE (e.g., Karstic/Fractured)
-         → SITE NOT FEASIBLE (Geological Limitation)
+         → (NOT_FEASIBLE) (Geological Limitation)
 
-2.1.1 (Unconfined) What is the depth to water table?
-         ├─ A. Less than 20m depth (Shallow water table) → Continue to 2.1.2
-         └─ B. Greater than 20m depth (Deep water table) → Continue to 2.1.3
+2.1.1 [GW_DEPTH] (Unconfined) What is the depth to water table?
+         
+         INPUT: (gw_level), (well_logs), (piezo_data)
+         
+         DEPENDENCIES:
+         
+         LOGIC:
+         
+         OUTPUT:
+         ├─ A. (SHALLOW) (depth < 20m) → Continue to 2.1.2
+         └─ B. (DEEP) (depth >= 20m) → Continue to 2.1.3
 
-2.1.2 (Shallow) What is the hydraulic conductivity (K)?
+2.1.2 [K_SHALLOW] (Shallow) What is the hydraulic conductivity (K)?
+         
+         INPUT: (pump_test), (slug_test), (lab_perm)
+         
+         DEPENDENCIES:
+         
+         LOGIC:
+         
+         OUTPUT:
          ├─ K > 33 ft/day (High permeability)
-         │  → HIGHLY FEASIBLE ✓ → Continue to 2.4
+         │  → (HIGHLY_FEASIBLE) → Continue to 2.4
          ├─ K = 3.3 - 33 ft/day (Moderate permeability)
-         │  → FEASIBLE WITH CONDITIONS ⚠ (May require careful design)
+         │  → (FEASIBLE_WITH_CONDITIONS) (May require careful design)
          │  → Continue to 2.4
          └─ K < 3.3 ft/day (Low permeability)
-            → NOT FEASIBLE ✗ (Poor recharge capacity)
+            → (NOT_FEASIBLE) (Poor recharge capacity)
 
-2.1.3 (Deep) FEASIBILITY CHECK: Limiting Infiltration Layer?
+2.1.3 [LIMIT_LAYER] (Deep) FEASIBILITY CHECK: Limiting Infiltration Layer?
      
-     INPUT REQUIRED: Geological Layer Table (K) and GW Depth.
-     LOGIC: Find K_min among all layers above GW Depth.
+     INPUT: (K_table), (gw_level), (vadose_strat)
      
+     DEPENDENCIES:
+     
+     LOGIC:
+     
+     OUTPUT:
      Is the minimum K in the vadose zone < 0.3 ft/day?
          
          ├─ YES - Limiting Infiltration Layer Present
          │  → Continue to 2.1.3.1 (Mitigation Check)
          │
          └─ NO - Permeable Vadose Zone (K_min >= 0.3 ft/day)
-             → FEASIBLE WITH CONDITIONS ⚠ (Surface or deep methods
-             potentially viable) → Continue to 2.1.6 (Determine D_min_GW)
+             → (FEASIBLE_WITH_CONDITIONS) (Surface or deep methods
+             potentially viable) → Continue to 2.1.5 (Infiltration Rate Calculation)
 
-2.1.3.1 (Mitigation Check) Is the limiting layer the TOP layer AND < 3 ft thick?
-         ├─ YES: Conditionally Feasible ⚠ (Earthwork/Removal Viable)
+2.1.3.1 [MITIGATION] (Mitigation Check) Is the limiting layer the TOP layer AND < 3 ft thick?
+         
+         INPUT: (layer_thick), (excav_cost), (layer_pos)
+         
+         DEPENDENCIES:
+         
+         LOGIC:
+         
+         OUTPUT:
+         ├─ YES: (FEASIBLE_WITH_CONDITIONS) (Earthwork/Removal Viable)
          │  (Surface spreading viable after low-K layer removal)
-         │  → Continue to 2.1.6 (Determine D_min_GW)
-         └─ NO: Surface Spreading NOT FEASIBLE ✗
+         │  → Continue to 2.1.5 (Infiltration Rate Calculation)
+         └─ NO: (NOT_FEASIBLE) (Surface Spreading NOT FEASIBLE)
             (Low-K layer is too thick or too deep for economic removal)
             (Deep injection likely required)
             → Continue to 2.1.4 (Feasibility Follow-up)
 
-2.1.4 (Feasibility Follow-up) Can deep injection access the target aquifer?
-         ├─ NO: NOT FEASIBLE ✗ (No viable recharge method)
-         └─ YES: Conditionally Feasible ⚠ (Injection required) → Continue to 2.4
+2.1.4 [DEEP_ACCESS] (Feasibility Follow-up) Can deep injection access the target aquifer?
+         
+         INPUT: (drill_feas), (aq_depth), (well_cost)
+         
+         DEPENDENCIES:
+         
+         LOGIC:
+         
+         OUTPUT:
+         ├─ NO: (NOT_FEASIBLE) (No viable recharge method)
+         └─ YES: (FEASIBLE_WITH_CONDITIONS) (Injection required) → Continue to 2.4
 
-2.1.5 DETERMINE MINIMUM ALLOWABLE DEPTH TO GW (D_min_GW)
+2.1.5 [INFIL_RATE] (Infiltration Rate Calculation) Calculate maximum sustainable infiltration rate
      
-     INPUT REQUIRED: User-specified value for D_min_GW.
+     INPUT: (K_min), (recharge_dim), (infil_design), (safety_factor)
      
-     GUIDANCE: This value should represent the shallowest acceptable water table 
-     level to prevent waterlogging, soil instability, or foundation damage. It must be
-     calculated based on site-specific geotechnical reports, land-use
-     requirements, and soil type.
+     DEPENDENCIES:
      
-     Example Calculation (Conceptual): D_min_GW = Depth to foundation base
-     + capillary rise factor + safety margin.
+     LOGIC:
      
+     OUTPUT:
+     Is the calculated infiltration rate adequate for the intended recharge volume?
+         ├─ YES: Continue to 2.1.6 (Mound Height Estimation)
+         └─ NO: (FEASIBILITY_DOUBTFUL) (Low infiltration capacity)
+             → Continue to 2.1.6 (Mound Height Estimation)
+
+2.1.6 [MOUND_HEIGHT] (Mound Height Estimation) Estimate groundwater mound height using Hantush 1967 method
+     
+     INPUT: (gw_avg), (gw_gradient), (infil_rate), (aq_params), (recharge_geom)
+     
+     DEPENDENCIES:
+     
+     LOGIC:
+     
+     OUTPUT:
+     Is the estimated mound height acceptable for the site conditions?
+         ├─ YES: Continue to 2.1.7 (Determine D_min_GW)
+         └─ NO: (FEASIBILITY_DOUBTFUL) (Excessive mounding risk)
+             → Continue to 2.1.7 (Determine D_min_GW)
+
+2.1.7 [D_MIN_GW] DETERMINE MINIMUM ALLOWABLE DEPTH TO GW (D_min_GW)
+     
+     INPUT: (D_min_GW), (geotech_reports), (landuse_req), (soil_type), (foundation_depth)
+     
+     DEPENDENCIES:
+     
+     LOGIC:
+     
+     OUTPUT:
      Is D_min_GW provided?
-         ├─ NO: FEASIBLE WITH CONDITIONS ⚠
+         ├─ NO: (FEASIBLE_WITH_CONDITIONS)
          │  (Default D_min_GW = 5 ft used)
          │  → ADD RECOMMENDATION (R1): Perform detailed geotechnical/soil survey 
          │     to determine site-specific D_min_GW.
-         │  → Continue to 2.1.6 (Potential Storage Estimation)
-         └─ YES: Continue to 2.1.6 (Potential Storage Estimation)
+         │  → Continue to 2.1.8 (Potential Storage Estimation)
+         └─ YES: Continue to 2.1.8 (Potential Storage Estimation)
 
-2.1.6 (Potential Storage Estimation) Is the Vadose Zone Storage less than the minimum
+2.1.8 [STORAGE_CALC] (Potential Storage Estimation) Is the Vadose Zone Storage less than the minimum
      user-specified storage?
      
-     INPUT REQUIRED: D_min_GW (from 2.1.5).
+     INPUT: (D_min_GW), (layer_thick), (Sy), (gw_current), (gw_seasonal), (storage_min)
      
-     LOGIC: Calculate Storage (ft/ft²) for the interval bounded by:
-     * Lower Bound: Current GW Level.
-     * Upper Bound: The deepest depth among (a) the first layer UPWARDS
-     where K < 0.3 ft/day, and (b) the Minimum Allowable Depth to GW
-     (D_min_GW) (The shallowest acceptable recharge level).
+     DEPENDENCIES:
      
-     CALCULATION: Storage (ft/ft²) = Sum of (Thickness x Specific Yield)
-     for layers in valid storage zone
+     LOGIC:
      
-     ├─ YES: FEASIBILITY DOUBTFUL ⚠ (Low Storage Capacity)
+     OUTPUT:
+     ├─ YES: (FEASIBILITY_DOUBTFUL) (Low Storage Capacity)
      │  → Continue to 2.4
-     └─ NO: FEASIBLE ✓ (Adequate storage volume) → Continue to 2.4
+     └─ NO: (FEASIBLE) (Adequate storage volume) → Continue to 2.4
 
-2.2 (Confined) Is direct aquifer access possible?
-     ├─ NO: NOT FEASIBLE ✗ (Cannot access aquifer economically)
+2.2 [CONF_ACCESS] (Confined) Is direct aquifer access possible?
+     
+     INPUT: (drill_feas), (aq_depth), (well_cost), (deep_well_regs)
+     
+     DEPENDENCIES:
+     
+     LOGIC:
+     
+     OUTPUT:
+     ├─ NO: (NOT_FEASIBLE) (Cannot access aquifer economically)
      └─ YES: Continue to 2.3
 
-2.3 (Confined) Check piezometric head.
+2.3 [PIEZO_HEAD] (Confined) Check piezometric head.
+     
+     INPUT: (piezo_head), (gs_elev), (aq_pressure)
+     
+     DEPENDENCIES:
+     
+     LOGIC:
+     
+     OUTPUT:
      ├─ Head below ground surface
-     │  → FEASIBLE ✓ (Suitable pressure conditions) → Continue to 2.4
+     │  → (FEASIBLE) (Suitable pressure conditions) → Continue to 2.4
      └─ Artesian conditions (head above surface)
-         → FEASIBLE WITH CONDITIONS ⚠ (Requires pressure management)
+         → (FEASIBLE_WITH_CONDITIONS) (Requires pressure management)
          → Continue to 2.4
 
-2.4 Is the aquifer storage capacity adequate to
+2.4 [STORAGE_ADEQ] Is the aquifer storage capacity adequate to
      justify the MAR investment?
+     
+     INPUT: (storage_vol), (mar_invest), (storage_vol), (econ_analysis)
+     
+     DEPENDENCIES:
+     
+     LOGIC:
+     
+     OUTPUT:
      ├─ A. Adequate storage volume → Continue to 2.5
-     └─ B. Limited storage capacity → NOT FEASIBLE ✗ (Insufficient volume)
+     └─ B. Limited storage capacity → (NOT_FEASIBLE) (Insufficient volume)
 
-2.5 Are there unacceptable hydrogeological risks?
+2.5 [HYDRO_RISKS] Are there unacceptable hydrogeological risks?
      (e.g., salt water intrusion, capture by low-priority receptors)
-     ├─ YES: FEASIBILITY DOUBTFUL (Hydrogeological Conflict)
+     
+     INPUT: (risk_data), (swi_studies), (receptor_analysis), (hydro_model)
+     
+     DEPENDENCIES:
+     
+     LOGIC:
+     
+     OUTPUT:
+     ├─ YES: (FEASIBILITY_DOUBTFUL) (Hydrogeological Conflict)
      └─ NO: Continue to 3.1
 
 ----------------------------------------------------------------------
 SECTION 3: WATER AVAILABILITY AND QUALITY
 ----------------------------------------------------------------------
 
-3.1 Is a reliable source of water available in sufficient quantity for
+3.1 [WATER_AVAIL] Is a reliable source of water available in sufficient quantity for
      long-term MAR operations?
-     ├─ NO: SITE NOT FEASIBLE (Operational Constraint)
+     
+     INPUT: (water_avail), (flow_meas), (water_proj), (op_req)
+     
+     DEPENDENCIES:
+     
+     LOGIC:
+     
+     OUTPUT:
+     ├─ NO: (NOT_FEASIBLE) (Operational Constraint)
      └─ YES: Continue to 3.2
 
-3.2 Does the source water quality meet recharge standards without expensive
+3.2 [SOURCE_QUALITY] Does the source water quality meet recharge standards without expensive
      treatment (low suspended solids)?
+     
+     INPUT: (source_quality), (recharge_std), (treatment_cost), (suspended_solids)
+     
+     DEPENDENCIES:
+     
+     LOGIC:
+     
+     OUTPUT:
      ├─ YES: Continue to 3.3
-     └─ NO: FEASIBILITY DOUBTFUL (High Treatment Cost)
+     └─ NO: (FEASIBILITY_DOUBTFUL) (High Treatment Cost)
          ├─ Follow-up: Is pre-treatment economically viable?
-         │  ├─ NO: SITE NOT FEASIBLE (Economic/Quality Constraint)
-         │  └─ YES: Conditionally Feasible → Continue to 3.3
+         │  ├─ NO: (NOT_FEASIBLE) (Economic/Quality Constraint)
+         │  └─ YES: (FEASIBLE_WITH_CONDITIONS) → Continue to 3.3
 
-3.3 What is the native groundwater quality?
+3.3 [NATIVE_QUALITY] What is the native groundwater quality?
+     
+     INPUT: (native_quality), (quality_std), (mixing_analysis), (isolation_feas)
+     
+     DEPENDENCIES:
+     
+     LOGIC:
+     
+     OUTPUT:
      ├─ A. Good quality (potable standards) → Continue to 3.4
      └─ B. Poor quality (saline/contaminated)
          ├─ Follow-up: Can isolation of injected water be maintained?
-         │  ├─ NO: NOT FEASIBLE ✗ (Excessive mixing expected)
-         │  └─ YES: FEASIBLE WITH CONDITIONS ⚠ (Requires careful recovery and
+         │  ├─ NO: (NOT_FEASIBLE) (Excessive mixing expected)
+         │  └─ YES: (FEASIBLE_WITH_CONDITIONS) (Requires careful recovery and
          │     buffer management) → Continue to 3.4
 
-3.4 Are there geochemical compatibility concerns?
+3.4 [GEOCHEM_COMPAT] Are there geochemical compatibility concerns?
      (scaling, clogging, contaminant mobilization)
+     
+     INPUT: (geochem_data), (scaling_studies), (clogging_risk), (mitigation_feas)
+     
+     DEPENDENCIES:
+     
+     LOGIC:
+     
+     OUTPUT:
      ├─ A. Source and aquifer waters compatible
-     │  → PROCEED TO FINAL DECISION ✓
+     │  → (PROCEED_TO_FINAL) (Final Decision)
      └─ B. Potential incompatibility
          ├─ Follow-up: Can issues be mitigated by pre-treatment or operational
          │  changes?
-         │  ├─ NO: SITE NOT FEASIBLE ✗ (Unacceptable Geochemical Risk)
-         │  └─ YES: Conditionally Feasible ⚠ → PROCEED TO FINAL DECISION
+         │  ├─ NO: (NOT_FEASIBLE) (Unacceptable Geochemical Risk)
+         │  └─ YES: (FEASIBLE_WITH_CONDITIONS) → (PROCEED_TO_FINAL)
 
 ----------------------------------------------------------------------
 FINAL DECISION
