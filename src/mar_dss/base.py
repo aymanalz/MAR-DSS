@@ -16,7 +16,7 @@ class Node:
         input_flag: bool,
         name: str,
         node_type: str,
-        leaf_flag: bool = True,
+        leaf_flag: bool = False, # temination node!
         description: Optional[str] = None,
         value: Optional[Any] = None,
         default: Optional[Any] = None,
@@ -52,6 +52,9 @@ class Node:
 
     def is_rule(self) -> bool:
         return not self.input_flag
+
+    def is_leaf(self) -> bool:
+        return self.leaf_flag
 
     def evaluate(self, inputs: dict) -> Any:
         """Evaluate the node if it’s a rule node using function reference."""
@@ -106,7 +109,7 @@ class DecisionGraph:
                             dependencies=item.get('dependencies'),
                             module=item.get('module'),
                             function_name=item.get('function_name'),
-                            function=None  # Function can be set later if needed
+                            function=None  # Function can be set later if needed (todo)
                         )
                         self.add_node(node)
 
@@ -140,12 +143,12 @@ class DecisionGraph:
         return value
 
     def evaluate(self, input_values: dict) -> dict:
-        """Evaluate all leaf nodes in the graph."""
+        """Evaluate all rule nodes in the graph."""
         cache = {}  # Cache for all computed values
-        leaf_nodes = [nid for nid, n in self.nodes.items() if n.leaf_flag]
-        results = {}  # Only leaf node results
+        rule_nodes = [nid for nid, n in self.nodes.items() if n.is_rule()]
+        results = {}  # All rule node results
 
-        for nid in leaf_nodes:
+        for nid in rule_nodes:
             results[nid] = self.evaluate_node(nid, input_values, cache)
 
         return results
@@ -262,8 +265,96 @@ class DecisionGraph:
         nx.draw_networkx_labels(G, label_pos, labels, horizontalalignment='left')
         plt.show()
 
+    def calculate_hierarchy_positions(self, G, flip_y=False, vert_gap=0.25):
+        """
+        Calculate hierarchical positions for a directed graph.
+        Groups nodes by depth: all nodes at the same depth level get the same y-coordinate.
+        
+        Parameters:
+        -----------
+        G : networkx.DiGraph
+            The directed graph to layout
+        flip_y : bool, default=True
+            If True, flips y-coordinates to make children appear above parents (bottom-up)
+        vert_gap : float, default=1.0
+            Vertical spacing between levels
+        
+        Returns:
+        --------
+        dict
+            Dictionary mapping node names to (x, y) coordinates
+        """
+        if len(G.nodes()) == 0:
+            return {}
+        
+        # Find all root nodes (nodes with no incoming edges)
+        roots = [n for n in G.nodes() if G.in_degree(n) == 0]
+        if len(roots) == 0:
+            # If no roots, pick an arbitrary starting point (pick node with minimum in-degree)
+            roots = [min(G.nodes(), key=lambda n: G.in_degree(n))]
+        
+        # Calculate depth level for each node using BFS
+        levels = {}
+        visited = set()
+        queue = [(root, 0) for root in roots]
+        
+        while queue:
+            node, level = queue.pop(0)
+            if node in visited:
+                continue
+            visited.add(node)
+            
+            # Store level, taking minimum if node has multiple paths
+            if node not in levels:
+                levels[node] = level
+            else:
+                levels[node] = min(levels[node], level)
+            
+            # Add children to queue
+            for child in G.successors(node):
+                if child not in visited:
+                    queue.append((child, level + 1))
+        
+        # Handle any unvisited nodes (disconnected components)
+        for node in G.nodes():
+            if node not in levels:
+                levels[node] = max(levels.values()) + 1 if levels else 0
+        
+        # Group nodes by level
+        nodes_by_level = {}
+        for node, level in levels.items():
+            if level not in nodes_by_level:
+                nodes_by_level[level] = []
+            nodes_by_level[level].append(node)
+        
+        # Calculate positions
+        pos = {}
+        max_level = max(levels.values()) if levels else 0
+        
+        for level, nodes in sorted(nodes_by_level.items()):
+            # Same y-coordinate for all nodes at this level
+            if flip_y:
+                # Bottom-up: level 0 (roots) at bottom, higher levels go up
+                y = level * vert_gap
+            else:
+                # Top-down: level 0 (roots) at top, higher levels go down
+                y = (max_level - level) * vert_gap
+            
+            # Distribute x-coordinates evenly within the level
+            num_nodes = len(nodes)
+            if num_nodes == 1:
+                x_positions = [0.5]
+            else:
+                x_positions = [i / (num_nodes - 1) for i in range(num_nodes)]
+            
+            # Assign positions
+            for node, x in zip(sorted(nodes), x_positions):
+                pos[node] = (x, y)
+        
+        return pos
+    
 
-    def plotly(self, layout: str = "kamada_kawai"):
+    def plotly(self, layout: str = "hierarchy"):
 
         G = nx.DiGraph()
         # Build graph
@@ -282,6 +373,10 @@ class DecisionGraph:
             pos = nx.spectral_layout(G)
         elif layout == "planar":
             pos = nx.planar_layout(G)
+        elif layout == "hierarchy":
+            pos = self.calculate_hierarchy_positions(G)
+        else:
+            raise ValueError(f"Invalid layout: {layout}")
 
         # Edges
         edge_x = []

@@ -1,58 +1,37 @@
 inputs:
-  - id: "Ks"
-    name: "Aquifer Conductivity"
-    description: "Hydraulic conductivity of the aquifer"
-    type: numeric
-    units: "m/day"
-    value: 5.5
-    default: 1.0
-    range: [1e-6, 2000]
+  - id: "aq_type"
+    name: "Aquifer Type"
+    description: "Geologic type of the aquifer provided by the user"
+    type: categorical
+    value: "Unconfined"
+    default: "Unconfined"
+    allowed_values: ["Confined", "Unconfined", "Semi-confined", "Karstic", "Fractured", "Other"]
     certainty: 1.0
     group: "Aquifer Properties"
 
-  - id: "Dgw"
+  - id: "stratigraphy_table"
+    name: "Stratigraphy Table"
+    description: "A table with a list of layers, for each thickness, K, sy/ss are provided"
+    type: pandas_dataframe
+    units: ["ft", "ft/day", None]
+    value: [[50, 50, 0.15]]
+    default: [50, 50, 0.15]
+    range: [[1e-6, 2000], [1e-6, 2000], [0.01, 0.7]]
+    certainty: 1.0
+    group: "Aquifer Properties"
+
+  - id: "monthly_gw_depth"
     name: "Groundwater Depth"
-    description: "Depth to groundwater table"
-    type: numeric
-    units: "m"
-    value: 20
-    default: 5
+    description: "Depth to groundwater table for each month"
+    type: list of  numeric
+    units: "ft"
+    value: [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
+    default: [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]    
     range: [0, 2000]
     certainty: 1.0
     group: "Aquifer Properties"
 
-  - id: "Aqtype"
-    name: "Aquifer Type"
-    description: "Geologic type of the aquifer"
-    type: categorical
-    value: "Unconfined"
-    default: "Unconfined"
-    allowed_values: ["Confined", "Unconfined", "Semi-confined"]
-    certainty: 1.0
-    group: "Aquifer Properties"
-
-  - id: "Ss"
-    name: "Storage Coefficient"
-    description: "Specific storage or storativity of the aquifer"
-    type: numeric
-    value: 0.15
-    default: 0.05
-    range: [1e-5, 0.7]
-    certainty: 0.9
-    units: "-"
-    group: "Aquifer Properties"
-
-  - id: "Vw"
-    name: "Available Water"
-    description: "Volume of water available for use"
-    type: numeric
-    units: "m³"
-    value: 1000
-    range: [0, null]
-    certainty: 0.85
-    group: "Water Balance"
-
-  - id: "Dgw_min"
+  - id: "d_gw_min"
     name: "Minimum Groundwater Depth"
     description: "Minimum depth of groundwater below ground surface before waterlogging issues occur"
     type: numeric
@@ -61,47 +40,70 @@ inputs:
     default: 5.0
     range: [0.0, 100.0]
     certainty: 0.8
-    group: "Water Balance"
-
-  - id: "Hmax"
-    name: "Maximum Allowable Head Change"
-    description: "Maximum allowable hydraulic head change in confined aquifers to prevent too much land uplift, fracturing, ord environmental impacts"
-    type: numeric
-    units: "m"
-    value: 2.0
-    default: 2.0
-    range: [0.1, 50.0]
-    certainty: 0.85
-    group: "Aquifer Properties"
-
-  - id: "n"
-    name: "Porosity"
-    description: "Fraction of void space in the aquifer material (ratio of void volume to total volume)"
-    type: numeric
-    units: "-"
-    value: 0.25
-    default: 0.20
-    range: [0.01, 0.60]
-    certainty: 0.9
-    group: "Aquifer Properties"
-
-  - id: "UnSatClay"
-    name: "Clay Layer in Vadose Zone"
-    description: "Whether a clay layer exists in the vadose zone"
-    type: boolean
-    units: "-"
-    value: false
-    default: false
-    certainty: 0.9
-    group: "Vadose Zone"
+    group: "Design Sizing"
   
-  - id: "UnSatClayDepth"
-    name: "Clay Layer Depth"
-    description: "Depth of the clay layer in the vadose zone"
+  - id: "max_available_area"
+    name: "Maximum Available Area"
+    description: "Maximum available area for the site"
     type: numeric
-    units: "m"
-    value: 0.0
-    default: 0.0
-    range: [0.0, 100.0]
-    certainty: 0.9
-    group: "Vadose Zone"
+    units: "ft2"
+    value: 1e7
+    default: 1e7
+    range: [0.0, 1e7]
+    certainty: 0.8
+    group: "Design Sizing"
+
+  # - id: "Vw"
+  #   name: "Available Water"
+  #   description: "Volume of water available for use"
+  #   type: numeric
+  #   units: "m³"
+  #   value: 1000
+  #   range: [0, null]
+  #   certainty: 0.85
+  #   group: "Water Balance"
+
+
+
+  # - id: "Hmax"
+  #   name: "Maximum Allowable Head Change"
+  #   description: "Maximum allowable hydraulic head change in confined aquifers to prevent too much land uplift, fracturing, ord environmental impacts"
+  #   type: numeric
+  #   units: "m"
+  #   value: 2.0
+  #   default: 2.0
+  #   range: [0.1, 50.0]
+  #   certainty: 0.85
+  #   group: "Aquifer Properties"
+
+  # - id: "n"
+  #   name: "Porosity"
+  #   description: "Fraction of void space in the aquifer material (ratio of void volume to total volume)"
+  #   type: numeric
+  #   units: "-"
+  #   value: 0.25
+  #   default: 0.20
+  #   range: [0.01, 0.60]
+  #   certainty: 0.9
+  #   group: "Aquifer Properties"
+
+  # - id: "UnSatClay"
+  #   name: "Clay Layer in Vadose Zone"
+  #   description: "Whether a clay layer exists in the vadose zone"
+  #   type: boolean
+  #   units: "-"
+  #   value: false
+  #   default: false
+  #   certainty: 0.9
+  #   group: "Vadose Zone"
+  
+  # - id: "UnSatClayDepth"
+  #   name: "Clay Layer Depth"
+  #   description: "Depth of the clay layer in the vadose zone"
+  #   type: numeric
+  #   units: "m"
+  #   value: 0.0
+  #   default: 0.0
+  #   range: [0.0, 100.0]
+  #   certainty: 0.9
+  #   group: "Vadose Zone"

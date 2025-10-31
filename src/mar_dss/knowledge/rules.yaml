@@ -1,27 +1,289 @@
 rules:
-  - id: "Vs"
-    name: "Available Storage"
-    symbol: "Vs"
-    description: "Calculates the volume of available storage in the aquifer."
-    type: numeric
-    module: "geohydro_rules"     
-    function_name: "compute_available_storage"  # Function inside the module
-    dependencies: ["Dgw", "Dgw_min", "Aqtype", "Ss"]
+  # - id: "get_aquifer_type"
+  #   name: "Aquifer Type"
+  #   symbol: "aqtype"
+  #   description: "Determines  aquifer type"
+  #   type: categorical 
+  #   module: "geohydro_rules"
+  #   function_name: "determine_aquifer_type"
+  #   dependencies: [Input_Aqtype]
+  #   certainty: 1.0
+  #   group: "Aquifer Characteristics"
+  #   leaf: false
+  
+  - id: "unconfined"
+    name: "Unconfined Aquifer"
+    #symbol: "unconfined"
+    description: "Branch for unconfined aquifer"
+    type: categorical 
+    module: "geohydro_rules"
+    function_name: "is_unconfined"
+    dependencies: [aq_type]
     certainty: 1.0
-    range: [0, null]
-    group: "Aquifer Properties"
+    group: "Aquifer Characteristics"
     leaf: false
 
-  - id: "Wlog"
-    name: "Waterlogging Checker"
-    symbol: "Wlog"
-    description: "Determines whether waterlogging occurs by comparing available storage with available water."
-    type: boolean
-    module: "aquifer_calculations"
-    function_name: "check_waterlogging"
-    dependencies: ["Vs", "Vw"]
+  - id: "confined"
+    name: "Confined Aquifer"
+    #symbol: "confined"
+    description: "Branch for confined aquifer"
+    type: categorical 
+    module: "geohydro_rules"
+    function_name: "is_confined"
+    dependencies: [aq_type]
     certainty: 1.0
-    allowed_values: [true, false]
-    group: "Water Balance"
-    leaf: true
+    group: "Aquifer Characteristics"
+    leaf: false
+
+  - id: "strat_df"
+    name: "Stratigraphy Dataframe"
+    #symbol: "stratigraphy_table"
+    description: "Get or retrieve the stratigraphy table"
+    type: pandas_dataframe
+    module: "geohydro_rules"
+    function_name: "get_stratigraphy_table"
+    dependencies: [stratigraphy_table]
+    certainty: 1.0
+    group: "Aquifer Characteristics"
+    leaf: false
+
+
+  - id: "limiting_layer"
+    name: "Limiting Layer"
+    #symbol: "limiting_layer_id"
+    description: "Finds vadose limiting layer"
+    type: categorical
+    module: "geohydro_rules"
+    function_name: "find_limiting_layer"
+    dependencies: [strat_df, unconfined, monthly_gw_depth]
+    certainty: 0.9
+    group: "Aquifer Characteristics"
+    leaf: false
+  
+  - id: "k_min_vadose"
+    name: "Minimum K in Vadose Zone"
+    #symbol: "K_min"
+    description: "Find vadose K_min"
+    type: numeric  
+    module: "geohydro_rules"
+    function_name: "find_min_k_vadose_zone"
+    dependencies: [strat_df, limiting_layer]
+    certainty: 0.9
+    group: "Aquifer Characteristics"
+    leaf: false
+
+  - id: "top_soil_removability"
+    name: "Topsoil Limiting Layer Removability"
+    #symbol: "TopRem"
+    description: "Checks if top layer is limiting and <3 ft (removable)."
+    type: boolean
+    module: "geohydro_rules"
+    function_name: "check_topsoil_limiting"
+    dependencies: [limiting_layer, k_min_vadose]
+    certainty: 0.8
+    group: "Surface Feasibility"
+    leaf: false
+
+  - id: "op_gw_depth"
+    name: "Operational GW Depth"
+    #symbol: "Dgw_ok"
+    description: "Compute the actuall minimum operational/actual grounwater depth"
+    type: numeric
+    module: "geohydro_rules"
+    function_name: "compute_min_gw_depth"
+    dependencies: [limiting_layer, strat_df, d_gw_min]
+    certainty: 1.0
+    group: "Constraints"
+    leaf: false
+
+  # - id: "design_sizing"
+  #   name: "Compute Spreading Area,  OpGW Depth, infil_rate"
+  #   #symbol: "Spread"
+  #   description: "Computes spread area and operational groundwater depth."
+  #   type: numeric
+  #   module: "geohydro_rules"
+  #   function_name: "compute_spread_area"
+  #   dependencies: [k_min_vadose, max_available_area, d_gw_min]
+  #   certainty: 0.8
+  #   group: "Design Sizing"
+  #   leaf: false
+
+  # - id: "ISDEEP"
+  #   name: "Water Table Depth Class"
+  #   symbol: "IsDeep"
+  #   description: "Classifies unconfined water table as SHALLOW (<20 m) or DEEP (>=20 m)."
+  #   type: categorical
+  #   allowed_values: [SHALLOW, DEEP]
+  #   module: "mar_rules"
+  #   function_name: "classify_water_table_depth"
+  #   dependencies: [gw_level, AQ_TYPE]
+  #   certainty: 1.0
+  #   group: "Aquifer Characteristics"
+  #   leaf: false
+
+  # - id: "K_SHALLOW"
+  #   name: "Shallow Zone Hydraulic Conductivity"
+  #   symbol: "Ksh"
+  #   description: "Evaluates shallow-zone K adequacy to avoid water logging."
+  #   type: categorical
+  #   allowed_values: [HIGH, MODERATE, LOW]
+  #   module: "mar_rules"
+  #   function_name: "evaluate_shallow_K"
+  #   dependencies: [stratigraphy_table]
+  #   certainty: 0.9
+  #   group: "Aquifer Characteristics"
+  #   leaf: false
+
+
+
+
+  # - id: "SHALLOW_LIMITING_LAYER"
+  #   name: "Shallow Limiting Layer (<10 ft)"
+  #   symbol: "ShallowLim"
+  #   description: "Determines if trench/subsurface spreading is feasible."
+  #   type: boolean
+  #   module: "mar_rules"
+  #   function_name: "check_shallow_limiting"
+  #   dependencies: [limiting_layer_id, K_min]
+  #   certainty: 0.8
+  #   group: "Surface Feasibility"
+  #   leaf: false
+
+  # - id: "SPREAD_AREA"
+  #   name: "Spreading Area and OpGW Depth"
+  #   symbol: "Spread"
+  #   description: "Computes spread area and operational groundwater depth."
+  #   type: object
+  #   object_fields: [spread_area, OpGW_depth]
+  #   module: "mar_rules"
+  #   function_name: "compute_spread_area"
+  #   dependencies: [K_min, max_available_area, D_min_GW]
+  #   certainty: 0.8
+  #   group: "Design Sizing"
+  #   leaf: false
+
+  # - id: "MOUND_HEIGHT"
+  #   name: "Mound Height (Hantush 1967)"
+  #   symbol: "Hm"
+  #   description: "Estimates mound height for given infiltration geometry."
+  #   type: numeric
+  #   module: "mar_rules"
+  #   function_name: "estimate_mound_height"
+  #   dependencies: [gw_avg, gw_gradient, infil_rate, aq_params, recharge_geom]
+  #   certainty: 0.7
+  #   range: [0, null]
+  #   group: "Design Sizing"
+  #   leaf: false
+
+  # - id: "D_MIN_GW_DECISION"
+  #   name: "Minimum Allowable GW Depth Decision"
+  #   symbol: "Dgw_ok"
+  #   description: "Checks if OpGW depth satisfies site-specific minimum."
+  #   type: boolean
+  #   module: "mar_rules"
+  #   function_name: "check_min_depth"
+  #   dependencies: [D_min_GW, OpGW_depth]
+  #   certainty: 1.0
+  #   group: "Constraints"
+  #   leaf: false
+
+  # - id: "STORAGE_CALC"
+  #   name: "Vadose Storage Adequacy"
+  #   symbol: "StorageOK"
+  #   description: "Checks if vadose storage meets minimum requirement."
+  #   type: boolean
+  #   module: "mar_rules"
+  #   function_name: "check_vadose_storage"
+  #   dependencies: [D_min_GW, layer_thick, Sy, gw_current, gw_seasonal, storage_min]
+  #   certainty: 0.8
+  #   group: "Aquifer Properties"
+  #   leaf: false
+
+  # - id: "CONF_ACCESS"
+  #   name: "Confined Aquifer Access"
+  #   symbol: "ConfAccess"
+  #   description: "Determines if confined aquifer access is feasible."
+  #   type: boolean
+  #   module: "mar_rules"
+  #   function_name: "check_confined_access"
+  #   dependencies: [drill_feas, aq_depth, well_cost, deep_well_regs]
+  #   certainty: 0.8
+  #   group: "Aquifer Characteristics"
+  #   leaf: false
+
+  # - id: "PIEZO_HEAD"
+  #   name: "Piezometric Head Condition"
+  #   symbol: "HeadCond"
+  #   description: "Classifies head as below GS (OK) or artesian (conditions)."
+  #   type: categorical
+  #   allowed_values: [below_surface, artesian]
+  #   module: "mar_rules"
+  #   function_name: "classify_piezometric_head"
+  #   dependencies: [piezo_head, gs_elev, aq_pressure]
+  #   certainty: 0.9
+  #   group: "Aquifer Characteristics"
+  #   leaf: false
+
+  # - id: "STORAGE_ADEQ"
+  #   name: "Aquifer Storage Adequacy"
+  #   symbol: "StorageAdeq"
+  #   description: "Evaluates if storage volume justifies investment."
+  #   type: boolean
+  #   module: "mar_rules"
+  #   function_name: "check_storage_adequacy"
+  #   dependencies: [storage_vol, mar_invest, econ_analysis]
+  #   certainty: 0.8
+  #   group: "Economics"
+  #   leaf: false
+
+  # - id: "WATER_AVAIL"
+  #   name: "Water Availability"
+  #   symbol: "WAvail"
+  #   description: "Checks if reliable source water is available long-term."
+  #   type: boolean
+  #   module: "mar_rules"
+  #   function_name: "check_water_availability"
+  #   dependencies: [water_avail, flow_meas, water_proj, op_req]
+  #   certainty: 0.9
+  #   group: "Source Water"
+  #   leaf: false
+
+  # - id: "SOURCE_QUALITY"
+  #   name: "Source Water Quality"
+  #   symbol: "SrcQual"
+  #   description: "Assesses if source meets recharge standards without costly treatment."
+  #   type: categorical
+  #   allowed_values: [meets_standards, pretreatment_viable, not_feasible]
+  #   module: "mar_rules"
+  #   function_name: "assess_source_quality"
+  #   dependencies: [source_quality, recharge_std, treatment_cost, suspended_solids]
+  #   certainty: 0.9
+  #   group: "Source Water"
+  #   leaf: false
+
+  # - id: "NATIVE_QUALITY"
+  #   name: "Native Groundwater Quality"
+  #   symbol: "NatQual"
+  #   description: "Classifies native groundwater quality and isolation feasibility."
+  #   type: categorical
+  #   allowed_values: [good, poor_isolation_no, poor_isolation_yes]
+  #   module: "mar_rules"
+  #   function_name: "classify_native_quality"
+  #   dependencies: [native_quality, quality_std, mixing_analysis, isolation_feas]
+  #   certainty: 0.8
+  #   group: "Water Quality"
+  #   leaf: false
+
+  # - id: "GEOCHEM_COMPAT"
+  #   name: "Geochemical Compatibility"
+  #   symbol: "GeoCompat"
+  #   description: "Evaluates compatibility and mitigation for scaling/clogging/mobilization."
+  #   type: categorical
+  #   allowed_values: [compatible, mitigable, not_feasible]
+  #   module: "mar_rules"
+  #   function_name: "evaluate_geochemical_compatibility"
+  #   dependencies: [geochem_data, scaling_studies, clogging_risk, mitigation_feas]
+  #   certainty: 0.8
+  #   group: "Water Quality"
+  #   leaf: false
 
