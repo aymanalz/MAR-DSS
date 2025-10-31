@@ -61,10 +61,18 @@ def compute_min_gw_depth(limiting_layer, strat_df, d_gw_min):
 
     return D_min_GW + limiting_layer + d_gw_min
 
-def compute_spread_area(k_min_vadose, max_available_area, d_gw_min):
+def compute_spread_area(k_min_vadose, max_available_area, d_gw_min, source_water_volume):
     max_available_area = float(max_available_area)
     k_min_vadose = float(k_min_vadose)
     d_gw_min = float(d_gw_min)
+
+    spread_area = max_available_area / (k_min_vadose)
+    while True:
+        break;
+        if spread_area < max_available_area:
+            break
+        else:
+            d_gw_min += 1
 
 
 

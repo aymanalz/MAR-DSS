@@ -1,4 +1,5 @@
 from typing import Any, Callable, List, Optional
+from collections import deque
 import importlib
 import importlib.util
 import sys
@@ -269,14 +270,15 @@ class DecisionGraph:
         """
         Calculate hierarchical positions for a directed graph.
         Groups nodes by depth: all nodes at the same depth level get the same y-coordinate.
+        Node level equals the maximum number of edges from root to that node (longest path).
         
         Parameters:
         -----------
         G : networkx.DiGraph
             The directed graph to layout
-        flip_y : bool, default=True
+        flip_y : bool, default=False
             If True, flips y-coordinates to make children appear above parents (bottom-up)
-        vert_gap : float, default=1.0
+        vert_gap : float, default=0.25
             Vertical spacing between levels
         
         Returns:
@@ -294,26 +296,29 @@ class DecisionGraph:
             roots = [min(G.nodes(), key=lambda n: G.in_degree(n))]
         
         # Calculate depth level for each node using BFS
+        # Level = maximum number of edges from root (longest path)
         levels = {}
-        visited = set()
-        queue = [(root, 0) for root in roots]
+        queue = deque([(root, 0) for root in roots])
+        
+        # Initialize root nodes to level 0
+        for root in roots:
+            levels[root] = 0
         
         while queue:
-            node, level = queue.pop(0)
-            if node in visited:
-                continue
-            visited.add(node)
+            node, level = queue.popleft()
             
-            # Store level, taking minimum if node has multiple paths
-            if node not in levels:
-                levels[node] = level
-            else:
-                levels[node] = min(levels[node], level)
-            
-            # Add children to queue
+            # Process all children
             for child in G.successors(node):
-                if child not in visited:
-                    queue.append((child, level + 1))
+                child_level = level + 1
+                # Take maximum level (longest path from root)
+                if child not in levels:
+                    levels[child] = child_level
+                    queue.append((child, child_level))
+                else:
+                    # Update if we found a longer path
+                    if child_level > levels[child]:
+                        levels[child] = child_level
+                        queue.append((child, child_level))
         
         # Handle any unvisited nodes (disconnected components)
         for node in G.nodes():
@@ -468,6 +473,51 @@ class DecisionGraph:
             showlegend=False
         )
 
+        # Add arrows to show direction (parent -> child)
+        node_radius = 0.015  # Approximate node radius in plot coordinates
+        arrows = []
+        for src, dst in G.edges():
+            x0, y0 = pos[src]
+            x1, y1 = pos[dst]
+            
+            # Calculate direction vector
+            dx = x1 - x0
+            dy = y1 - y0
+            length = np.sqrt(dx**2 + dy**2)
+            
+            if length > 0:
+                # Normalize direction vector
+                dx_norm = dx / length
+                dy_norm = dy / length
+                
+                # Calculate arrow endpoint (just before the child node)
+                # Offset by node radius so arrow doesn't overlap the node
+                arrow_end_x = x1 - dx_norm * node_radius
+                arrow_end_y = y1 - dy_norm * node_radius
+                
+                # Calculate arrow start point (from parent node edge)
+                arrow_start_x = x0 + dx_norm * node_radius
+                arrow_start_y = y0 + dy_norm * node_radius
+                
+                # Add arrow annotation
+                arrows.append(
+                    go.layout.Annotation(
+                        x=arrow_end_x,
+                        y=arrow_end_y,
+                        ax=arrow_start_x,
+                        ay=arrow_start_y,
+                        xref="x",
+                        yref="y",
+                        axref="x",
+                        ayref="y",
+                        showarrow=True,
+                        arrowhead=2,
+                        arrowsize=1.5,
+                        arrowwidth=1.5,
+                        arrowcolor='gray',
+                    )
+                )
+
         # Legend traces (dummy invisible points for legend)
         legend_traces = [
             go.Scatter(
@@ -512,7 +562,8 @@ class DecisionGraph:
                 hovermode='closest',
                 margin=dict(b=20, l=5, r=5, t=40),
                 xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
+                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                annotations=arrows
             )
         )
 

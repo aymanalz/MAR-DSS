@@ -96,17 +96,17 @@ rules:
     group: "Constraints"
     leaf: false
 
-  # - id: "design_sizing"
-  #   name: "Compute Spreading Area,  OpGW Depth, infil_rate"
-  #   #symbol: "Spread"
-  #   description: "Computes spread area and operational groundwater depth."
-  #   type: numeric
-  #   module: "geohydro_rules"
-  #   function_name: "compute_spread_area"
-  #   dependencies: [k_min_vadose, max_available_area, d_gw_min]
-  #   certainty: 0.8
-  #   group: "Design Sizing"
-  #   leaf: false
+  - id: "design_sizing"
+    name: "Compute Spreading Area"
+    #symbol: "Spread"
+    description: "Computes spread area and operational groundwater depth."
+    type: numeric
+    module: "geohydro_rules"
+    function_name: "compute_spread_area"
+    dependencies: [k_min_vadose, max_available_area, d_gw_min, source_water_volume]
+    certainty: 0.8
+    group: "Design Sizing"
+    leaf: false
 
   # - id: "ISDEEP"
   #   name: "Water Table Depth Class"
