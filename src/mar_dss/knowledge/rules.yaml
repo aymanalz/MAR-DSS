@@ -103,11 +103,34 @@ rules:
     type: numeric
     module: "geohydro_rules"
     function_name: "compute_spread_area"
-    dependencies: [k_min_vadose, max_available_area, d_gw_min, source_water_volume]
+    dependencies: [k_min_vadose, max_available_area, monthly_gw_depth, source_water_volume, strat_df, limiting_layer, op_gw_depth]
     certainty: 0.8
     group: "Design Sizing"
     leaf: false
 
+  - id: "optimal_vadose_storage"
+    name: "Optimal Vadose  storage volume"
+    #symbol: "StorageOK"
+    description: "Computes the optimal vadose storage."
+    type: numeric
+    module: "geohydro_rules"
+    function_name: "compute_optimal_vadose_storage"
+    dependencies: [design_sizing, max_available_area, source_water_volume, k_min_vadose]
+    certainty: 0.8
+    group: "Aquifer Properties"
+    leaf: false
+
+  - id: "rechargability"
+    name: "Vadose Storage Adequacy"
+    #symbol: "StorageOK"
+    description: "% of source water that can be recharged"
+    type: numeric
+    module: "geohydro_rules"
+    function_name: "compute_rechargability"
+    dependencies: [optimal_vadose_storage, source_water_volume ]
+    certainty: 0.8
+    group: "Aquifer Properties"
+    leaf: false
   # - id: "ISDEEP"
   #   name: "Water Table Depth Class"
   #   symbol: "IsDeep"
@@ -187,17 +210,7 @@ rules:
   #   group: "Constraints"
   #   leaf: false
 
-  # - id: "STORAGE_CALC"
-  #   name: "Vadose Storage Adequacy"
-  #   symbol: "StorageOK"
-  #   description: "Checks if vadose storage meets minimum requirement."
-  #   type: boolean
-  #   module: "mar_rules"
-  #   function_name: "check_vadose_storage"
-  #   dependencies: [D_min_GW, layer_thick, Sy, gw_current, gw_seasonal, storage_min]
-  #   certainty: 0.8
-  #   group: "Aquifer Properties"
-  #   leaf: false
+
 
   # - id: "CONF_ACCESS"
   #   name: "Confined Aquifer Access"

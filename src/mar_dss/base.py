@@ -125,17 +125,63 @@ class DecisionGraph:
             value = input_values.get(node_id, node.value)
         else:
             # recursively evaluate dependencies
-            dep_values = {
-                dep: self.evaluate_node(dep, input_values, cache)
-                for dep in node.dependencies
-            }
+            dep_values = {}
+            for dep in node.dependencies:
+                try:
+                    dep_val = self.evaluate_node(dep, input_values, cache)
+                    dep_values[dep] = dep_val
+                except Exception as e:
+                    import traceback
+                    print(f"ERROR: Failed to evaluate dependency '{dep}' for node '{node_id}': {e}")
+                    traceback.print_exc()
+                    raise
+            
+            # Debug print for design_sizing specifically
+            if node_id == "design_sizing":
+                print(f"\nDEBUG design_sizing - Dependencies evaluated:")
+                for dep, val in dep_values.items():
+                    print(f"  {dep}: {val} (type: {type(val)})")
+            
             if node.function is None and node.module and node.function_name:
                 node.function = self._load_function(
                     node.module, node.function_name
                 )
+                
+                # Debug print for design_sizing specifically
+                if node_id == "design_sizing":
+                    print(f"DEBUG design_sizing - Function loaded: {node.function is not None}")
+                    if node.function is None:
+                        print(f"  Failed to load function from module '{node.module}', function '{node.function_name}'")
+            
             if node.function:
-                value = node.function(*dep_values.values())
+                # Pass arguments in the order of dependencies (not dict.values() order)
+                args = [dep_values[dep] for dep in node.dependencies]
+                
+                # Debug print for design_sizing specifically
+                if node_id == "design_sizing":
+                    print(f"DEBUG design_sizing - Calling function with args:")
+                    for i, (dep, arg) in enumerate(zip(node.dependencies, args)):
+                        print(f"  arg[{i}] ({dep}): {arg} (type: {type(arg)})")
+                    print(f"  Function: {node.function}")
+                
+                try:
+                    value = node.function(*args)
+                    
+                    # Debug print for design_sizing specifically
+                    if node_id == "design_sizing":
+                        print(f"DEBUG design_sizing - Function returned: {value}")
+                except Exception as e:
+                    # If function raises an exception, store None and re-raise
+                    import traceback
+                    print(f"Error evaluating node '{node_id}': {e}")
+                    print(f"Dependencies: {list(dep_values.keys())}")
+                    print(f"Dependency values: {dep_values}")
+                    print(f"Function: {node.function}")
+                    traceback.print_exc()
+                    raise
             else:
+                if node_id == "design_sizing":
+                    print(f"DEBUG design_sizing - No function available, using node.value: {node.value}")
                 value = node.value
 
         # Update the node's value with the computed result
@@ -147,10 +193,23 @@ class DecisionGraph:
         """Evaluate all rule nodes in the graph."""
         cache = {}  # Cache for all computed values
         rule_nodes = [nid for nid, n in self.nodes.items() if n.is_rule()]
+        
+        # Debug: Check if design_sizing is in rule_nodes
+        if "design_sizing" in self.nodes:
+            print(f"\nDEBUG evaluate() - design_sizing in nodes: True")
+            print(f"  is_rule(): {self.nodes['design_sizing'].is_rule()}")
+            print(f"  in rule_nodes list: {'design_sizing' in rule_nodes}")
+            print(f"  Total rule nodes: {len(rule_nodes)}")
+            print(f"  Rule nodes: {rule_nodes}")
+        
         results = {}  # All rule node results
 
         for nid in rule_nodes:
+            if nid == "design_sizing":
+                print(f"\nDEBUG evaluate() - About to evaluate design_sizing")
             results[nid] = self.evaluate_node(nid, input_values, cache)
+            if nid == "design_sizing":
+                print(f"DEBUG evaluate() - Finished evaluating design_sizing, result: {results[nid]}")
 
         return results
     

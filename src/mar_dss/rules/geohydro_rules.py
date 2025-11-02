@@ -1,7 +1,20 @@
 import numpy as np
 import pandas as pd
+try:
+    from mar_dss.rules.analytical_solutions import compute_recharge_rate
+except ImportError:
+    # Fallback for when running from source directory
+    try:
+        from src.mar_dss.rules.analytical_solutions import compute_recharge_rate
+    except ImportError:
+        # If both fail, define a placeholder
+        def compute_recharge_rate(*args, **kwargs):
+            raise NotImplementedError("compute_recharge_rate not available")
+
 
 defaults = {"k_min_vadose_threshold": 0.3}
+
+
 def is_unconfined(aq_type):
     if aq_type.lower() == "unconfined":
         return True
@@ -30,7 +43,7 @@ def find_limiting_layer(strat_df, unconfined, monthly_gw_depth):
             
         return limit_layer_index
     else:
-        raise ValueError("Confined aquifer is not supported yet.")
+        raise ValueError("Confined aquifer: limiting layer is the upper confining layer.")
 
 def find_min_k_vadose_zone(strat_df, limiting_layer):
     return strat_df.iloc[limiting_layer]["K"]
@@ -56,27 +69,59 @@ def compute_min_gw_depth(limiting_layer, strat_df, d_gw_min):
 
 
 
+def compute_spread_area(k_min_vadose, max_available_area, gw_depth, source_water_volume, strat_df, limiting_layer, op_gw_depth):
 
-   
-
-    return D_min_GW + limiting_layer + d_gw_min
-
-def compute_spread_area(k_min_vadose, max_available_area, d_gw_min, source_water_volume):
+    
     max_available_area = float(max_available_area)
     k_min_vadose = float(k_min_vadose)
-    d_gw_min = float(d_gw_min)
+    avg_gw_depth = np.mean(gw_depth)
+    limiting_layer = int(limiting_layer)
 
-    spread_area = max_available_area / (k_min_vadose)
-    while True:
-        break;
-        if spread_area < max_available_area:
-            break
+    layer_depths = strat_df['thickness'].cumsum()
+
+    saturated_layres = layer_depths - avg_gw_depth
+    saturated_layres = saturated_layres[saturated_layres>0]
+    saturated_thickness = saturated_layres.sum()
+    sat_thks = saturated_layres.diff()
+    sat_thks.iloc[0] = saturated_layres.iloc[0]
+
+    sy_s = strat_df.iloc[-(len(sat_thks)):]['sy/ss']
+    k_s = strat_df.iloc[-(len(sat_thks)):]['K']
+    k_mean = (k_s.values * sat_thks.values).sum() / sat_thks.values.sum()
+    sy_mean = (sy_s.values * sat_thks.values).sum() / sat_thks.values.sum()
+
+    dh = avg_gw_depth - op_gw_depth
+
+    t = 50 # long time for near steady state
+
+    # todo: Talk to run to check if the average is the best way to estimate the spread area.
+    spread_area = np.mean(source_water_volume) / (k_min_vadose)
+    
+    # Iterative calculation to find appropriate spread area
+    max_iterations = 100  # Safety limit
+    iteration = 0
+    while iteration < max_iterations:
+        infl_rate = compute_recharge_rate(x=0, y=0,
+                                         t=t, del_h=dh,
+                                         spread_area=spread_area,
+                                         k=k_mean,
+                                         b=saturated_thickness, 
+                                         sy=sy_mean)
+
+        if infl_rate < k_min_vadose:
+            spread_area = spread_area * infl_rate/k_min_vadose
         else:
-            d_gw_min += 1
+            # If spread area is too large, reduce it
+            spread_area = spread_area * k_min_vadose/ infl_rate # Reduce by 10% each iteration
+        iteration += 1
 
-
-
-    return max_available_area / (k_min_vadose * d_gw_min)
+        if abs(infl_rate - k_min_vadose) < 1e-5:
+            break
+    
+    # Ensure we don't exceed max available area
+    spread_area = min(spread_area, max_available_area)
+    
+    return spread_area
 
 # write a function that compute the available storage in an aquifer
 def compute_available_storage(Dgw, Dgw_min, Aqtype, Ss, Hmax):
