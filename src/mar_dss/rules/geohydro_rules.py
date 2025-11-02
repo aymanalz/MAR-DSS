@@ -54,6 +54,16 @@ def check_topsoil_limiting(limiting_layer, k_min_vadose):
     else:
         return False
 
+def check_topsoil_removable(top_soil_limiting, strat_df):
+    
+    if top_soil_limiting:
+        top_soil_thickness = strat_df.iloc[0]["thickness"].values[0]
+        if top_soil_thickness < 6:
+            return True
+        else:
+            return False
+    else:
+        return None # irrelevant if top soil is not limiting
 def compute_min_gw_depth(limiting_layer, strat_df, d_gw_min):
    
     
@@ -69,9 +79,20 @@ def compute_min_gw_depth(limiting_layer, strat_df, d_gw_min):
 
 
 
-def compute_spread_area(k_min_vadose, max_available_area, gw_depth, source_water_volume, strat_df, limiting_layer, op_gw_depth):
+def compute_spread_area(k_min_vadose, max_available_area, gw_depth, source_water_volume, strat_df, limiting_layer, op_gw_depth, top_soil_removable):
 
-    
+    if top_soil_removable is None:
+        # None means irrelevant, False means not removable, True means removable
+        pass
+    else:
+        if top_soil_removable:
+            pass
+        else:
+            # not removable, so no spread area
+            return None
+
+   
+
     max_available_area = float(max_available_area)
     k_min_vadose = float(k_min_vadose)
     avg_gw_depth = np.mean(gw_depth)
@@ -95,7 +116,7 @@ def compute_spread_area(k_min_vadose, max_available_area, gw_depth, source_water
     t = 50 # long time for near steady state
 
     # todo: Talk to run to check if the average is the best way to estimate the spread area.
-    spread_area = np.mean(source_water_volume) / (k_min_vadose)
+    spread_area = (np.max(source_water_volume)/30.25) / (k_min_vadose)
     
     # Iterative calculation to find appropriate spread area
     max_iterations = 100  # Safety limit
@@ -112,7 +133,7 @@ def compute_spread_area(k_min_vadose, max_available_area, gw_depth, source_water
             spread_area = spread_area * infl_rate/k_min_vadose
         else:
             # If spread area is too large, reduce it
-            spread_area = spread_area * k_min_vadose/ infl_rate # Reduce by 10% each iteration
+            spread_area = spread_area * k_min_vadose/ infl_rate 
         iteration += 1
 
         if abs(infl_rate - k_min_vadose) < 1e-5:
@@ -123,12 +144,22 @@ def compute_spread_area(k_min_vadose, max_available_area, gw_depth, source_water
     
     return {"spread_area": spread_area, "infl_rate": infl_rate, "inf_k_ratio": infl_rate/k_min_vadose}
 
-def compute_optimal_vadose_storage(design_sizing_result):
+def compute_annual_recharge_volume(design_sizing_result, source_water_volume):
     spread_area = design_sizing_result["spread_area"]
     infl_rate = design_sizing_result["infl_rate"]
     inf_k_ratio = design_sizing_result["inf_k_ratio"]
-    return spread_area * infl_rate
 
+    annual_recharge_volume = 0
+    # 30.25 is the number of days in a month
+    for i in range(12):
+        current_month_storage = spread_area * infl_rate * 30.25
+        act_recharge =min(current_month_storage, source_water_volume[i])
+        annual_recharge_volume += act_recharge
+
+    return annual_recharge_volume
+
+def compute_rechargability(annual_recharge_volume, source_water_volume):
+    return 100.0*annual_recharge_volume / np.sum(source_water_volume)
 # write a function that compute the available storage in an aquifer
 def compute_available_storage(Dgw, Dgw_min, Aqtype, Ss, Hmax):
     """

@@ -72,14 +72,26 @@ rules:
     group: "Aquifer Characteristics"
     leaf: false
 
-  - id: "top_soil_removability"
-    name: "Topsoil Limiting Layer Removability"
+  - id: "top_soil_limiting"
+    name: "Topsoil Limiting Layer"
     #symbol: "TopRem"
-    description: "Checks if top layer is limiting and <3 ft (removable)."
+    description: "Checks if top layer is limiting"
     type: boolean
     module: "geohydro_rules"
     function_name: "check_topsoil_limiting"
     dependencies: [limiting_layer, k_min_vadose]
+    certainty: 0.8
+    group: "Surface Feasibility"
+    leaf: false
+
+  - id: "top_soil_removable"
+    name: "Topsoil is removable if less than 6 ft thick"
+    #symbol: "TopRem"
+    description: "Checks if top layer is removable if less than 6 ft thick"
+    type: boolean
+    module: "geohydro_rules"
+    function_name: "check_topsoil_removable"
+    dependencies: [top_soil_limiting, strat_df]
     certainty: 0.8
     group: "Surface Feasibility"
     leaf: false
@@ -103,22 +115,22 @@ rules:
     type: numeric
     module: "geohydro_rules"
     function_name: "compute_spread_area"
-    dependencies: [k_min_vadose, max_available_area, monthly_gw_depth, source_water_volume, strat_df, limiting_layer, op_gw_depth]
+    dependencies: [k_min_vadose, max_available_area, monthly_gw_depth, source_water_volume, strat_df, limiting_layer, op_gw_depth, top_soil_removable]
     certainty: 0.8
     group: "Design Sizing"
     leaf: false
 
-  - id: "optimal_vadose_storage"
-    name: "Optimal Vadose  storage volume"
+  - id: "annual_recharge_volume"
+    name: "annual recharge volume"
     #symbol: "StorageOK"
-    description: "Computes the optimal vadose storage."
+    description: "Computes the annual recharge into the vadose zone."
     type: numeric
     module: "geohydro_rules"
-    function_name: "compute_optimal_vadose_storage"
-    dependencies: [design_sizing]
+    function_name: "compute_annual_recharge_volume"
+    dependencies: [design_sizing, source_water_volume]
     certainty: 0.8
     group: "Aquifer Properties"
-    leaf: false
+    leaf: true
 
   - id: "rechargability"
     name: "Vadose Storage Adequacy"
@@ -127,88 +139,11 @@ rules:
     type: numeric
     module: "geohydro_rules"
     function_name: "compute_rechargability"
-    dependencies: [optimal_vadose_storage, source_water_volume ]
+    dependencies: [annual_recharge_volume, source_water_volume ]
     certainty: 0.8
     group: "Aquifer Properties"
-    leaf: false
-  # - id: "ISDEEP"
-  #   name: "Water Table Depth Class"
-  #   symbol: "IsDeep"
-  #   description: "Classifies unconfined water table as SHALLOW (<20 m) or DEEP (>=20 m)."
-  #   type: categorical
-  #   allowed_values: [SHALLOW, DEEP]
-  #   module: "mar_rules"
-  #   function_name: "classify_water_table_depth"
-  #   dependencies: [gw_level, AQ_TYPE]
-  #   certainty: 1.0
-  #   group: "Aquifer Characteristics"
-  #   leaf: false
+    leaf: true
 
-  # - id: "K_SHALLOW"
-  #   name: "Shallow Zone Hydraulic Conductivity"
-  #   symbol: "Ksh"
-  #   description: "Evaluates shallow-zone K adequacy to avoid water logging."
-  #   type: categorical
-  #   allowed_values: [HIGH, MODERATE, LOW]
-  #   module: "mar_rules"
-  #   function_name: "evaluate_shallow_K"
-  #   dependencies: [stratigraphy_table]
-  #   certainty: 0.9
-  #   group: "Aquifer Characteristics"
-  #   leaf: false
-
-
-
-
-  # - id: "SHALLOW_LIMITING_LAYER"
-  #   name: "Shallow Limiting Layer (<10 ft)"
-  #   symbol: "ShallowLim"
-  #   description: "Determines if trench/subsurface spreading is feasible."
-  #   type: boolean
-  #   module: "mar_rules"
-  #   function_name: "check_shallow_limiting"
-  #   dependencies: [limiting_layer_id, K_min]
-  #   certainty: 0.8
-  #   group: "Surface Feasibility"
-  #   leaf: false
-
-  # - id: "SPREAD_AREA"
-  #   name: "Spreading Area and OpGW Depth"
-  #   symbol: "Spread"
-  #   description: "Computes spread area and operational groundwater depth."
-  #   type: object
-  #   object_fields: [spread_area, OpGW_depth]
-  #   module: "mar_rules"
-  #   function_name: "compute_spread_area"
-  #   dependencies: [K_min, max_available_area, D_min_GW]
-  #   certainty: 0.8
-  #   group: "Design Sizing"
-  #   leaf: false
-
-  # - id: "MOUND_HEIGHT"
-  #   name: "Mound Height (Hantush 1967)"
-  #   symbol: "Hm"
-  #   description: "Estimates mound height for given infiltration geometry."
-  #   type: numeric
-  #   module: "mar_rules"
-  #   function_name: "estimate_mound_height"
-  #   dependencies: [gw_avg, gw_gradient, infil_rate, aq_params, recharge_geom]
-  #   certainty: 0.7
-  #   range: [0, null]
-  #   group: "Design Sizing"
-  #   leaf: false
-
-  # - id: "D_MIN_GW_DECISION"
-  #   name: "Minimum Allowable GW Depth Decision"
-  #   symbol: "Dgw_ok"
-  #   description: "Checks if OpGW depth satisfies site-specific minimum."
-  #   type: boolean
-  #   module: "mar_rules"
-  #   function_name: "check_min_depth"
-  #   dependencies: [D_min_GW, OpGW_depth]
-  #   certainty: 1.0
-  #   group: "Constraints"
-  #   leaf: false
 
 
 

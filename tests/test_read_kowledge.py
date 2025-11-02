@@ -1,5 +1,5 @@
 from pathlib import Path
-
+import numpy as np
 from mar_dss.base import DecisionGraph
 
 
@@ -13,27 +13,25 @@ def test_read_knowledge():
     )
     return graph
 
+def create_monthly_bell(min_val, max_val, peak_month=6, spread=2.5):
+    """
+    Create bell curve with peak at specific month.
+    
+    peak_month: 0=Jan, 5=Jun, 6=Jul, etc.
+    spread: controls width (larger = wider bell)
+    """
+    months = np.arange(12)
+    bell = max_val * np.exp(-0.5 * ((months - peak_month) / spread) ** 2)
+    # Ensure minimum value at edges
+    bell = np.maximum(bell, min_val)
+    return bell.tolist()
 
 if __name__ == "__main__":
     # Only run when file is executed directly, not when imported
     graph = test_read_knowledge()
     
     # Debug: Check if design_sizing was loaded
-    print(f"\nDEBUG - After loading graph:")
-    print(f"  Total nodes: {len(graph.nodes)}")
-    if "design_sizing" in graph.nodes:
-        node = graph.nodes["design_sizing"]
-        print(f"  design_sizing found:")
-        print(f"    node_id: {node.node_id}")
-        print(f"    input_flag: {node.input_flag}")
-        print(f"    is_rule(): {node.is_rule()}")
-        print(f"    module: {node.module}")
-        print(f"    function_name: {node.function_name}")
-        print(f"    dependencies: {node.dependencies}")
-    else:
-        print(f"  design_sizing NOT FOUND in nodes!")
-        print(f"  Available nodes: {list(graph.nodes.keys())}")
-    
+      
     inputs = {}
     inputs["aq_type"] = "Unconfined"
     inputs["stratigraphy_table"]= [[10, 10, 0.1],
@@ -43,7 +41,12 @@ if __name__ == "__main__":
     inputs["monthly_gw_depth"] = [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
     inputs["d_gw_min"] = 5.0
     inputs["max_available_area"] = 1e7
-    inputs["source_water_volume"] = [300000, 300000, 300000, 300000, 300000, 300000, 300000, 300000, 300000, 300000, 300000, 300000]
+    # for an area of 50m by 50 and inf 0.2 m/day. 
+    max_source_water_volume = 200 * 200 * 0.2*30*3*3
+    source_water_volume = create_monthly_bell(0.2*max_source_water_volume, 
+    max_source_water_volume, peak_month=6, spread=2.5)
+
+    inputs["source_water_volume"] = source_water_volume  
 
 
     results = graph.evaluate(inputs)
