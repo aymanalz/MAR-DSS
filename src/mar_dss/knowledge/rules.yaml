@@ -115,7 +115,7 @@ rules:
     type: numeric
     module: "geohydro_rules"
     function_name: "compute_optimal_vadose_storage"
-    dependencies: [design_sizing, max_available_area, source_water_volume, k_min_vadose]
+    dependencies: [design_sizing]
     certainty: 0.8
     group: "Aquifer Properties"
     leaf: false

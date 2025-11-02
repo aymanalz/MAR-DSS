@@ -121,7 +121,13 @@ def compute_spread_area(k_min_vadose, max_available_area, gw_depth, source_water
     # Ensure we don't exceed max available area
     spread_area = min(spread_area, max_available_area)
     
-    return spread_area
+    return {"spread_area": spread_area, "infl_rate": infl_rate, "inf_k_ratio": infl_rate/k_min_vadose}
+
+def compute_optimal_vadose_storage(design_sizing_result):
+    spread_area = design_sizing_result["spread_area"]
+    infl_rate = design_sizing_result["infl_rate"]
+    inf_k_ratio = design_sizing_result["inf_k_ratio"]
+    return spread_area * infl_rate
 
 # write a function that compute the available storage in an aquifer
 def compute_available_storage(Dgw, Dgw_min, Aqtype, Ss, Hmax):
