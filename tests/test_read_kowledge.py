@@ -33,7 +33,7 @@ if __name__ == "__main__":
     # Debug: Check if design_sizing was loaded
       
     inputs = {}
-    inputs["aq_type"] = "Unconfined"
+    inputs["aq_type"] = "confined"
     inputs["stratigraphy_table"]= [[10, 10, 0.1],
                                   [5, 0.1, 0.15],
                                   [50, 30, 0.2],
@@ -51,20 +51,7 @@ if __name__ == "__main__":
 
     results = graph.evaluate(inputs)
     
-    # Debug: Check if design_sizing node exists and its state
-    if "design_sizing" in graph.nodes:
-        node = graph.nodes["design_sizing"]
-        print(f"\nDEBUG - design_sizing node:")
-        print(f"  Function loaded: {node.function is not None}")
-        print(f"  Function: {node.function}")
-        print(f"  Module: {node.module}")
-        print(f"  Function name: {node.function_name}")
-        print(f"  Dependencies: {node.dependencies}")
-        print(f"  Value: {node.value}")
-        print(f"  In results: {'design_sizing' in results}")
-        if "design_sizing" in results:
-            print(f"  Result value: {results['design_sizing']}")
-    
+    print("\nAll results:")
     graph.plotly()
     print("\nAll results:")
     print(results)

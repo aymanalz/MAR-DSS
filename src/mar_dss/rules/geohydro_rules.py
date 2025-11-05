@@ -1,18 +1,28 @@
 import numpy as np
 import pandas as pd
-try:
-    from mar_dss.rules.analytical_solutions import compute_recharge_rate
-except ImportError:
-    # Fallback for when running from source directory
-    try:
-        from src.mar_dss.rules.analytical_solutions import compute_recharge_rate
-    except ImportError:
-        # If both fail, define a placeholder
-        def compute_recharge_rate(*args, **kwargs):
-            raise NotImplementedError("compute_recharge_rate not available")
+from mar_dss.rules.analytical_solutions import compute_recharge_rate, theis_drawdown_or_Q
 
+    
 
-defaults = {"k_min_vadose_threshold": 0.3}
+defaults = {}
+defaults["k_min_vadose_threshold"] = 0.3
+defaults['leakage_radius'] = 1000
+defaults['excessive_deep_aquifer'] = [1500.0, 3000.0]
+
+# maximum perecenatge of source water that can be recharged
+defaults["maximum_rechargability"] = 50.0
+
+# default effective porosity for vadose zone (if not available from stratigraphy)
+defaults["vadose_effective_porosity"] = 0.2 # porosity times moisture content
+defaults["average_moisture_content"] = 0.1 # dimensionless
+
+# minimum residence time for natural attenuation (days)
+defaults["pathogenic_bacteria_residence_time"] = 30  # days - minimum for biodegradation
+defaults["organic_matter_residence_time"] = 7 
+defaults["trace_organic_matter_residence_time"] = 30
+defaults["Nutrients_residence_time"] = 30
+
+ # days - optimal for biodegradation
 
 
 def is_unconfined(aq_type):
@@ -43,10 +53,91 @@ def find_limiting_layer(strat_df, unconfined, monthly_gw_depth):
             
         return limit_layer_index
     else:
-        raise ValueError("Confined aquifer: limiting layer is the upper confining layer.")
+        return None # irrelevant for confined aquifer
 
 def find_min_k_vadose_zone(strat_df, limiting_layer):
+    if limiting_layer is None:
+        return None # irrelevant for confined aquifer
     return strat_df.iloc[limiting_layer]["K"]
+
+def check_k_vadose_threshold(k_min_vadose):
+    """
+    Check if vadose zone minimum hydraulic conductivity meets threshold for infiltration.
+    
+    Parameters:
+    - k_min_vadose: Minimum hydraulic conductivity in vadose zone (ft/day)
+    
+    Returns:
+    - True if k_min_vadose >= threshold (suitable for infiltration)
+    - False if k_min_vadose < threshold or is None
+    """
+    if k_min_vadose is None:
+        return False
+    threshold = defaults["k_min_vadose_threshold"]
+    return k_min_vadose >= threshold
+
+def check_vadose_pollution(unconfined, vadose_polluted_present):
+    if not (unconfined):
+        return None # irrelevant for confined aquifer
+    if vadose_polluted_present is None:
+        return None
+
+    if vadose_polluted_present:
+        return True
+    else:
+        return False
+
+def check_vadose_high_toxicity(vadose_pollution_present, vadose_pollution_high_toxicity):
+    """
+    Check if highly toxic contaminants are present in the vadose zone.
+    
+    Parameters:
+    - vadose_pollution_present: Boolean indicating if pollution is present
+    - vadose_pollution_high_toxicity: Boolean flag indicating high toxicity presence
+    
+    Returns:
+    - True if highly toxic contaminants are present
+    - False if no high toxicity or not applicable
+    - None if no pollution present (irrelevant)
+    """
+    if  vadose_pollution_present is None:
+        return None  # irrelevant for confined aquifer
+
+    if vadose_pollution_high_toxicity:
+        return True
+    else:
+        return False
+
+def check_vadose_biodegradable(vadose_pollution_present, vadose_pollution_high_toxicity):
+    if vadose_pollution_high_toxicity is None:
+        return None # irrelevant for confined aquifer
+    if vadose_pollution_present and not vadose_pollution_high_toxicity:
+        return True
+    else:
+        return False
+    
+def check_vadose_remediation(vadose_pollution_high_toxicity):
+    """
+    Check if vadose zone remediation is available, completed, or feasible.
+    
+    Parameters:
+    - vadose_pollution_present: Boolean indicating if pollution is present
+    - vadose_remediation_data: Boolean, string, or dict indicating remediation status
+    
+    Returns:
+    - True if remediation is available/completed/feasible
+    - False if remediation is not available or not needed
+    - None if no pollution present (remediation not applicable)
+    """
+    if vadose_pollution_high_toxicity is None:
+        return None # irrelevant for confined aquifer
+    if vadose_pollution_high_toxicity:
+        return True
+    else:
+        return False
+
+
+
 
 def check_topsoil_limiting(limiting_layer, k_min_vadose):
     if limiting_layer == 0 and k_min_vadose < defaults["k_min_vadose_threshold"]:
@@ -66,7 +157,8 @@ def check_topsoil_removable(top_soil_limiting, strat_df):
         return None # irrelevant if top soil is not limiting
 def compute_min_gw_depth(limiting_layer, strat_df, d_gw_min):
    
-    
+    if limiting_layer is None:
+        return None # irrelevant for confined aquifer
     d_gw_min = float(d_gw_min)    
     limiting_layer = int(limiting_layer)
     k_min_vadose = strat_df.iloc[limiting_layer]["K"]
@@ -91,12 +183,15 @@ def compute_spread_area(k_min_vadose, max_available_area, gw_depth, source_water
             # not removable, so no spread area
             return None
 
+    if k_min_vadose is None:
+        return None # irrelevant for confined aquifer
    
 
     max_available_area = float(max_available_area)
     k_min_vadose = float(k_min_vadose)
     avg_gw_depth = np.mean(gw_depth)
     limiting_layer = int(limiting_layer)
+    
 
     layer_depths = strat_df['thickness'].cumsum()
 
@@ -145,6 +240,8 @@ def compute_spread_area(k_min_vadose, max_available_area, gw_depth, source_water
     return {"spread_area": spread_area, "infl_rate": infl_rate, "inf_k_ratio": infl_rate/k_min_vadose}
 
 def compute_annual_recharge_volume(design_sizing_result, source_water_volume):
+    if design_sizing_result is None:
+        return None # irrelevant for confined aquifer
     spread_area = design_sizing_result["spread_area"]
     infl_rate = design_sizing_result["infl_rate"]
     inf_k_ratio = design_sizing_result["inf_k_ratio"]
@@ -158,64 +255,147 @@ def compute_annual_recharge_volume(design_sizing_result, source_water_volume):
 
     return annual_recharge_volume
 
+def compute_vadose_residence_time(vadose_biodegradable, design_zing, strat_df,  avg_gw_depth):
+
+    # Not applicable for confined aquifers
+    #vadose_biodegradable = True # debug only
+    if not vadose_biodegradable:
+        return None
+    # Calculate effective porosity from vadose zone layers
+    # Use sy/ss from stratigraphy layers above water table
+    #effective_porosity = defaults["vadose_effective_porosity"]  # default   
+
+    layer_depths = strat_df['thickness'].cumsum()
+    unsaturated_layres = layer_depths - np.mean(avg_gw_depth)
+    unsaturated_layres = unsaturated_layres[unsaturated_layres<0]
+    unsaturated_thickness = unsaturated_layres.abs().sum()
+    #ks = strat_df.iloc[:(len(unsaturated_layres))]['K']
+
+    
+    # ratio = defaults["average_moisture_content"] / effective_porosity#
+    # v = ks.values * ratio / effective_porosity# todo: v = k * i * theta, 
+    
+    infl_rate = design_zing["infl_rate"]
+    v = infl_rate/defaults["average_moisture_content"]
+    residence_time = unsaturated_thickness / v
+    return residence_time
+
+def check_vadose_residence_time_reasonable(vadose_residence_time):
+    if vadose_residence_time is None:
+        return None
+    unreasonble = []
+    if vadose_residence_time <= 7:
+        unreasonble.append("Organic Matter")
+    if vadose_residence_time <=30:
+        unreasonble.append("Pathogenic Bacteria")
+        unreasonble.append("Trace Organic Matter")
+        unreasonble.append("Nutrients")
+
+    return unreasonble    
+
 def compute_rechargability(annual_recharge_volume, source_water_volume):
+    if annual_recharge_volume is None:
+        return None # irrelevant for confined aquifer
     return 100.0*annual_recharge_volume / np.sum(source_water_volume)
-# write a function that compute the available storage in an aquifer
-def compute_available_storage(Dgw, Dgw_min, Aqtype, Ss, Hmax):
-    """
-    Compute the available storage in an aquifer.
 
-    Parameters:
-    - Dgw_min: Minimum depth to groundwater (float)
-    - Dgw: Depth to groundwater (float)
-    - Aqtype: Aquifer type (str), e.g., "unconfined" or "confined"
-    - Ss: Specific storage (float)
-    - Hmax: Maximum allowable head change (float)
-    Returns:
-    - available_storage: Available storage (float)
-    """
 
-    current_moisture_content = 0.0  # todo: find a way to estimate this.
-
-    if Aqtype is None:
-        raise ValueError(
-            "Aqtype (aquifer type) must be specified as 'unconfined' or 'confined'."
-        )
-
-    if isinstance(Aqtype, str):
-        aqtype = Aqtype.strip().lower()
+def compute_confined_storage_volume(confined, strat_df, Hmax):  
+    # annual injection volume``  
+    # we assume the table has four overburden layer, layers 2 bedrock and 1 aquifer in the middle
+    if confined:        
+        if len(strat_df) != 4:
+            raise ValueError("Stratigraphy table must have four layers for confined aquifer")
+        
+        kaq = strat_df.iloc[2]["K"]
+        B = strat_df.iloc[2]["thickness"]
+        Ss = strat_df.iloc[2]["sy/ss"]
+        transmissivity = kaq * B
+        Ss = Ss * B      
+        
+        max_injection_rate = theis_drawdown_or_Q(Q_or_dh=Hmax, T=transmissivity, S=Ss, r=1, t=50, compute_Q=True)
+        
+        return max_injection_rate * 365.25
     else:
-        aqtype = str(Aqtype).strip().lower()
+        return None
 
-    if aqtype == "unconfined":
-        if Ss is None or Dgw is None:
-            raise ValueError(
-                "Both Ss and Dgw must be provided for unconfined aquifer."
-            )
-        if Dgw < Dgw_min:
-            return 0.0
-        if current_moisture_content > Ss:
-            return 0.0
-        else:
-            return (Ss - current_moisture_content) * (Dgw - Dgw_min)
-    elif aqtype == "confined":
-        if Ss is None:
-            raise ValueError(
-                "Ss (storage coefficient) must be provided for confined aquifer."
-            )
-        return Ss * Hmax
+def compute_confined_rechargability(annual_confined_storage_volume, source_water_volume):
+    if annual_confined_storage_volume is None:
+        return None # irrelevant for confined aquifer
+    
+    percentage = 100.0*annual_confined_storage_volume / np.sum(source_water_volume)
+    if percentage > 100.0:
+        return 100.0
     else:
-        raise ValueError(f"Unknown aquifer type: {Aqtype}")
+        return percentage
 
-def compute_infiltration_rate(Ks, UnSatClay, UnSatClayDepth):
-    """
-    Compute the infiltration rate of the aquifer.
-    """
-    if UnSatClay:
-        return Ks * (1 - UnSatClayDepth)
+def compute_leakage_significance(rechargability, strat_df):
+    if rechargability is None:
+        return None # irrelevant for unconfined aquifer
+    
+    top_confined_layer_k = strat_df.iloc[1]["K"]
+    top_confined_layer_thickness = strat_df.iloc[1]["thickness"]
+    bottom_confined_layer_k = strat_df.iloc[3]["K"]
+    bottom_confined_layer_thickness = strat_df.iloc[3]["thickness"]
+
+    leakance_top =  top_confined_layer_k/top_confined_layer_thickness
+    leakance_bottom =  bottom_confined_layer_k/bottom_confined_layer_thickness
+    leakance = max(leakance_top, leakance_bottom)
+
+    k_aquifer = strat_df.iloc[2]["K"]
+    aquifer_thickness = strat_df.iloc[2]["thickness"]
+    transmissivity = k_aquifer * aquifer_thickness
+
+    BB = np.sqrt(transmissivity / leakance)
+    leakage_significance = BB/defaults['leakage_radius']
+    if leakage_significance> 20.0:
+        return "low"
+    elif leakage_significance<20.0 and leakage_significance>1:
+        return "medium"
     else:
-        return Ks
+        return "high"
 
+
+def compute_depth_significance(confined, strat_df):
+    if not (confined):
+        return None # irrelevant for unconfined aquifer
+
+    aquifer_depth = strat_df.iloc[0:2]["thickness"] 
+    aquifer_depth = aquifer_depth.sum()
+
+    if aquifer_depth > defaults['excessive_deep_aquifer'][1]:
+        return "Too Deep"
+    elif aquifer_depth > defaults['excessive_deep_aquifer'][0] and aquifer_depth <= defaults['excessive_deep_aquifer'][1]:
+        return "Moderate Deep"
+    else:
+        return "Low Depth"
+
+def compute_gs_slope_significance(unconfined, gs_slope):
+    if not (unconfined):
+        return None # irrelevant for confined aquifer
+    if gs_slope < 2.0:
+        return "Gentle"
+    elif gs_slope >= 2.0 and gs_slope < 5.0:
+        return "Moderate"
+    else:
+        return "Steep"
+    
+
+def compute_surface_recharge_suitability(gs_slope_significance, inflitration_significance, rechargability, remediate):
+    surface_recharge_suitability = True
+    if (inflitration_significance is None) or (not inflitration_significance):
+        surface_recharge_suitability = False
+        
+    if gs_slope_significance is None or not (gs_slope_significance in ["Gentle", "Moderate"]):
+        surface_recharge_suitability = False
+    
+    if rechargability < defaults["maximum_rechargability"]:
+        surface_recharge_suitability = False
+    
+    if not (remediate):
+        surface_recharge_suitability = False
+
+    return surface_recharge_suitability
+    
 def get_stratigraphy_table(stratigraphy_table):
     """    
     Convert the stratigraphy table to a pandas DataFrame.

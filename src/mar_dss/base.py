@@ -415,7 +415,132 @@ class DecisionGraph:
             for node, x in zip(sorted(nodes), x_positions):
                 pos[node] = (x, y)
         
+        # Adjust positions to avoid nodes on connecting lines
+        node_radius = 0.015  # Approximate node radius for clearance
+        min_spacing = node_radius * 4  # Minimum spacing between nodes
+        adjusted = True
+        max_iterations = 50  # Increased iterations
+        iteration = 0
+        
+        # Create a list of all edges for checking
+        all_edges = list(G.edges())
+        
+        while adjusted and iteration < max_iterations:
+            adjusted = False
+            iteration += 1
+            
+            # Check all edges and all nodes
+            for edge in all_edges:
+                src, dst = edge
+                x0, y0 = pos[src]
+                x1, y1 = pos[dst]
+                
+                # Skip if edge is too short (same level nodes)
+                if abs(y1 - y0) < node_radius:
+                    continue
+                
+                # Check all other nodes to see if they lie on the line segment
+                for node_id, (nx, ny) in list(pos.items()):
+                    if node_id == src or node_id == dst:
+                        continue
+                    
+                    # Check if this node lies on or near the line segment between src and dst
+                    if self._point_on_line_segment(nx, ny, x0, y0, x1, y1, tolerance=node_radius * 3):
+                        # Try progressively larger offsets
+                        offset_amounts = [node_radius * 3, node_radius * 5, node_radius * 8, node_radius * 12, node_radius * 20]
+                        
+                        moved = False
+                        for offset_amount in offset_amounts:
+                            # Try both directions
+                            for direction in [-1, 1]:
+                                new_x = nx + direction * offset_amount
+                                
+                                # Ensure x stays within bounds [0, 1]
+                                new_x = max(0.0, min(1.0, new_x))
+                                
+                                # Check if new position conflicts with ANY other node (not just same level)
+                                conflict = False
+                                for other_node_id, (ox, oy) in pos.items():
+                                    if other_node_id == node_id:
+                                        continue
+                                    # Check horizontal distance (allowing same level to be closer)
+                                    node_level = levels.get(node_id, 0)
+                                    other_level = levels.get(other_node_id, 0)
+                                    required_spacing = min_spacing if node_level == other_level else node_radius * 2
+                                    
+                                    if abs(new_x - ox) < required_spacing:
+                                        conflict = True
+                                        break
+                                
+                                # Check if new position still lies on any edge
+                                still_on_edge = False
+                                for other_edge in all_edges:
+                                    if node_id in other_edge:
+                                        continue
+                                    osrc, odst = other_edge
+                                    ox0, oy0 = pos[osrc]
+                                    ox1, oy1 = pos[odst]
+                                    if abs(oy1 - oy0) > node_radius:  # Only check non-horizontal edges
+                                        if self._point_on_line_segment(new_x, ny, ox0, oy0, ox1, oy1, tolerance=node_radius * 3):
+                                            still_on_edge = True
+                                            break
+                                
+                                if not conflict and not still_on_edge:
+                                    pos[node_id] = (new_x, ny)
+                                    adjusted = True
+                                    moved = True
+                                    break
+                            
+                            if moved:
+                                break
+        
         return pos
+    
+    def _point_on_line_segment(self, px, py, x1, y1, x2, y2, tolerance=0.01):
+        """
+        Check if point (px, py) lies on the line segment from (x1, y1) to (x2, y2).
+        
+        Parameters:
+        -----------
+        px, py : float
+            Point coordinates to check
+        x1, y1 : float
+            Start of line segment
+        x2, y2 : float
+            End of line segment
+        tolerance : float
+            Tolerance for distance from line (default: 0.01)
+        
+        Returns:
+        --------
+        bool
+            True if point is on or near the line segment
+        """
+        # Vector from start to end of segment
+        dx = x2 - x1
+        dy = y2 - y1
+        segment_length_sq = dx * dx + dy * dy
+        
+        if segment_length_sq < 1e-10:  # Degenerate segment
+            # Check if point is near the single point
+            dist_sq = (px - x1) ** 2 + (py - y1) ** 2
+            return dist_sq < tolerance ** 2
+        
+        # Vector from start to point
+        t = ((px - x1) * dx + (py - y1) * dy) / segment_length_sq
+        
+        # Check if point is within the segment (t between 0 and 1)
+        if t < 0 or t > 1:
+            return False
+        
+        # Find closest point on line segment
+        closest_x = x1 + t * dx
+        closest_y = y1 + t * dy
+        
+        # Calculate distance from point to closest point on segment
+        dist_sq = (px - closest_x) ** 2 + (py - closest_y) ** 2
+        
+        return dist_sq < tolerance ** 2
     
 
     def plotly(self, layout: str = "hierarchy"):

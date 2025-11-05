@@ -71,6 +71,64 @@ rules:
     certainty: 0.9
     group: "Aquifer Characteristics"
     leaf: false
+  
+  - id: "k_vadose_threshold"
+    name: "Suitability of vadose infiltration capacity"
+    #symbol: "K_min"
+    description: "check if vadose K_min is suitable for infiltration"
+    type: boolean  
+    module: "geohydro_rules"
+    function_name: "check_k_vadose_threshold"
+    dependencies: [k_min_vadose]
+    certainty: 0.9
+    group: "Aquifer Characteristics"
+    leaf: false
+
+  - id: "vadose_pollution_present"
+    name: "Vadose Zone Pollution Check"
+    description: "Checks if pollution or contamination is present in the vadose zone"
+    type: boolean
+    module: "geohydro_rules"
+    function_name: "check_vadose_pollution"
+    dependencies: [unconfined, vadose_pollution_flag]
+    certainty: 0.85
+    group: "Environmental Quality"
+    leaf: false
+
+  - id: "vadose_high_toxicity_present"
+    name: "Vadose Zone High Toxicity Check"
+    description: "Checks if highly toxic contaminants are present in the vadose zone"
+    type: boolean
+    module: "geohydro_rules"
+    function_name: "check_vadose_high_toxicity"
+    dependencies: [vadose_pollution_present, vadose_pollution_high_toxicity]
+    certainty: 0.85
+    group: "Environmental Quality"
+    leaf: True
+
+  - id: "vadose_biodegradable"
+    name: "Vadose Zone Pollution Biodegradability Check"
+    description: "Checks if vadose zone pollution is biodegradable"
+    type: boolean
+    module: "geohydro_rules"
+    function_name: "check_vadose_biodegradable"
+    dependencies: [vadose_pollution_present, vadose_high_toxicity_present]
+    certainty: 0.85
+    group: "Environmental Quality"
+    leaf: false
+
+  - id: "vadose_remediation_needed"
+    name: "Vadose Zone Remediation Check"
+    description: "Checks if vadose zone remediation is available, completed, or feasible"
+    type: boolean
+    module: "geohydro_rules"
+    function_name: "check_vadose_remediation"
+    dependencies: [vadose_high_toxicity_present]
+    certainty: 0.85
+    group: "Environmental Quality"
+    leaf: false
+
+    
 
   - id: "top_soil_limiting"
     name: "Topsoil Limiting Layer"
@@ -132,6 +190,31 @@ rules:
     group: "Aquifer Properties"
     leaf: true
 
+  - id: "vadose_residence_time"
+    name: "Vadose Zone Residence Time"
+    #symbol: "ResTime"
+    description: "Computes the residence time of water in the vadose zone (days)"
+    type: numeric
+    module: "geohydro_rules"
+    function_name: "compute_vadose_residence_time"
+    dependencies: [vadose_biodegradable, design_sizing, strat_df, monthly_gw_depth]
+    certainty: 0.8
+    group: "Aquifer Properties"
+    leaf: false
+
+  - id: "vadose_residence_time_issues"
+    name: "Vadose Zone Residence Time Issues"
+    #symbol: "ResTimeOK"
+    description: "Checks if residence time is reasonable for natural attenuation/biodegradation"
+    type: boolean
+    module: "geohydro_rules"
+    function_name: "check_vadose_residence_time_reasonable"
+    dependencies: [vadose_residence_time]
+    certainty: 0.8
+    group: "Environmental Quality"
+    leaf: false
+
+  
   - id: "rechargability"
     name: "Vadose Storage Adequacy"
     #symbol: "StorageOK"
@@ -145,19 +228,97 @@ rules:
     leaf: true
 
 
+  - id: "annual_confined_storage_volume"
+    name: "Max Annual Confined Aquifer Storage Volume"
+    #symbol: "confined"
+    description: "compute maximum storage volume for confined aquifer"
+    type: numeric 
+    module: "geohydro_rules"
+    function_name: "compute_confined_storage_volume"
+    dependencies: [confined, strat_df, Hmax]
+    certainty: 1.0
+    group: "Aquifer Characteristics"
+    leaf: false
 
+  
+  - id: "confined_rechargability"
+    name: "Confined Storage Adequacy"
+    #symbol: "StorageOK"
+    description: "% of source water that can be recharged"
+    type: numeric
+    module: "geohydro_rules"
+    function_name: "compute_confined_rechargability"
+    dependencies: [annual_confined_storage_volume, source_water_volume ]
+    certainty: 0.8
+    group: "Aquifer Properties"
+    leaf: true
+  
+  - id: "leakage_significance"
+    name: "Confined leakage Adequacy"
+    #symbol: "StorageOK"
+    description: "a metric to assess the significance of leakage within a raduis of 1000 ft"
+    type: categorical
+    module: "geohydro_rules"
+    function_name: "compute_leakage_significance"
+    dependencies: [confined_rechargability, strat_df]
+    certainty: 0.8
+    group: "Aquifer Properties"
+    leaf: true
+  
+  - id: "excessive_deep_aquifer"
+    name: "Confined aquifer depth adequacy"
+    #symbol: "StorageOK"
+    description: "a metric to assess the significance of aquifer depth"
+    type: categorical
+    module: "geohydro_rules"
+    function_name: "compute_depth_significance"
+    dependencies: [confined, strat_df]
+    certainty: 0.8
+    group: "Aquifer Properties"
+    leaf: true
 
-  # - id: "CONF_ACCESS"
-  #   name: "Confined Aquifer Access"
-  #   symbol: "ConfAccess"
-  #   description: "Determines if confined aquifer access is feasible."
+  - id: "gs_slope_significance"
+    name: "Ground surface slope significance"
+    #symbol: "StorageOK"
+    description: "a metric to assess the significance of ground surface slope"
+    type: categorical
+    module: "geohydro_rules"
+    function_name: "compute_gs_slope_significance"
+    dependencies: [unconfined, gs_slope]
+    certainty: 0.8
+    group: "Site Characteristics"
+    leaf: true
+  
+  # add a rule to assess the suitability of surface recharge
+  - id: "surface_recharge_suitability"
+    name: "Surface recharge suitability"
+    #symbol: "StorageOK"
+    description: "a metric to assess the suitability of surface recharge"
+    type: categorical
+    module: "geohydro_rules"
+    function_name: "compute_surface_recharge_suitability"
+    dependencies: [gs_slope_significance, k_vadose_threshold, rechargability, vadose_remediation_needed]
+    certainty: 0.8
+    group: "Engineering Feasibility"
+    leaf: true
+  
+  
+
+  # - id: "subsurface_recharge_suitability"
+  #   name: "Subsurface recharge suitability"
+  #   #symbol: "StorageOK"
+  #   description: "a metric to assess the suitability of subsurface recharge (injection wells)"
   #   type: boolean
-  #   module: "mar_rules"
-  #   function_name: "check_confined_access"
-  #   dependencies: [drill_feas, aq_depth, well_cost, deep_well_regs]
+  #   module: "geohydro_rules"
+  #   function_name: "compute_subsurface_recharge_suitability"
+  #   dependencies: [confined_rechargability, rechargability, leakage_significance, excessive_deep_aquifer, unconfined, confined]
   #   certainty: 0.8
-  #   group: "Aquifer Characteristics"
-  #   leaf: false
+  #   group: "Engineering Feasibility"
+  #   leaf: true
+
+    
+
+  
 
   # - id: "PIEZO_HEAD"
   #   name: "Piezometric Head Condition"

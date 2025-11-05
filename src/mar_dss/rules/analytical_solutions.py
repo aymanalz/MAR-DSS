@@ -4,6 +4,7 @@ import numpy as np
 from scipy.special import erf
 from scipy.integrate import quad_vec
 import matplotlib.pyplot as plt
+from scipy.special import exp1
 
 
 def concat(dh):    
@@ -93,3 +94,68 @@ def compute_recharge_rate(x,y,t,del_h, spread_area, k,b,sy):
     recharge_rate = 2 * k * h2/(v1*t*s)    
     return recharge_rate
 
+def theis_drawdown_or_Q(Q_or_dh, T, S, r, t, compute_Q=True):
+    """
+    Computes the drawdown (dh) or pumping rate (Q) in a confined aquifer using 
+    the Theis (Transient) solution.
+
+    The Theis equation is given by: s = (Q / (4 * pi * T)) * W(u)
+
+    Parameters:
+    -----------
+    Q : float
+        Pumping rate (Volume/Time, e.g., m^3/day).
+    T : float
+        Aquifer Transmissivity (Area/Time, e.g., m^2/day).
+    S : float
+        Aquifer Storativity (dimensionless).
+    r : float
+        Radial distance from the pumping well (Length, e.g., m).
+    t : float
+        Time since pumping started (Time, e.g., day).
+
+    Returns:
+    --------
+    float
+        The calculated drawdown (s) at distance 'r' and time 't' (Length, e.g., m).
+        Returns 0 if time 't' is zero to avoid division by zero.
+    """
+    # Ensure all inputs are positive floats
+    if T <= 0 or S <= 0 or r <= 0:
+        raise ValueError("Q, T, S, and r must be positive.")
+
+    # Handle the t=0 case, as drawdown is zero before pumping starts
+    if t <= 0:
+        return 0.0
+
+    # 1. Calculate the 'u' parameter (Dimensionless time/distance parameter)
+    # u = (r^2 * S) / (4 * T * t)
+    # 
+    try:
+        u = (r**2 * S) / (4 * T * t)
+    except Exception as e:
+        print(f"Error calculating u: {e}")
+        return 0.0
+
+    # 2. Calculate the Well Function W(u)
+    # The Well Function W(u) is mathematically equivalent to the Exponential Integral E1(u)
+    # W(u) = E1(u) = integral from u to infinity of (e^-y / y) dy
+    try:
+        # exp1 is the scipy function for the Exponential Integral E1(u)
+        W_u = exp1(u)
+    except Exception as e:
+        # Fallback for extreme u values, although exp1 is robust
+        print(f"Error calculating W(u): {e}. Returning 0.")
+        return 0.0
+
+    # 3. Calculate Drawdown (s)
+    # s = (Q / (4 * pi * T)) * W(u)
+    if compute_Q:
+        drawdown = Q_or_dh
+        Q = (drawdown/W_u) * (4 * np.pi * T)
+        return Q
+
+    else:
+        Q = Q_or_dh
+        drawdown= (Q / (4 * np.pi * T)) * W_u
+        return drawdown

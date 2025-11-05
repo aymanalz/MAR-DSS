@@ -62,19 +62,49 @@ inputs:
     range: [0, 1e7]
     certainty: 0.85
     group: "Water Balance"
+  
+  
+  - id: "Hmax"
+    name: "Maximum Allowable pressure"
+    description: "Maximum allowable hydraulic head change in confined aquifers to prevent too much land uplift, fracturing, ord environmental impacts"
+    type: numeric
+    units: "ft"
+    value: 75
+    default: 100
+    range: [0.1, 1000.0]
+    certainty: 0.85
+    group: "Aquifer Properties"
+  
+  - id: "gs_slope"
+    name: "Ground Surface Slope"
+    description: "Ground surface slope (rise/run ratio, e.g., 0.01 = 1% slope, 0.02 = 2% slope). Typical values: 0.0-0.1 for gentle slopes, 0.1-0.3 for moderate, >0.3 for steep."
+    type: numeric
+    units: "%"
+    value: 0.0
+    default: 0.0
+    range: [0.0, 100.0]
+    certainty: 0.85
+    group: "Site Characteristics"
 
-
-
-  # - id: "Hmax"
-  #   name: "Maximum Allowable Head Change"
-  #   description: "Maximum allowable hydraulic head change in confined aquifers to prevent too much land uplift, fracturing, ord environmental impacts"
-  #   type: numeric
-  #   units: "m"
-  #   value: 2.0
-  #   default: 2.0
-  #   range: [0.1, 50.0]
-  #   certainty: 0.85
-  #   group: "Aquifer Properties"
+  - id: "vadose_pollution_flag"
+    name: "Vadose Zone Pollution Flag"
+    description: "Indicates presence of pollution or contamination in the vadose zone. Can be boolean (True/False), list of contaminants, or concentration data."
+    type: boolean
+    value: false
+    default: false
+    certainty: 0.8
+    group: "Environmental Quality"
+  
+  - id: "vadose_pollution_high_toxicity"
+    name: "Vadose Zone High Toxicity Flag"
+    description: "Indicates presence of highly toxic contaminants in the vadose zone (e.g., heavy metals, volatile organic compounds, radioactive materials)"
+    type: boolean
+    value: false
+    default: false
+    certainty: 0.8
+    group: "Environmental Quality"
+  
+    
 
   # - id: "n"
   #   name: "Porosity"
