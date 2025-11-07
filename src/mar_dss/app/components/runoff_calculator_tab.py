@@ -132,18 +132,33 @@ def create_runoff_calculator_tab():
         html.H3("Runoff Calculator", className="mb-4"),
         html.P("Calculate and analyze runoff patterns for your MAR project location.", className="mb-4"),
 
-        dbc.Row([
-            dbc.Col([
-                create_map_card()
-            ], width=8),
-            dbc.Col([
-                create_controls_card()
-            ], width=4)
-        ], className="mb-4"),
+        dbc.Tabs([
+            dbc.Tab(
+                label="Curve Number",
+                tab_id="curve-number-tab",
+                children=[
+                    html.Div(id="curve-number-content", className="mt-4")
+                ]
+            ),
+            dbc.Tab(
+                label="Rainfall and Watershed Information",
+                tab_id="rainfall-watershed-tab",
+                children=[
+                    dbc.Row([
+                        dbc.Col([
+                            create_map_card()
+                        ], width=8),
+                        dbc.Col([
+                            create_controls_card()
+                        ], width=4)
+                    ], className="mb-4"),
 
-        dbc.Row([
-            dbc.Col([
-                create_results_card()
-            ])
-        ])
+                    dbc.Row([
+                        dbc.Col([
+                            create_results_card()
+                        ])
+                    ])
+                ]
+            )
+        ], id="runoff-calculator-tabs", active_tab="rainfall-watershed-tab")
     ]
