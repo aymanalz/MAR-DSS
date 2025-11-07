@@ -22,7 +22,7 @@ except ImportError:
 df = pd.DataFrame()
 
 def get_rain_data(lat, lon):
-
+    """Get rain data from NOAA Atlas 14 and return as DataFrame."""
     file_path = download(lat=lat, lon=lon, units='english', data='depth', overwrite=True)
     fidr = open(file_path, 'r')
     lines = fidr.readlines()
@@ -52,8 +52,8 @@ def get_rain_data(lat, lon):
             frequency = [float(fval) for fval in parts[1:]]
             record = [duration] + frequency
             data.append(record)
-            parts = line.split(',')
-    df = pd.DataFrame(data, columns=header)
+    df_rain = pd.DataFrame(data, columns=header)
+    return df_rain
 
 def get_streams_near_point(lat, lon, distance_m=16093):
     """Find streams within specified distance of a point"""
@@ -170,7 +170,8 @@ def setup_runoff_callbacks(app):
     # Callback 4: Handle "Get Watershed Info" button with working message
     @app.callback(
         [Output('watershed-layer', 'children'),
-         Output('runoff-calculation-output', 'children'),
+         Output('watershed-info-content', 'children'),
+         Output('rain-info-content', 'children'),
          Output('status-message', 'children', allow_duplicate=True)],
         [Input('get-watershed-btn', 'n_clicks')],
         [State('selected-latitude', 'value'),
@@ -184,6 +185,15 @@ def setup_runoff_callbacks(app):
             # Show working message first
             working_msg = html.Div("Working on obtaining watershed info...", 
                                   className="alert alert-info", role="alert")
+            
+            # Get rain data
+            df_rain = None
+            rain_table = None
+            try:
+                df_rain = get_rain_data(lat, lon)
+            except Exception as e:
+                print(f"Error getting rain data: {e}")
+                rain_table = html.P(f"Error getting rain data: {str(e)}", className="text-danger")
             
             # Get watershed data for the map
             try:
@@ -214,13 +224,13 @@ def setup_runoff_callbacks(app):
                     style={'color': 'red', 'weight': 3, 'opacity': 0.8, 'fillOpacity': 0.2}
                 )
                 
-                # Generate table from df with error handling
+                # Generate watershed table with error handling
                 try:
                     if df.empty:
-                        print("DataFrame is empty!")
-                        table = html.P("No watershed parameters available.", className="text-orange-500 italic")
+                        print("Watershed DataFrame is empty!")
+                        watershed_table = html.P("No watershed parameters available.", className="text-warning")
                     else:
-                        table = dash_table.DataTable(
+                        watershed_table = dash_table.DataTable(
                             data=df.to_dict('records'),
                             columns=[{"name": i, "id": i} for i in df.columns],
                             style_cell={
@@ -251,19 +261,66 @@ def setup_runoff_callbacks(app):
                             export_format="csv"
                         )
                 except Exception as table_error:
-                    print(f"Error creating table: {table_error}")
-                    table = html.P(f"Error creating table: {str(table_error)}", className="text-red-500")
-                print(f"Table generated with {len(df)} rows")
+                    print(f"Error creating watershed table: {table_error}")
+                    watershed_table = html.P(f"Error creating table: {str(table_error)}", className="text-danger")
+                
+                # Generate rain table with error handling (only if not already set from error above)
+                if rain_table is None:
+                    try:
+                        if df_rain is None or df_rain.empty:
+                            print("Rain DataFrame is empty or None!")
+                            rain_table = html.P("No rain data available.", className="text-warning")
+                        else:
+                            rain_table = dash_table.DataTable(
+                                data=df_rain.to_dict('records'),
+                                columns=[{"name": i, "id": i} for i in df_rain.columns],
+                                style_cell={
+                                    'textAlign': 'left',
+                                    'padding': '10px',
+                                    'fontFamily': 'Arial, sans-serif',
+                                    'fontSize': '14px',
+                                    'border': '1px solid #ddd'
+                                },
+                                style_header={
+                                    'backgroundColor': '#f8f9fa',
+                                    'fontWeight': 'bold',
+                                    'border': '1px solid #ddd'
+                                },
+                                style_data={
+                                    'backgroundColor': 'white',
+                                    'border': '1px solid #ddd'
+                                },
+                                style_data_conditional=[
+                                    {
+                                        'if': {'row_index': 'odd'},
+                                        'backgroundColor': '#f8f9fa'
+                                    }
+                                ],
+                                page_size=len(df_rain),  # Show all rows on one page
+                                sort_action="native",
+                                filter_action="native",
+                                export_format="csv"
+                            )
+                    except Exception as rain_table_error:
+                        print(f"Error creating rain table: {rain_table_error}")
+                        rain_table = html.P(f"Error creating rain table: {str(rain_table_error)}", className="text-danger")
+                
+                print(f"Watershed table generated with {len(df)} rows")
+                if df_rain is not None:
+                    print(f"Rain table generated with {len(df_rain)} rows")
                 
                 # Show completion message
                 done_msg = html.Div("Done!", className="alert alert-success", role="alert")
-                return [watershed_layer], table, done_msg
+                return [watershed_layer], watershed_table, rain_table, done_msg
                 
             except Exception as e:
                 print(f"Error getting watershed data: {e}")
                 error_msg = html.Div("Error getting watershed data", className="alert alert-danger", role="alert")
-                return [], html.P(f"Error getting watershed data: {str(e)}", className="text-red-500"), error_msg
+                # Use rain_table if it was set, otherwise show default message
+                if rain_table is None:
+                    rain_table = html.P("No data available.", className="text-warning")
+                return [], html.P(f"Error getting watershed data: {str(e)}", className="text-danger"), rain_table, error_msg
         
-        return [], html.Div("Click 'Get Watershed Info' to retrieve watershed data."), html.Div("")
+        return [], html.Div("Click 'Get Watershed Info' to retrieve watershed data."), html.Div("Click 'Get Watershed Info' to retrieve rain data."), html.Div("")
 
 

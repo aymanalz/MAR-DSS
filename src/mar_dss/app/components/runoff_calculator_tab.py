@@ -24,6 +24,108 @@ def create_runoff_map(lat=38.5816, lon=-121.4944, zoom=10):
     )
 
 
+def create_map_card():
+    """Create the map card component."""
+    return dbc.Card([
+        dbc.CardHeader("Runoff Analysis Map", className="fw-bold bg-primary text-white"),
+        dbc.CardBody([
+            create_runoff_map()
+        ])
+    ])
+
+
+def create_coordinate_inputs():
+    """Create the latitude and longitude input fields."""
+    return [
+        html.Label("Selected Latitude:", className="fw-bold"),
+        dbc.Input(
+            id="selected-latitude",
+            type="number",
+            value=None,
+            placeholder="Click map to set latitude",
+            step=0.000001,
+            style={"margin-bottom": "10px"}
+        ),
+        html.Label("Selected Longitude:", className="fw-bold"),
+        dbc.Input(
+            id="selected-longitude",
+            type="number",
+            value=None,
+            placeholder="Click map to set longitude",
+            step=0.000001,
+            style={"margin-bottom": "15px"}
+        ),
+    ]
+
+
+def create_action_buttons():
+    """Create the action buttons for runoff analysis."""
+    return [
+        dbc.Button(
+            "Obtain nearby streams",
+            id="obtain-streams-btn",
+            color="success",
+            className="me-2 mb-3"
+        ),
+        dbc.Button(
+            "Get Watershed Info",
+            id="get-watershed-btn",
+            color="info",
+            className="mb-3"
+        ),
+        dbc.Button(
+            "Calculate Runoff",
+            id="calculate-runoff-btn",
+            color="primary",
+            className="me-2"
+        ),
+    ]
+
+
+def create_controls_card():
+    """Create the analysis controls card component."""
+    return dbc.Card([
+        dbc.CardHeader("Analysis Controls", className="fw-bold bg-primary text-white"),
+        dbc.CardBody([
+            *create_action_buttons(),
+            html.Div(id="status-message", className="mt-3 mb-3"),
+            html.Hr(),
+            *create_coordinate_inputs(),
+            html.Hr(),
+            html.Div(id="runoff-results", className="mt-3"),
+            html.Small(
+                "Click on the map to add monitoring points or draw watershed boundaries.",
+                className="text-muted"
+            )
+        ])
+    ])
+
+
+def create_results_card():
+    """Create the runoff calculation results card component with tabs."""
+    return dbc.Card([
+        dbc.CardHeader("Runoff Calculation Results", className="fw-bold bg-primary text-white"),
+        dbc.CardBody([
+            dbc.Tabs([
+                dbc.Tab(
+                    label="Watershed Info",
+                    tab_id="watershed-tab",
+                    children=[
+                        html.Div(id="watershed-info-content", style={'minHeight': '400px', 'overflow': 'auto'})
+                    ]
+                ),
+                dbc.Tab(
+                    label="Rain Information",
+                    tab_id="rain-tab",
+                    children=[
+                        html.Div(id="rain-info-content", style={'minHeight': '400px', 'overflow': 'auto'})
+                    ]
+                )
+            ], id="results-tabs", active_tab="watershed-tab")
+        ])
+    ], style={'minHeight': '500px'})
+
+
 def create_runoff_calculator_tab():
     """Create the content for the Runoff Calculator tab."""
     return [
@@ -32,81 +134,16 @@ def create_runoff_calculator_tab():
 
         dbc.Row([
             dbc.Col([
-                dbc.Card([
-                    dbc.CardHeader("Runoff Analysis Map", className="fw-bold bg-primary text-white"),
-                    dbc.CardBody([
-                        create_runoff_map()
-                    ])
-                ])
+                create_map_card()
             ], width=8),
-
             dbc.Col([
-                dbc.Card([
-                    dbc.CardHeader("Analysis Controls", className="fw-bold bg-primary text-white"),
-                    dbc.CardBody([
-                        dbc.Button(
-                            "Obtain nearby streams",
-                            id="obtain-streams-btn",
-                            color="success",
-                            className="me-2 mb-3"
-                        ),
-                        dbc.Button(
-                            "Get Watershed Info",
-                            id="get-watershed-btn",
-                            color="info",
-                            className="mb-3"
-                        ),
-                        html.Div(id="status-message", className="mt-3 mb-3"),
-                        html.Hr(),
-
-                        html.Label("Selected Latitude:", className="fw-bold"),
-                        dbc.Input(
-                            id="selected-latitude",
-                            type="number",
-                            value=None,
-                            placeholder="Click map to set latitude",
-                            step=0.000001,
-                            style={"margin-bottom": "10px"}
-                        ),
-
-                        html.Label("Selected Longitude:", className="fw-bold"),
-                        dbc.Input(
-                            id="selected-longitude",
-                            type="number",
-                            value=None,
-                            placeholder="Click map to set longitude",
-                            step=0.000001,
-                            style={"margin-bottom": "15px"}
-                        ),
-
-                        dbc.Button(
-                            "Calculate Runoff",
-                            id="calculate-runoff-btn",
-                            color="primary",
-                            className="me-2"
-                        ),
-
-                        html.Hr(),
-
-                        html.Div(id="runoff-results", className="mt-3"),
-
-                        html.Small(
-                            "Click on the map to add monitoring points or draw watershed boundaries.",
-                            className="text-muted"
-                        )
-                    ])
-                ])
+                create_controls_card()
             ], width=4)
         ], className="mb-4"),
 
         dbc.Row([
             dbc.Col([
-                dbc.Card([
-                    dbc.CardHeader("Runoff Calculation Results", className="fw-bold bg-primary text-white"),
-                    dbc.CardBody([
-                        html.Div(id="runoff-calculation-output", style={'minHeight': '400px', 'overflow': 'auto'})
-                    ])
-                ], style={'minHeight': '500px'})
+                create_results_card()
             ])
         ])
     ]
