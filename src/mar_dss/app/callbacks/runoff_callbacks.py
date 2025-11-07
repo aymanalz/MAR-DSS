@@ -1,7 +1,7 @@
 """
 Callbacks for the Runoff Calculator tab.
 """
-
+import os
 import dash
 from dash import Input, Output, html, no_update, State
 import dash_leaflet as dl
@@ -11,6 +11,8 @@ import geopandas as gpd
 import streamstats
 import json
 from dash import dash_table
+from mar_dss.pfdf.data.noaa.atlas14 import download
+
 
 
 try:
@@ -18,6 +20,40 @@ try:
 except ImportError:
     from ..components.runoff_calculator_tab import create_runoff_map
 df = pd.DataFrame()
+
+def get_rain_data(lat, lon):
+
+    file_path = download(lat=lat, lon=lon, units='english', data='depth', overwrite=True)
+    fidr = open(file_path, 'r')
+    lines = fidr.readlines()
+    fidr.close()
+
+    # remove the file
+    os.remove(file_path)
+
+    readdata = False
+    readheader = False
+    data = []
+    for line in lines:
+        if "PRECIPITATION FREQUENCY ESTIMATES" in line:
+            readdata = True
+            readheader = True
+            continue
+        
+        if readdata:
+            if readheader:
+                header = [hval.strip() for hval in line.split(',')]
+                readheader = False
+                continue
+            parts = line.split(',')
+            duration = parts[0]
+            if duration.strip() == '':
+                break
+            frequency = [float(fval) for fval in parts[1:]]
+            record = [duration] + frequency
+            data.append(record)
+            parts = line.split(',')
+    df = pd.DataFrame(data, columns=header)
 
 def get_streams_near_point(lat, lon, distance_m=16093):
     """Find streams within specified distance of a point"""
