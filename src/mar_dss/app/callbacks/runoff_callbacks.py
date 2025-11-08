@@ -743,33 +743,85 @@ def setup_runoff_callbacks(app):
                         {"Parameter": "Runoff Volume (ft3)", "Value": 10000}
                     ]
                 
-                # Update the Composite Curve Number and Maximum Potential Storage values
+                # Get current values for Runoff Depth calculation
+                rainfall = 5  # default
+                initial_abstraction = 0.05  # default
+                for row in updated_data:
+                    if row.get("Parameter") == "24-hour Rainfall (inches)":
+                        try:
+                            rainfall = float(row.get("Value", 5))
+                        except (ValueError, TypeError):
+                            rainfall = 5
+                    elif row.get("Parameter") == "Initial Abstraction":
+                        try:
+                            initial_abstraction = float(row.get("Value", 0.05))
+                        except (ValueError, TypeError):
+                            initial_abstraction = 0.05
+                
+                # Calculate Runoff Depth: ((D7 - (D19 * D18))^2) / (D7 + ((1 - D19) * D18))
+                # D7: 24-hour Rainfall, D19: Initial Abstraction, D18: Maximum Potential Storage
+                numerator = (rainfall - (initial_abstraction * max_potential_storage)) ** 2
+                denominator = rainfall + ((1 - initial_abstraction) * max_potential_storage)
+                runoff_depth = numerator / denominator if denominator > 0 else 0
+                
+                # Update the Composite Curve Number, Maximum Potential Storage, and Runoff Depth values
                 for row in updated_data:
                     if row.get("Parameter") == "Composite Curve Number":
                         row["Value"] = composite_cn
                     elif row.get("Parameter") == "Maximum Potential Storage (inches)":
                         row["Value"] = round(max_potential_storage, 2)
+                    elif row.get("Parameter") == "Runoff Depth (inches)":
+                        row["Value"] = round(runoff_depth, 2)
                 return updated_data
         
-        # If table data was edited, check if Composite Curve Number changed and update Maximum Potential Storage
+        # If table data was edited, check for changes and recalculate dependent values
         if trigger_id == "runoff-calculations-table" and current_table_data:
             updated_data = [row.copy() for row in current_table_data]
-            # Check if Composite Curve Number was edited
+            
+            # Extract current values from the table
+            composite_cn = None
+            rainfall = None
+            max_potential_storage = None
+            initial_abstraction = None
+            
             for row in updated_data:
-                if row.get("Parameter") == "Composite Curve Number":
-                    try:
-                        composite_cn = float(row.get("Value", 0))
-                        if composite_cn > 0:
-                            # Calculate Maximum Potential Storage: (1000/D6) - 10
-                            max_potential_storage = (1000 / composite_cn) - 10
-                            # Update Maximum Potential Storage in the table
-                            for storage_row in updated_data:
-                                if storage_row.get("Parameter") == "Maximum Potential Storage (inches)":
-                                    storage_row["Value"] = round(max_potential_storage, 2)
-                                    break
-                    except (ValueError, TypeError):
-                        pass
-                    break
+                param = row.get("Parameter")
+                try:
+                    value = float(row.get("Value", 0))
+                    if param == "Composite Curve Number":
+                        composite_cn = value
+                    elif param == "24-hour Rainfall (inches)":
+                        rainfall = value
+                    elif param == "Maximum Potential Storage (inches)":
+                        max_potential_storage = value
+                    elif param == "Initial Abstraction":
+                        initial_abstraction = value
+                except (ValueError, TypeError):
+                    pass
+            
+            # If Composite Curve Number was edited, recalculate Maximum Potential Storage
+            if composite_cn is not None and composite_cn > 0:
+                new_max_storage = (1000 / composite_cn) - 10
+                for row in updated_data:
+                    if row.get("Parameter") == "Maximum Potential Storage (inches)":
+                        row["Value"] = round(new_max_storage, 2)
+                        max_potential_storage = new_max_storage
+                        break
+            
+            # Recalculate Runoff Depth if any of the required values are available
+            # Formula: ((D7 - (D19 * D18))^2) / (D7 + ((1 - D19) * D18))
+            # D7: 24-hour Rainfall, D19: Initial Abstraction, D18: Maximum Potential Storage
+            if rainfall is not None and initial_abstraction is not None and max_potential_storage is not None:
+                numerator = (rainfall - (initial_abstraction * max_potential_storage)) ** 2
+                denominator = rainfall + ((1 - initial_abstraction) * max_potential_storage)
+                runoff_depth = numerator / denominator if denominator > 0 else 0
+                
+                # Update Runoff Depth in the table
+                for row in updated_data:
+                    if row.get("Parameter") == "Runoff Depth (inches)":
+                        row["Value"] = round(runoff_depth, 2)
+                        break
+            
             return updated_data
         
         return current_table_data if current_table_data else dash.no_update
