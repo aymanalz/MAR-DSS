@@ -267,7 +267,7 @@ def create_runoff_calculator_tab():
                     dbc.Row([
                         dbc.Col([
                             dbc.Card([
-                                dbc.CardHeader("Runoff Calculations", className="fw-bold bg-primary text-white"),
+                                dbc.CardHeader("Runoff for Single Storm", className="fw-bold bg-primary text-white"),
                                 dbc.CardBody([
                                     html.H5("Step 2: Estimate watershed area and rainfall information. You may use the Rain Fall Watershed tab to obtain this information", 
                                             className="fw-bold mb-3"),

@@ -764,7 +764,25 @@ def setup_runoff_callbacks(app):
                 denominator = rainfall + ((1 - initial_abstraction) * max_potential_storage)
                 runoff_depth = numerator / denominator if denominator > 0 else 0
                 
-                # Update the Composite Curve Number, Maximum Potential Storage, and Runoff Depth values
+                # Calculate Runoff/Precipitation Ratio: D20 / D7
+                # D20: Runoff Depth, D7: 24-hour Rainfall
+                runoff_precip_ratio = runoff_depth / rainfall if rainfall > 0 else 0
+                
+                # Get Area value for Runoff Volume calculation
+                area = 10  # default
+                for row in updated_data:
+                    if row.get("Parameter") == "Area (acres)":
+                        try:
+                            area = float(row.get("Value", 10))
+                        except (ValueError, TypeError):
+                            area = 10
+                        break
+                
+                # Calculate Runoff Volume: D20 * (D5 * 43560 / 12)
+                # D5: Area (acres), D20: Runoff Depth (inches)
+                runoff_volume = runoff_depth * (area * 43560 / 12)
+                
+                # Update the Composite Curve Number, Maximum Potential Storage, Runoff Depth, Runoff/Precipitation Ratio, and Runoff Volume values
                 for row in updated_data:
                     if row.get("Parameter") == "Composite Curve Number":
                         row["Value"] = composite_cn
@@ -772,6 +790,10 @@ def setup_runoff_callbacks(app):
                         row["Value"] = round(max_potential_storage, 2)
                     elif row.get("Parameter") == "Runoff Depth (inches)":
                         row["Value"] = round(runoff_depth, 2)
+                    elif row.get("Parameter") == "Runoff/Precipitation Ratio":
+                        row["Value"] = round(runoff_precip_ratio, 2)
+                    elif row.get("Parameter") == "Runoff Volume (ft3)":
+                        row["Value"] = round(runoff_volume, 2)
                 return updated_data
         
         # If table data was edited, check for changes and recalculate dependent values
@@ -783,6 +805,8 @@ def setup_runoff_callbacks(app):
             rainfall = None
             max_potential_storage = None
             initial_abstraction = None
+            runoff_depth = None
+            area = None
             
             for row in updated_data:
                 param = row.get("Parameter")
@@ -796,6 +820,10 @@ def setup_runoff_callbacks(app):
                         max_potential_storage = value
                     elif param == "Initial Abstraction":
                         initial_abstraction = value
+                    elif param == "Runoff Depth (inches)":
+                        runoff_depth = value
+                    elif param == "Area (acres)":
+                        area = value
                 except (ValueError, TypeError):
                     pass
             
@@ -820,6 +848,28 @@ def setup_runoff_callbacks(app):
                 for row in updated_data:
                     if row.get("Parameter") == "Runoff Depth (inches)":
                         row["Value"] = round(runoff_depth, 2)
+                        break
+            
+            # Recalculate Runoff/Precipitation Ratio: D20 / D7
+            # D20: Runoff Depth, D7: 24-hour Rainfall
+            if runoff_depth is not None and rainfall is not None and rainfall > 0:
+                runoff_precip_ratio = runoff_depth / rainfall
+                
+                # Update Runoff/Precipitation Ratio in the table
+                for row in updated_data:
+                    if row.get("Parameter") == "Runoff/Precipitation Ratio":
+                        row["Value"] = round(runoff_precip_ratio, 2)
+                        break
+            
+            # Recalculate Runoff Volume: D20 * (D5 * 43560 / 12)
+            # D5: Area (acres), D20: Runoff Depth (inches)
+            if runoff_depth is not None and area is not None:
+                runoff_volume = runoff_depth * (area * 43560 / 12)
+                
+                # Update Runoff Volume in the table
+                for row in updated_data:
+                    if row.get("Parameter") == "Runoff Volume (ft3)":
+                        row["Value"] = round(runoff_volume, 2)
                         break
             
             return updated_data
