@@ -212,7 +212,7 @@ def create_runoff_calculator_tab():
                 children=[
                     dbc.Card([
                         dbc.CardBody([
-                            html.H5("Curve Number Option 1: Composite Curve Number Based on % Impervious Cover Calculator (Pick 1A or 1B)", 
+                            html.H5("Step 1: Composite Curve Number Based on % Impervious Cover Calculator (Pick 1A or 1B)", 
                                     className="fw-bold mb-3"),
                             dbc.Row([
                                 dbc.Col([
@@ -263,7 +263,58 @@ def create_runoff_calculator_tab():
                         dbc.Col([
                             create_cover_soil_curve_number_content()
                         ], width=6)
-                    ])
+                    ]),
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Card([
+                                dbc.CardHeader("Runoff Calculations", className="fw-bold bg-primary text-white"),
+                                dbc.CardBody([
+                                    html.H5("Step 2: Estimate watershed area and rainfall information. You may use the Rain Fall Watershed tab to obtain this information", 
+                                            className="fw-bold mb-3"),
+                                    html.Div(id="runoff-calculations-content", className="mt-3"),
+                                    dash_table.DataTable(
+                                        id="runoff-calculations-table",
+                                        data=[
+                                            {"Parameter": "Area (acres)", "Value": 10},
+                                            {"Parameter": "Composite Curve Number", "Value": 50},
+                                            {"Parameter": "24-hour Rainfall (inches)", "Value": 5},
+                                            {"Parameter": "Maximum Potential Storage (inches)", "Value": 10},
+                                            {"Parameter": "Initial Abstraction", "Value": 0.05},
+                                            {"Parameter": "Runoff Depth (inches)", "Value": 1},
+                                            {"Parameter": "Runoff/Precipitation Ratio", "Value": 0.2},
+                                            {"Parameter": "Runoff Volume (ft3)", "Value": 10000}
+                                        ],
+                                        columns=[
+                                            {"name": "Parameter", "id": "Parameter", "editable": False},
+                                            {"name": "Value", "id": "Value", "editable": True, "type": "numeric"}
+                                        ],
+                                        style_cell={
+                                            'textAlign': 'left',
+                                            'padding': '10px',
+                                            'fontFamily': 'Arial, sans-serif',
+                                            'fontSize': '14px',
+                                            'border': '1px solid #ddd'
+                                        },
+                                        style_header={
+                                            'backgroundColor': '#f8f9fa',
+                                            'fontWeight': 'bold',
+                                            'border': '1px solid #ddd'
+                                        },
+                                        style_data={
+                                            'backgroundColor': 'white',
+                                            'border': '1px solid #ddd'
+                                        },
+                                        style_data_conditional=[
+                                            {
+                                                'if': {'row_index': 'odd'},
+                                                'backgroundColor': '#f8f9fa'
+                                            }
+                                        ]
+                                    )
+                                ])
+                            ])
+                        ], width=12)
+                    ], className="mt-4")
                 ]
             ),
             dbc.Tab(

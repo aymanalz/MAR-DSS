@@ -686,9 +686,93 @@ def setup_runoff_callbacks(app):
         
         return table, updated_data
     
-    # Note: The "Recalculate Composite CN" button triggers recalculation after manual edits.
-    # Automatic recalculation on edit is not possible due to Dash's component validation
-    # requiring all Input IDs to exist in the initial layout.
+    # Callback to sync Composite CN to runoff calculations table
+    @app.callback(
+        Output('runoff-calculations-table', 'data'),
+        [Input('composite-cn-table-store', 'data'),
+         Input('runoff-calculations-table', 'data')],
+        [State('runoff-calculations-table', 'data')],
+        prevent_initial_call=False
+    )
+    def sync_composite_cn_to_runoff_table(cn_store_data, table_data_trigger, current_table_data):
+        """Sync Composite CN value to runoff calculations table."""
+        ctx = dash.callback_context
+        if not ctx.triggered:
+            # Initial load - use default data
+            return current_table_data if current_table_data else [
+                {"Parameter": "Area (acres)", "Value": 10},
+                {"Parameter": "Composite Curve Number", "Value": 50},
+                {"Parameter": "24-hour Rainfall (inches)", "Value": 5},
+                {"Parameter": "Maximum Potential Storage (inches)", "Value": 10},
+                {"Parameter": "Initial Abstraction", "Value": 0.05},
+                {"Parameter": "Runoff Depth (inches)", "Value": 1},
+                {"Parameter": "Runoff/Precipitation Ratio", "Value": 0.2},
+                {"Parameter": "Runoff Volume (ft3)", "Value": 10000}
+            ]
+        
+        trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        
+        # If Composite CN store was updated, update the runoff table
+        if trigger_id == "composite-cn-table-store" and cn_store_data:
+            # Find Composite CN value
+            composite_cn = None
+            for row in cn_store_data:
+                if row.get("Parameter") == "Composite CN":
+                    try:
+                        composite_cn = float(row.get("Value", 0))
+                    except (ValueError, TypeError):
+                        pass
+                    break
+            
+            if composite_cn is not None:
+                # Calculate Maximum Potential Storage: (1000/D6) - 10 where D6 is Composite Curve Number
+                max_potential_storage = (1000 / composite_cn) - 10 if composite_cn > 0 else 0
+                
+                # Get current table data or use defaults
+                if current_table_data:
+                    updated_data = [row.copy() for row in current_table_data]
+                else:
+                    updated_data = [
+                        {"Parameter": "Area (acres)", "Value": 10},
+                        {"Parameter": "Composite Curve Number", "Value": composite_cn},
+                        {"Parameter": "24-hour Rainfall (inches)", "Value": 5},
+                        {"Parameter": "Maximum Potential Storage (inches)", "Value": max_potential_storage},
+                        {"Parameter": "Initial Abstraction", "Value": 0.05},
+                        {"Parameter": "Runoff Depth (inches)", "Value": 1},
+                        {"Parameter": "Runoff/Precipitation Ratio", "Value": 0.2},
+                        {"Parameter": "Runoff Volume (ft3)", "Value": 10000}
+                    ]
+                
+                # Update the Composite Curve Number and Maximum Potential Storage values
+                for row in updated_data:
+                    if row.get("Parameter") == "Composite Curve Number":
+                        row["Value"] = composite_cn
+                    elif row.get("Parameter") == "Maximum Potential Storage (inches)":
+                        row["Value"] = round(max_potential_storage, 2)
+                return updated_data
+        
+        # If table data was edited, check if Composite Curve Number changed and update Maximum Potential Storage
+        if trigger_id == "runoff-calculations-table" and current_table_data:
+            updated_data = [row.copy() for row in current_table_data]
+            # Check if Composite Curve Number was edited
+            for row in updated_data:
+                if row.get("Parameter") == "Composite Curve Number":
+                    try:
+                        composite_cn = float(row.get("Value", 0))
+                        if composite_cn > 0:
+                            # Calculate Maximum Potential Storage: (1000/D6) - 10
+                            max_potential_storage = (1000 / composite_cn) - 10
+                            # Update Maximum Potential Storage in the table
+                            for storage_row in updated_data:
+                                if storage_row.get("Parameter") == "Maximum Potential Storage (inches)":
+                                    storage_row["Value"] = round(max_potential_storage, 2)
+                                    break
+                    except (ValueError, TypeError):
+                        pass
+                    break
+            return updated_data
+        
+        return current_table_data if current_table_data else dash.no_update
 
 
 
