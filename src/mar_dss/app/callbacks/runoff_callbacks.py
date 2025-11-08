@@ -566,6 +566,7 @@ def setup_runoff_callbacks(app):
                 except (ValueError, TypeError, IndexError):
                     table_data[4]["Value"] = 0
             
+            # Create the DataTable to display in the div
             table = dash_table.DataTable(
                 id="composite-cn-datatable",
                 data=table_data,
@@ -604,6 +605,90 @@ def setup_runoff_callbacks(app):
             return table, table_data
         
         return html.Div("No data available for this option.", className="text-warning"), None
+
+    # Callback to recompute Composite CN when table values are edited
+    @app.callback(
+        [Output('composite-cn-table', 'children', allow_duplicate=True),
+         Output('composite-cn-table-store', 'data', allow_duplicate=True)],
+        [Input('composite-cn-datatable', 'data'),
+         Input('impervious-outlet-option', 'value')],
+        prevent_initial_call=True
+    )
+    def recompute_composite_cn_from_table(table_data, selected_option):
+        """Recompute Composite CN when any table value is edited."""
+        if not table_data or not selected_option:
+            return dash.no_update, dash.no_update
+        
+        # Make a copy to avoid modifying the original
+        updated_data = [row.copy() for row in table_data]
+        
+        # Compute Composite CN based on the formula
+        if selected_option == "1A":
+            # Formula: ((M11*M13)+(M12*(100-M13)))/100
+            try:
+                m11 = float(updated_data[0]["Value"]) if updated_data[0]["Value"] != "" else 0
+                m12 = float(updated_data[1]["Value"]) if updated_data[1]["Value"] != "" else 0
+                m13 = float(updated_data[2]["Value"]) if updated_data[2]["Value"] != "" else 0
+                composite_cn = ((m11 * m13) + (m12 * (100 - m13))) / 100
+                updated_data[3]["Value"] = round(composite_cn, 2)
+            except (ValueError, TypeError, IndexError):
+                updated_data[3]["Value"] = 0
+        elif selected_option == "1B":
+            # Formula: (((P11*P13)+(P12*(100-P13)))/100)-(((P14/100)*P13*((((P11*P13)+(P12*(100-P13)))/100)-P12))/100)
+            try:
+                p11 = float(updated_data[0]["Value"]) if updated_data[0]["Value"] != "" else 0
+                p12 = float(updated_data[1]["Value"]) if updated_data[1]["Value"] != "" else 0
+                p13 = float(updated_data[2]["Value"]) if updated_data[2]["Value"] != "" else 20
+                p14 = float(updated_data[3]["Value"]) if updated_data[3]["Value"] != "" else 1
+                first_part = ((p11 * p13) + (p12 * (100 - p13))) / 100
+                second_part = ((p14 / 100) * p13 * (first_part - p12)) / 100
+                composite_cn = first_part - second_part
+                updated_data[4]["Value"] = round(composite_cn, 2)
+            except (ValueError, TypeError, IndexError):
+                updated_data[4]["Value"] = 0
+        
+        # Update the table display
+        table = dash_table.DataTable(
+            id="composite-cn-datatable",
+            data=updated_data,
+            columns=[
+                {"name": "Parameter", "id": "Parameter", "editable": False},
+                {"name": "Value", "id": "Value", "editable": True, "type": "numeric"}
+            ],
+            style_cell={
+                'textAlign': 'left',
+                'padding': '10px',
+                'fontFamily': 'Arial, sans-serif',
+                'fontSize': '14px',
+                'border': '1px solid #ddd'
+            },
+            style_header={
+                'backgroundColor': '#f8f9fa',
+                'fontWeight': 'bold',
+                'border': '1px solid #ddd'
+            },
+            style_data={
+                'backgroundColor': 'white',
+                'border': '1px solid #ddd'
+            },
+            style_data_conditional=[
+                {
+                    'if': {'row_index': 'odd'},
+                    'backgroundColor': '#f8f9fa'
+                },
+                {
+                    'if': {'row_index': 3 if selected_option == "1A" else 4},
+                    'backgroundColor': '#e3f2fd',
+                    'fontWeight': 'bold'
+                }
+            ]
+        )
+        
+        return table, updated_data
+    
+    # Note: The "Recalculate Composite CN" button triggers recalculation after manual edits.
+    # Automatic recalculation on edit is not possible due to Dash's component validation
+    # requiring all Input IDs to exist in the initial layout.
 
 
 

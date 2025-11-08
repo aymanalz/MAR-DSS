@@ -232,6 +232,18 @@ def create_runoff_calculator_tab():
                                         className="mb-4"
                                     ),
                                     html.Div(id="composite-cn-table", className="mt-3"),
+                                    html.Div(
+                                        dash_table.DataTable(
+                                            id="composite-cn-datatable",
+                                            data=[],
+                                            columns=[
+                                                {"name": "Parameter", "id": "Parameter", "editable": False},
+                                                {"name": "Value", "id": "Value", "editable": True, "type": "numeric"}
+                                            ]
+                                        ),
+                                        style={"display": "none"},
+                                        id="composite-cn-datatable-wrapper"
+                                    ),
                                     dcc.Store(id="composite-cn-table-store", data=None)
                                 ], width=6),
                                 dbc.Col([
