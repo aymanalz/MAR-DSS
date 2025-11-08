@@ -528,8 +528,8 @@ def setup_runoff_callbacks(app):
             table_data = [
                 {"Parameter": "CN impervious", "Value": cn_impervious},
                 {"Parameter": "CN pervious", "Value": cn_pervious},
-                {"Parameter": "Total Impervious Area %", "Value": ""},
-                {"Parameter": "R %", "Value": ""},
+                {"Parameter": "Total Impervious Area %", "Value": 20},
+                {"Parameter": "R %", "Value": 1},
                 {"Parameter": "Composite CN", "Value": 0}
             ]
         else:
@@ -554,8 +554,9 @@ def setup_runoff_callbacks(app):
                 try:
                     p11 = float(table_data[0]["Value"]) if table_data[0]["Value"] != "" else 0
                     p12 = float(table_data[1]["Value"]) if table_data[1]["Value"] != "" else 0
-                    p13 = float(table_data[2]["Value"]) if table_data[2]["Value"] != "" else 0
-                    p14 = float(table_data[3]["Value"]) if table_data[3]["Value"] != "" else 0
+                    # Use default values of 20 and 1 if empty
+                    p13 = float(table_data[2]["Value"]) if table_data[2]["Value"] != "" else 20
+                    p14 = float(table_data[3]["Value"]) if table_data[3]["Value"] != "" else 1
                     # First part: ((P11*P13)+(P12*(100-P13)))/100
                     first_part = ((p11 * p13) + (p12 * (100 - p13))) / 100
                     # Second part: ((P14/100)*P13*((((P11*P13)+(P12*(100-P13)))/100)-P12))/100
