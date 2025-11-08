@@ -6,6 +6,7 @@ import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 from dash import dcc, html
 import dash_leaflet as dl
+from dash import dash_table
 
 
 def create_runoff_map(lat=38.5816, lon=-121.4944, zoom=10):
@@ -209,6 +210,40 @@ def create_runoff_calculator_tab():
                 label="Curve Number",
                 tab_id="curve-number-tab",
                 children=[
+                    dbc.Card([
+                        dbc.CardBody([
+                            html.H5("Curve Number Option 1: Composite Curve Number Based on % Impervious Cover Calculator (Pick 1A or 1B)", 
+                                    className="fw-bold mb-3"),
+                            dbc.Row([
+                                dbc.Col([
+                                    dbc.RadioItems(
+                                        id="impervious-outlet-option",
+                                        options=[
+                                            {
+                                                "label": "1A: Pick this one if all of your impervious areas outlet directly to the drainage system (see figure below).",
+                                                "value": "1A"
+                                            },
+                                            {
+                                                "label": "1B: Pick this one if all/some of impervious area flow spreads over pervious areas before entering the drainage system.",
+                                                "value": "1B"
+                                            }
+                                        ],
+                                        value=None,
+                                        className="mb-4"
+                                    ),
+                                    html.Div(id="composite-cn-table", className="mt-3"),
+                                    dcc.Store(id="composite-cn-table-store", data=None)
+                                ], width=6),
+                                dbc.Col([
+                                    html.Img(
+                                        src="/assets/curve_number.jpg",
+                                        alt="Curve Number Diagram",
+                                        style={"maxWidth": "70%", "height": "auto"}
+                                    )
+                                ], width=6)
+                            ])
+                        ])
+                    ], className="mt-4 mb-4"),
                     dbc.Row([
                         dbc.Col([
                             create_impervious_curve_number_content()
@@ -216,7 +251,7 @@ def create_runoff_calculator_tab():
                         dbc.Col([
                             create_cover_soil_curve_number_content()
                         ], width=6)
-                    ], className="mt-4")
+                    ])
                 ]
             ),
             dbc.Tab(

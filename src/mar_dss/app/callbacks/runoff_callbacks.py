@@ -91,6 +91,29 @@ def streams_to_geojson(streams):
 def setup_runoff_callbacks(app):
     """Register callbacks related to the runoff calculator tab."""
     print("Setting up runoff callbacks...")
+    
+    # Client-side callback to resize map when tab becomes active
+    app.clientside_callback(
+        """
+        function(activeTab) {
+            if (activeTab === "rainfall-watershed-tab") {
+                setTimeout(function() {
+                    try {
+                        window.dispatchEvent(new Event("resize"));
+                    } catch (e) {
+                        var evt = document.createEvent("UIEvents");
+                        evt.initUIEvent("resize", true, false, window, 0);
+                        window.dispatchEvent(evt);
+                    }
+                }, 100);
+            }
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output("runoff-map", "id", allow_duplicate=True),  # dummy output
+        Input("runoff-calculator-tabs", "active_tab"),
+        prevent_initial_call=True,
+    )
 
     # Callback 1: Handle map clicks to update coordinates (exact same as open3.py)
     @app.callback(
@@ -433,5 +456,153 @@ def setup_runoff_callbacks(app):
             ], color="info")
         
         return html.Div("Invalid selection combination.", className="text-danger")
+
+    # Callback for composite CN table based on 1A/1B selection
+    @app.callback(
+        [Output('composite-cn-table', 'children'),
+         Output('composite-cn-table-store', 'data')],
+        [Input('impervious-outlet-option', 'value'),
+         Input('impervious-curve-number-select', 'value'),
+         Input('cover-description-select', 'value'),
+         Input('soil-type-select', 'value')]
+    )
+    def update_composite_cn_table(selected_option, impervious_cn_selection, cover_description, soil_type):
+        """Update the composite CN table based on 1A or 1B selection."""
+        if not selected_option:
+            return html.Div("Please select an option (1A or 1B).", className="text-muted"), None
+        
+        # Get CN impervious value from the impervious curve number selection
+        cn_impervious_map = {
+            "concrete_fresh": 99,
+            "concrete_weathered": 97,
+            "asphalt_fresh": 99,
+            "asphalt_weathered": 97
+        }
+        cn_impervious = cn_impervious_map.get(impervious_cn_selection, 50)  # Default to 50 if not selected
+        
+        # Get CN pervious value from the cover description and soil type selection
+        curve_number_table = {
+            "open_space_poor": {
+                "type_a": 56,
+                "type_b": 70,
+                "type_c": 79,
+                "type_d": 84
+            },
+            "open_space_fair": {
+                "type_a": 36,
+                "type_b": 57,
+                "type_c": 70,
+                "type_d": 77
+            },
+            "open_space_good": {
+                "type_a": 26,
+                "type_b": 48,
+                "type_c": 64,
+                "type_d": 71
+            },
+            "natural_desert": {
+                "type_a": 50,
+                "type_b": 67,
+                "type_c": 78,
+                "type_d": 82
+            },
+            "developing_urban": {
+                "type_a": 67,
+                "type_b": 79,
+                "type_c": 87,
+                "type_d": 91
+            }
+        }
+        cn_pervious = curve_number_table.get(cover_description, {}).get(soil_type, 50)  # Default to 50 if not selected
+        
+        if selected_option == "1A":
+            # Table data for 1A
+            table_data = [
+                {"Parameter": "CN impervious", "Value": cn_impervious},
+                {"Parameter": "CN pervious", "Value": cn_pervious},
+                {"Parameter": "Connected Impervious Area %", "Value": 20},
+                {"Parameter": "Composite CN", "Value": 50}
+            ]
+        elif selected_option == "1B":
+            # Table data for 1B
+            table_data = [
+                {"Parameter": "CN impervious", "Value": cn_impervious},
+                {"Parameter": "CN pervious", "Value": cn_pervious},
+                {"Parameter": "Total Impervious Area %", "Value": ""},
+                {"Parameter": "R %", "Value": ""},
+                {"Parameter": "Composite CN", "Value": 0}
+            ]
+        else:
+            return html.Div("Invalid option selected.", className="text-danger")
+        
+        if table_data:
+            # Compute Composite CN based on the formula
+            if selected_option == "1A":
+                # Formula: ((M11*M13)+(M12*(100-M13)))/100
+                # M11: CN impervious, M12: CN pervious, M13: Connected Impervious Area %
+                try:
+                    m11 = float(table_data[0]["Value"]) if table_data[0]["Value"] != "" else 0
+                    m12 = float(table_data[1]["Value"]) if table_data[1]["Value"] != "" else 0
+                    m13 = float(table_data[2]["Value"]) if table_data[2]["Value"] != "" else 0
+                    composite_cn = ((m11 * m13) + (m12 * (100 - m13))) / 100
+                    table_data[3]["Value"] = round(composite_cn, 2)
+                except (ValueError, TypeError, IndexError):
+                    table_data[3]["Value"] = 0
+            elif selected_option == "1B":
+                # Formula: (((P11*P13)+(P12*(100-P13)))/100)-(((P14/100)*P13*((((P11*P13)+(P12*(100-P13)))/100)-P12))/100)
+                # P11: CN impervious, P12: CN pervious, P13: Total Impervious Area %, P14: R %
+                try:
+                    p11 = float(table_data[0]["Value"]) if table_data[0]["Value"] != "" else 0
+                    p12 = float(table_data[1]["Value"]) if table_data[1]["Value"] != "" else 0
+                    p13 = float(table_data[2]["Value"]) if table_data[2]["Value"] != "" else 0
+                    p14 = float(table_data[3]["Value"]) if table_data[3]["Value"] != "" else 0
+                    # First part: ((P11*P13)+(P12*(100-P13)))/100
+                    first_part = ((p11 * p13) + (p12 * (100 - p13))) / 100
+                    # Second part: ((P14/100)*P13*((((P11*P13)+(P12*(100-P13)))/100)-P12))/100
+                    second_part = ((p14 / 100) * p13 * (first_part - p12)) / 100
+                    composite_cn = first_part - second_part
+                    table_data[4]["Value"] = round(composite_cn, 2)
+                except (ValueError, TypeError, IndexError):
+                    table_data[4]["Value"] = 0
+            
+            table = dash_table.DataTable(
+                id="composite-cn-datatable",
+                data=table_data,
+                columns=[
+                    {"name": "Parameter", "id": "Parameter", "editable": False},
+                    {"name": "Value", "id": "Value", "editable": True, "type": "numeric"}
+                ],
+                style_cell={
+                    'textAlign': 'left',
+                    'padding': '10px',
+                    'fontFamily': 'Arial, sans-serif',
+                    'fontSize': '14px',
+                    'border': '1px solid #ddd'
+                },
+                style_header={
+                    'backgroundColor': '#f8f9fa',
+                    'fontWeight': 'bold',
+                    'border': '1px solid #ddd'
+                },
+                style_data={
+                    'backgroundColor': 'white',
+                    'border': '1px solid #ddd'
+                },
+                style_data_conditional=[
+                    {
+                        'if': {'row_index': 'odd'},
+                        'backgroundColor': '#f8f9fa'
+                    },
+                    {
+                        'if': {'row_index': 3 if selected_option == "1A" else 4},
+                        'backgroundColor': '#e3f2fd',
+                        'fontWeight': 'bold'
+                    }
+                ]
+            )
+            return table, table_data
+        
+        return html.Div("No data available for this option.", className="text-warning"), None
+
 
 

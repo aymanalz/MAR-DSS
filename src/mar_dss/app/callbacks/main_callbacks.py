@@ -670,7 +670,7 @@ def setup_main_callbacks(app, dashboard_instance):
     # Client-side resize to force Leaflet/Mapbox to re-render when tab becomes visible
     app.clientside_callback(
         ClientsideFunction(namespace="clientside", function_name="resizeMapOnTab"),
-        Output("runoff-map", "id"),  # dummy output; will always return no_update
+        Output("runoff-map", "id", allow_duplicate=True),  # dummy output; will always return no_update
         Input("water-source-tabs", "active_tab"),
         prevent_initial_call=True,
     )
