@@ -101,6 +101,78 @@ def create_controls_card():
     ])
 
 
+def create_impervious_curve_number_content():
+    """Create the impervious curve number selection component."""
+    # Curve number data for impervious surfaces
+    curve_number_options = [
+        {"label": "Concrete - Fresh/Uncracked (CN: 99)", "value": "concrete_fresh"},
+        {"label": "Concrete - Weathered/Cracked (CN: 97)", "value": "concrete_weathered"},
+        {"label": "Asphalt - Fresh/Uncracked (CN: 99)", "value": "asphalt_fresh"},
+        {"label": "Asphalt - Weathered/Cracked (CN: 97)", "value": "asphalt_weathered"},
+    ]
+    
+    return dbc.Card([
+        dbc.CardHeader("Estimated Impervious Curve Number Values", className="fw-bold bg-primary text-white"),
+        dbc.CardBody([
+            html.Label("Select Surface Condition:", className="fw-bold mb-2"),
+            dbc.Select(
+                id="impervious-curve-number-select",
+                options=curve_number_options,
+                placeholder="Select a surface condition...",
+                className="mb-3"
+            ),
+            html.Div(id="selected-impervious-curve-number-display", className="mt-3")
+        ])
+    ])
+
+
+def create_cover_soil_curve_number_content():
+    """Create the cover description and soil type curve number selection component."""
+    # Cover Description options (rows)
+    cover_description_options = [
+        {"label": "Open Space - Poor Condition", "value": "open_space_poor"},
+        {"label": "Open Space - Fair Condition", "value": "open_space_fair"},
+        {"label": "Open Space - Good Condition", "value": "open_space_good"},
+        {"label": "Natural Desert Landscaping (pervious areas only)", "value": "natural_desert"},
+        {"label": "Developing Urban Areas - Newly Graded Areas", "value": "developing_urban"},
+    ]
+    
+    # Hydrologic Soil Type options (columns)
+    soil_type_options = [
+        {"label": "Hydrologic Soil Type A", "value": "type_a"},
+        {"label": "Hydrologic Soil Type B", "value": "type_b"},
+        {"label": "Hydrologic Soil Type C", "value": "type_c"},
+        {"label": "Hydrologic Soil Type D", "value": "type_d"},
+    ]
+    
+    return dbc.Card([
+        dbc.CardHeader("Estimated Pervious Curve Number Values", className="fw-bold bg-primary text-white"),
+        dbc.CardBody([
+            dbc.Row([
+                dbc.Col([
+                    html.Label("Cover Description:", className="fw-bold mb-2"),
+                    dbc.Select(
+                        id="cover-description-select",
+                        options=cover_description_options,
+                        placeholder="Select cover description...",
+                        className="mb-3"
+                    ),
+                ], width=6),
+                dbc.Col([
+                    html.Label("Hydrologic Soil Type:", className="fw-bold mb-2"),
+                    dbc.Select(
+                        id="soil-type-select",
+                        options=soil_type_options,
+                        placeholder="Select soil type...",
+                        className="mb-3"
+                    ),
+                ], width=6)
+            ]),
+            html.Div(id="selected-curve-number-display", className="mt-3")
+        ])
+    ])
+
+
 def create_results_card():
     """Create the runoff calculation results card component with tabs."""
     return dbc.Card([
@@ -137,7 +209,14 @@ def create_runoff_calculator_tab():
                 label="Curve Number",
                 tab_id="curve-number-tab",
                 children=[
-                    html.Div(id="curve-number-content", className="mt-4")
+                    dbc.Row([
+                        dbc.Col([
+                            create_impervious_curve_number_content()
+                        ], width=6),
+                        dbc.Col([
+                            create_cover_soil_curve_number_content()
+                        ], width=6)
+                    ], className="mt-4")
                 ]
             ),
             dbc.Tab(

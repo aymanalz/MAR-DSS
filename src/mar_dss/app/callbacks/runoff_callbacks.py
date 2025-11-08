@@ -4,6 +4,7 @@ Callbacks for the Runoff Calculator tab.
 import os
 import dash
 from dash import Input, Output, html, no_update, State
+import dash_bootstrap_components as dbc
 import dash_leaflet as dl
 import pandas as pd
 import osmnx as ox
@@ -322,5 +323,115 @@ def setup_runoff_callbacks(app):
                 return [], html.P(f"Error getting watershed data: {str(e)}", className="text-danger"), rain_table, error_msg
         
         return [], html.Div("Click 'Get Watershed Info' to retrieve watershed data."), html.Div("Click 'Get Watershed Info' to retrieve rain data."), html.Div("")
+
+    # Callback for impervious curve number selection
+    @app.callback(
+        Output('selected-impervious-curve-number-display', 'children'),
+        Input('impervious-curve-number-select', 'value')
+    )
+    def update_impervious_curve_number_display(selected_value):
+        """Display the selected impervious curve number information."""
+        if not selected_value:
+            return html.Div("Please select a surface condition.", className="text-muted")
+        
+        # Map values to curve numbers
+        curve_number_map = {
+            "concrete_fresh": {"surface": "Concrete", "condition": "Fresh/Uncracked", "cn": 99},
+            "concrete_weathered": {"surface": "Concrete", "condition": "Weathered/Cracked", "cn": 97},
+            "asphalt_fresh": {"surface": "Asphalt", "condition": "Fresh/Uncracked", "cn": 99},
+            "asphalt_weathered": {"surface": "Asphalt", "condition": "Weathered/Cracked", "cn": 97},
+        }
+        
+        info = curve_number_map.get(selected_value)
+        if info:
+            return dbc.Alert([
+                html.H5("Selected Surface Condition:", className="mb-2"),
+                html.P([
+                    html.Strong("Surface: "), info["surface"], html.Br(),
+                    html.Strong("Condition: "), info["condition"], html.Br(),
+                    html.Strong("Curve Number (CN): "), html.Span(str(info["cn"]), className="text-primary fw-bold fs-4")
+                ], className="mb-0")
+            ], color="info")
+        
+        return html.Div("Invalid selection.", className="text-danger")
+
+    # Callback for curve number selection based on cover description and soil type
+    @app.callback(
+        Output('selected-curve-number-display', 'children'),
+        [Input('cover-description-select', 'value'),
+         Input('soil-type-select', 'value')]
+    )
+    def update_curve_number_display(cover_description, soil_type):
+        """Display the selected curve number based on cover description and soil type."""
+        if not cover_description or not soil_type:
+            return html.Div("Please select both Cover Description and Hydrologic Soil Type.", className="text-muted")
+        
+        # Curve number lookup table
+        # Structure: {cover_description: {soil_type: curve_number}}
+        curve_number_table = {
+            "open_space_poor": {
+                "type_a": 56,
+                "type_b": 70,
+                "type_c": 79,
+                "type_d": 84
+            },
+            "open_space_fair": {
+                "type_a": 36,
+                "type_b": 57,
+                "type_c": 70,
+                "type_d": 77
+            },
+            "open_space_good": {
+                "type_a": 26,
+                "type_b": 48,
+                "type_c": 64,
+                "type_d": 71
+            },
+            "natural_desert": {
+                "type_a": 50,
+                "type_b": 67,
+                "type_c": 78,
+                "type_d": 82
+            },
+            "developing_urban": {
+                "type_a": 67,
+                "type_b": 79,
+                "type_c": 87,
+                "type_d": 91
+            }
+        }
+        
+        # Cover description labels
+        cover_labels = {
+            "open_space_poor": "Open Space - Poor Condition",
+            "open_space_fair": "Open Space - Fair Condition",
+            "open_space_good": "Open Space - Good Condition",
+            "natural_desert": "Natural Desert Landscaping (pervious areas only)",
+            "developing_urban": "Developing Urban Areas - Newly Graded Areas"
+        }
+        
+        # Soil type labels
+        soil_labels = {
+            "type_a": "Hydrologic Soil Type A",
+            "type_b": "Hydrologic Soil Type B",
+            "type_c": "Hydrologic Soil Type C",
+            "type_d": "Hydrologic Soil Type D"
+        }
+        
+        # Get curve number
+        cn = curve_number_table.get(cover_description, {}).get(soil_type)
+        
+        if cn is not None:
+            return dbc.Alert([
+                html.H5("Selected Curve Number:", className="mb-2"),
+                html.P([
+                    html.Strong("Cover Description: "), cover_labels.get(cover_description, cover_description), html.Br(),
+                    html.Strong("Soil Type: "), soil_labels.get(soil_type, soil_type), html.Br(),
+                    html.Hr(className="my-2"),
+                    html.Strong("Curve Number (CN): "), html.Span(str(cn), className="text-primary fw-bold fs-3")
+                ], className="mb-0")
+            ], color="info")
+        
+        return html.Div("Invalid selection combination.", className="text-danger")
 
 
