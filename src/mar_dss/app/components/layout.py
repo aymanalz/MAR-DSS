@@ -300,7 +300,7 @@ def _build_tabs() -> dbc.Tabs:
                 }
             ),
             dbc.Tab(
-                label=("(4) Environmental Impact"), 
+                label=("(4) Water Quality and Geochemistry"), 
                 tab_id="environmental",
                 label_style={
                     "color": "#ffffff", 
