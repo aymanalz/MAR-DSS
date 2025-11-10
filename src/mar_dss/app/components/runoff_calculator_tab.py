@@ -271,6 +271,28 @@ def create_runoff_calculator_tab():
                                 dbc.CardBody([
                                     html.H5("Step 2: Estimate watershed area and rainfall information. You may use the Rain Fall Watershed tab to obtain this information", 
                                             className="fw-bold mb-3"),
+                                    dbc.Row([
+                                        dbc.Col([
+                                            html.Label("Latitude:", className="fw-bold mb-2"),
+                                            dbc.Input(
+                                                id="runoff-single-storm-latitude",
+                                                type="number",
+                                                value=38.5816,
+                                                placeholder="Enter latitude",
+                                                className="mb-3"
+                                            )
+                                        ], width=6),
+                                        dbc.Col([
+                                            html.Label("Longitude:", className="fw-bold mb-2"),
+                                            dbc.Input(
+                                                id="runoff-single-storm-longitude",
+                                                type="number",
+                                                value=-121.4944,
+                                                placeholder="Enter longitude",
+                                                className="mb-3"
+                                            )
+                                        ], width=6)
+                                    ]),
                                     html.Div(id="runoff-calculations-content", className="mt-3"),
                                     dash_table.DataTable(
                                         id="runoff-calculations-table",
@@ -322,28 +344,6 @@ def create_runoff_calculator_tab():
                                 dbc.CardBody([
                                     html.H5("Step 3: Estimate Annual Runoff", 
                                             className="fw-bold mb-3"),
-                                    dbc.Row([
-                                        dbc.Col([
-                                            html.Label("Latitude:", className="fw-bold mb-2"),
-                                            dbc.Input(
-                                                id="monthly-runoff-latitude",
-                                                type="number",
-                                                value=38.5816,
-                                                placeholder="Enter latitude",
-                                                className="mb-3"
-                                            )
-                                        ], width=6),
-                                        dbc.Col([
-                                            html.Label("Longitude:", className="fw-bold mb-2"),
-                                            dbc.Input(
-                                                id="monthly-runoff-longitude",
-                                                type="number",
-                                                value=-121.4944,
-                                                placeholder="Enter longitude",
-                                                className="mb-3"
-                                            )
-                                        ], width=6)
-                                    ]),
                                     dbc.Button(
                                         "Get Monthly Rainfall and Runoff",
                                         id="get-monthly-rain-btn",

@@ -1020,8 +1020,8 @@ def setup_runoff_callbacks(app):
     @app.callback(
         Output('monthly-runoff-estimation-content', 'children'),
         Input('get-monthly-rain-btn', 'n_clicks'),
-        [State('monthly-runoff-latitude', 'value'),
-         State('monthly-runoff-longitude', 'value'),
+        [State('runoff-single-storm-latitude', 'value'),
+         State('runoff-single-storm-longitude', 'value'),
          State('runoff-calculations-table', 'data')],
         prevent_initial_call=True
     )
@@ -1031,7 +1031,7 @@ def setup_runoff_callbacks(app):
             try:
                 # Get monthly rain data
                 monthly_rain = get_monthly_rain(lat, lon)
-                rain_stat = get_rain_data(lat, lon)
+                #rain_stat = get_rain_data(lat, lon)
                 ### 
                 # Get Composite Curve Number and Area from the runoff calculations table
                 cn = 50  # default value
