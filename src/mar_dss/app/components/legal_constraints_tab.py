@@ -52,6 +52,17 @@ def create_legal_constraints_content():
                 dbc.Col(
                     [
                         html.H3("Legal & Regulatory Feasibility Inputs", className="mb-4 text-primary"),
+                        dbc.Alert(
+                            [
+                                html.I(className="fas fa-triangle-exclamation me-2"),
+                                html.Strong("Legal disclaimer: "),
+                                "This decision aid is for informational purposes only and does not constitute legal advice. ",
+                                "Regulatory requirements vary by jurisdiction and project specifics. ",
+                                "Additional review may be required to confirm local, state, Tribal, and federal laws, permits, and approvals.",
+                            ],
+                            color="danger",
+                            className="mb-4",
+                        ),
 
                         # 0) Project/Jurisdiction screen
                         _section_card(
@@ -223,8 +234,8 @@ def create_legal_constraints_content():
                                 html.P("C5. Anti-degradation/TMDL (Total Maximum Daily Load) compliance"),
                                 _radio(
                                     "legal-qual-antideg",
-                                    ["No lowering or justified with mitigation", "Likely with studies", "Not compliant (Prohibited)"],
-                                    "No lowering or justified with mitigation",
+                                    ["No lowering", "Lowering justified with mitigation", "Likely with studies", "Not compliant (Prohibited)"],
+                                    "No lowering",
                                 ),
                                 html.Hr(),
                                 html.P("C6. Geochemical compatibility (mobilization/precipitation risks)"),

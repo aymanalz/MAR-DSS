@@ -211,8 +211,7 @@ def setup_environmental_impact_callbacks(app):
             decision_content = [
                 html.P("The source water is **SUITABLE** for MAR implementation.", className="lead font-weight-bold"),
                 html.P(f"Total Risk Score: {total_score} points (Range: 0-2)"),
-                html.P("Minimal to no treatment required. Low implementation cost.", className="mt-2"),
-                html.P("Action: **Proceed with hydrogeological assessment and design.**", className="mt-3 font-weight-bold")
+                html.P("Minimal to no treatment required. Low implementation cost.", className="mt-2")
             ]
 
         # 3. Create Gauge Plot

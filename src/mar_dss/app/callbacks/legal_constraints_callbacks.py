@@ -217,9 +217,9 @@ def setup_legal_constraints_callbacks(app):
             html.P(final_text, className="lead fw-bold mb-2"),
             html.Ul(
                 [
-                    html.Li(f"A) Site: {site_result}", className=f"text-{site_color}"),
-                    html.Li(f"B) Water Source: {source_result}", className=f"text-{source_color}"),
-                    html.Li(f"C) Water Quality: {quality_result}", className=f"text-{quality_color}"),
+                    html.Li(["A) Site: ", html.Strong(site_result)], className="mb-1"),
+                    html.Li(["B) Water Source: ", html.Strong(source_result)], className="mb-1"),
+                    html.Li(["C) Water Quality: ", html.Strong(quality_result)], className="mb-0"),
                 ],
                 className="mb-0",
             ),
@@ -321,19 +321,19 @@ def setup_legal_constraints_callbacks(app):
 
         site_branch = html.Div(
             [
-                html.P(["Site Branch Result: ", html.Strong(site_result)], className=f"text-{site_color} mb-2"),
+                html.P(["Site Branch Result: ", html.Strong(site_result)], className="mb-2"),
                 html.Small("Outcome derived from A1–A7 inputs."),
             ]
         )
         source_branch = html.Div(
             [
-                html.P(["Water Source Branch Result: ", html.Strong(source_result)], className=f"text-{source_color} mb-2"),
+                html.P(["Water Source Branch Result: ", html.Strong(source_result)], className="mb-2"),
                 html.Small("Outcome derived from B1–B5 inputs."),
             ]
         )
         quality_branch = html.Div(
             [
-                html.P(["Water Quality Branch Result: ", html.Strong(quality_result)], className=f"text-{quality_color} mb-2"),
+                html.P(["Water Quality Branch Result: ", html.Strong(quality_result)], className="mb-2"),
                 html.Small("Outcome derived from C1–C9 inputs."),
             ]
         )
