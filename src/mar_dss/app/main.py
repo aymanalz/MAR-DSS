@@ -110,6 +110,15 @@ class DashboardApp:
             from .callbacks.environmental_impact_callbacks import setup_environmental_impact_callbacks
         setup_environmental_impact_callbacks(self.app)
 
+        # Set up legal constraints callbacks
+        try:
+            from mar_dss.app.callbacks.legal_constraints_callbacks import (
+                setup_legal_constraints_callbacks,
+            )
+        except ImportError:
+            from .callbacks.legal_constraints_callbacks import setup_legal_constraints_callbacks
+        setup_legal_constraints_callbacks(self.app)
+
     def create_sample_data(self):
         """Create sample data for demonstration."""
         # Generate sample time series data
