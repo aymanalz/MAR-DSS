@@ -314,6 +314,46 @@ def create_runoff_calculator_tab():
                                 ])
                             ])
                         ], width=12)
+                    ], className="mt-4"),
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Card([
+                                dbc.CardHeader("Monthly Runoff Estimation", className="fw-bold bg-primary text-white"),
+                                dbc.CardBody([
+                                    html.H5("Step 3: Estimate Annual Runoff", 
+                                            className="fw-bold mb-3"),
+                                    dbc.Row([
+                                        dbc.Col([
+                                            html.Label("Latitude:", className="fw-bold mb-2"),
+                                            dbc.Input(
+                                                id="monthly-runoff-latitude",
+                                                type="number",
+                                                value=38.5816,
+                                                placeholder="Enter latitude",
+                                                className="mb-3"
+                                            )
+                                        ], width=6),
+                                        dbc.Col([
+                                            html.Label("Longitude:", className="fw-bold mb-2"),
+                                            dbc.Input(
+                                                id="monthly-runoff-longitude",
+                                                type="number",
+                                                value=-121.4944,
+                                                placeholder="Enter longitude",
+                                                className="mb-3"
+                                            )
+                                        ], width=6)
+                                    ]),
+                                    dbc.Button(
+                                        "Get Monthly Rainfall and Runoff",
+                                        id="get-monthly-rain-btn",
+                                        color="primary",
+                                        className="mb-3"
+                                    ),
+                                    html.Div(id="monthly-runoff-estimation-content")
+                                ])
+                            ])
+                        ], width=12)
                     ], className="mt-4")
                 ]
             ),

@@ -16,6 +16,7 @@ from mar_dss.pfdf.data.noaa.atlas14 import download
 import requests
 import numpy as np
 import plotly.graph_objects as go
+from scipy.special import exp1
 
 
 try:
@@ -1014,6 +1015,151 @@ def setup_runoff_callbacks(app):
             return updated_data
         
         return current_table_data if current_table_data else dash.no_update
+
+    # Callback for "Get Monthly Rainfall and Runoff" button in Monthly Runoff Estimation card
+    @app.callback(
+        Output('monthly-runoff-estimation-content', 'children'),
+        Input('get-monthly-rain-btn', 'n_clicks'),
+        [State('monthly-runoff-latitude', 'value'),
+         State('monthly-runoff-longitude', 'value'),
+         State('runoff-calculations-table', 'data')],
+        prevent_initial_call=True
+    )
+    def get_monthly_rain_for_runoff(n_clicks, lat, lon, runoff_table_data):
+        """Get monthly rain data and display as table and chart side by side."""
+        if n_clicks and n_clicks > 0 and lat is not None and lon is not None:
+            try:
+                # Get monthly rain data
+                monthly_rain = get_monthly_rain(lat, lon)
+                rain_stat = get_rain_data(lat, lon)
+                ### 
+                # Get Composite Curve Number and Area from the runoff calculations table
+                cn = 50  # default value
+                area = 0  # default value
+                if runoff_table_data:
+                    for row in runoff_table_data:
+                        if row.get("Parameter") == "Composite Curve Number":
+                            try:
+                                cn = float(row.get("Value", 50))
+                            except (ValueError, TypeError):
+                                cn = 50
+                        elif row.get("Parameter") == "Area (acres)":
+                            try:
+                                area = float(row.get("Value", 0))
+                            except (ValueError, TypeError):
+                                area = 0
+
+                
+                runoff_volume = []
+                runoff_depth = []
+                for p in monthly_rain['Rain (inches)']:
+                    if p > 0:
+                        s = (1000.0 / cn) - 10
+                        alpha_s = p - s
+                        lambda005 = 0.05
+                        exp_lambda005 = np.exp(-1.0 * lambda005 * (s/p))
+                        term1 = alpha_s * exp_lambda005
+
+                        tm1 = s*s/p
+                        tm2 = np.exp(((1-lambda005)*s)/p)
+                        tm3 = exp1(s/p)
+                        term2 = tm1 * tm2 * tm3
+                        vol = 30.25*area * 43560 / 12 * (term1 + term2)
+                        runoff_depth.append(term1 + term2)
+                        runoff_volume.append(vol)
+                       
+                    else:
+                        runoff_volume.append(0)
+                        runoff_depth.append(0)
+                    
+
+                ###
+                
+                if monthly_rain is None or monthly_rain.empty:
+                    return html.P("No monthly rain data available.", className="text-warning")
+                if len(runoff_volume)>0:
+                    monthly_rain['Runoff depth (in/day)'] = runoff_depth
+                    monthly_rain['Runoff Volume (ft3)'] = runoff_volume
+                # Create monthly rain table
+                monthly_rain_table = dash_table.DataTable(
+                    data=monthly_rain.to_dict('records'),
+                    columns=[{"name": i, "id": i} for i in monthly_rain.columns],
+                    style_cell={
+                        'textAlign': 'left',
+                        'padding': '10px',
+                        'fontFamily': 'Arial, sans-serif',
+                        'fontSize': '14px',
+                        'border': '1px solid #ddd'
+                    },
+                    style_header={
+                        'backgroundColor': '#f8f9fa',
+                        'fontWeight': 'bold',
+                        'border': '1px solid #ddd'
+                    },
+                    style_data={
+                        'backgroundColor': 'white',
+                        'border': '1px solid #ddd'
+                    },
+                    style_data_conditional=[
+                        {
+                            'if': {'row_index': 'odd'},
+                            'backgroundColor': '#f8f9fa'
+                        }
+                    ],
+                    page_size=len(monthly_rain),
+                    sort_action="native",
+                    filter_action="native",
+                    export_format="csv"
+                )
+                
+                # Create grouped bar chart for monthly rain and runoff depth
+                fig = go.Figure(data=[
+                    go.Bar(
+                        name='Rainfall',
+                        x=monthly_rain['Month'],
+                        y=monthly_rain['Rain (inches)'],
+                        marker_color='steelblue',
+                        text=monthly_rain['Rain (inches)'].round(2),
+                        textposition='outside'
+                    ),
+                    go.Bar(
+                        name='Runoff depth (in/day)',
+                        x=monthly_rain['Month'],
+                        y=monthly_rain['Runoff depth (in/day)'],
+                        marker_color='orange',
+                        text=monthly_rain['Runoff depth (in/day)'].round(2),
+                        textposition='outside'
+                    )
+                ])
+                fig.update_layout(
+                    title='Monthly Average Precipitation and Runoff Depth',
+                    xaxis_title='Month',
+                    yaxis_title='Depth (inches)',
+                    xaxis={'tickangle': -45},
+                    barmode='group',  # Group bars side by side
+                    height=400,
+                    margin=dict(l=50, r=50, t=50, b=100),
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="right",
+                        x=1
+                    )
+                )
+                monthly_rain_chart = dcc.Graph(figure=fig)
+                
+                # Return table and chart side by side
+                return dbc.Row([
+                    dbc.Col([monthly_rain_table], width=6),
+                    dbc.Col([monthly_rain_chart], width=6)
+                ])
+                
+            except Exception as e:
+                print(f"Error getting monthly rain data: {e}")
+                return html.P(f"Error getting monthly rain data: {str(e)}", className="text-danger")
+        
+        return html.Div("Click 'Get Monthly Rainfall and Runoff' to retrieve monthly precipitation data.", className="text-muted")
 
 
 
