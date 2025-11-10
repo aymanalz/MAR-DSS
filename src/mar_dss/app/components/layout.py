@@ -97,7 +97,7 @@ def _build_title_block() -> html.Div:
                                 src="assets/logo2.png",
                                 alt="MAR DSS Logo 2",
                                 style={
-                                    "height": "100px",
+                                    "height": "90px",
                                     "width": "auto",
                                     "vertical-align": "middle",
                                 },
@@ -109,15 +109,12 @@ def _build_title_block() -> html.Div:
                     dbc.Col(
                         [
                             html.H1(
-                                [
-                                    "Managed Aquifer Recharge",
-                                    html.Br(),
-                                    "Decision Support System",
-                                ],
+                                "Managed Aquifer Recharge Tool",
                                 className="text-center mb-0",
                                 style={
                                     "font-family": ("'Segoe UI', Tahoma, sans-serif"),
-                                    "font-size": "2.75rem",
+                                    "font-size": "2.4rem",
+                                    "line-height": "1.2",
                                     "font-weight": "700",
                                     "color": "#2C3E50",
                                     "background-color": "transparent",
@@ -135,20 +132,10 @@ def _build_title_block() -> html.Div:
                         [
                             html.Div([
                                 html.Img(
-                                    src="assets/logo.jpg",
-                                    alt="MAR DSS Logo",
+                                    src="assets/logos.jpg",
+                                    alt="Partner Logos",
                                     style={
                                         "height": "104px",
-                                        "width": "auto",
-                                        "vertical-align": "middle",
-                                        "margin-right": "20px",
-                                    },
-                                ),
-                                html.Img(
-                                    src="assets/estcp.png",
-                                    alt="ESTCP Logo",
-                                    style={
-                                        "height": "80px",
                                         "width": "auto",
                                         "vertical-align": "middle",
                                     },
