@@ -100,6 +100,15 @@ class DashboardApp:
         except ImportError:
             from .callbacks.analysis_callbacks import setup_analysis_callbacks
         setup_analysis_callbacks(self.app)
+        
+        # Set up environmental impact callbacks
+        try:
+            from mar_dss.app.callbacks.environmental_impact_callbacks import (
+                setup_environmental_impact_callbacks,
+            )
+        except ImportError:
+            from .callbacks.environmental_impact_callbacks import setup_environmental_impact_callbacks
+        setup_environmental_impact_callbacks(self.app)
 
     def create_sample_data(self):
         """Create sample data for demonstration."""
