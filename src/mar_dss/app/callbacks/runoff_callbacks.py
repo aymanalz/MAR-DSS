@@ -1142,7 +1142,31 @@ def setup_runoff_callbacks(app):
                 if len(runoff_volume)>0:
                     monthly_rain['Runoff depth (in/day)'] = runoff_depth
                     monthly_rain['Runoff Volume (ft3)'] = runoff_volume
-                # Create monthly rain table
+                # Create monthly rain table with different colors for each column
+                # Define colors for each column
+                column_colors = {
+                    'Month': {'header': '#2c5aa0', 'data': '#e8f4f8'},
+                    'Rain (inches)': {'header': '#28a745', 'data': '#d4edda'},
+                    'Runoff depth (in/day)': {'header': '#ff6b35', 'data': '#ffe5d9'},
+                    'Runoff Volume (ft3)': {'header': '#6f42c1', 'data': '#e9d5ff'}
+                }
+                
+                # Build conditional styling for columns
+                style_data_conditional = []
+                style_header_conditional = []
+                
+                for col in monthly_rain.columns:
+                    if col in column_colors:
+                        style_data_conditional.append({
+                            'if': {'column_id': col},
+                            'backgroundColor': column_colors[col]['data']
+                        })
+                        style_header_conditional.append({
+                            'if': {'column_id': col},
+                            'backgroundColor': column_colors[col]['header'],
+                            'color': 'white'
+                        })
+                
                 monthly_rain_table = dash_table.DataTable(
                     data=monthly_rain.to_dict('records'),
                     columns=[{"name": i, "id": i} for i in monthly_rain.columns],
@@ -1156,18 +1180,15 @@ def setup_runoff_callbacks(app):
                     style_header={
                         'backgroundColor': '#f8f9fa',
                         'fontWeight': 'bold',
-                        'border': '1px solid #ddd'
+                        'border': '1px solid #ddd',
+                        'color': 'black'
                     },
                     style_data={
                         'backgroundColor': 'white',
                         'border': '1px solid #ddd'
                     },
-                    style_data_conditional=[
-                        {
-                            'if': {'row_index': 'odd'},
-                            'backgroundColor': '#f8f9fa'
-                        }
-                    ],
+                    style_data_conditional=style_data_conditional,
+                    style_header_conditional=style_header_conditional,
                     page_size=len(monthly_rain),
                     sort_action="native",
                     filter_action="native",

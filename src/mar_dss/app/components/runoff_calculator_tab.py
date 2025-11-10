@@ -324,21 +324,30 @@ def create_runoff_calculator_tab():
                                                     'padding': '10px',
                                                     'fontFamily': 'Arial, sans-serif',
                                                     'fontSize': '14px',
-                                                    'border': '1px solid #ddd'
+                                                    'border': '1px solid #4a90e2',
+                                                    'backgroundColor': '#e8f4f8'
                                                 },
                                                 style_header={
-                                                    'backgroundColor': '#f8f9fa',
+                                                    'backgroundColor': '#2c5aa0',
+                                                    'color': 'white',
                                                     'fontWeight': 'bold',
-                                                    'border': '1px solid #ddd'
+                                                    'border': '1px solid #1a3d6b',
+                                                    'textAlign': 'center'
                                                 },
                                                 style_data={
-                                                    'backgroundColor': 'white',
-                                                    'border': '1px solid #ddd'
+                                                    'backgroundColor': '#f0f8ff',
+                                                    'border': '1px solid #4a90e2',
+                                                    'color': '#1a1a1a'
                                                 },
                                                 style_data_conditional=[
                                                     {
                                                         'if': {'row_index': 'odd'},
-                                                        'backgroundColor': '#f8f9fa'
+                                                        'backgroundColor': '#d6e9f5'
+                                                    },
+                                                    {
+                                                        'if': {'column_id': 'Parameter'},
+                                                        'backgroundColor': '#b8d4e3',
+                                                        'fontWeight': 'bold'
                                                     }
                                                 ]
                                             )
