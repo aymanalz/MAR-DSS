@@ -361,7 +361,7 @@ def _build_tabs() -> dbc.Tabs:
             ),
         ],
         id="top-tabs",
-        active_tab="overview",
+        active_tab="overview"
     )
 
 
