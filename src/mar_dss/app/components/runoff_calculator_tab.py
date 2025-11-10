@@ -293,46 +293,60 @@ def create_runoff_calculator_tab():
                                             )
                                         ], width=6)
                                     ]),
+                                    dbc.Button(
+                                        "Download Rain Statistics",
+                                        id="download-rain-statistics-btn",
+                                        color="secondary",
+                                        className="mb-3"
+                                    ),
                                     html.Div(id="runoff-calculations-content", className="mt-3"),
-                                    dash_table.DataTable(
-                                        id="runoff-calculations-table",
-                                        data=[
-                                            {"Parameter": "Area (acres)", "Value": 10},
-                                            {"Parameter": "Composite Curve Number", "Value": 50},
-                                            {"Parameter": "24-hour Rainfall (inches)", "Value": 5},
-                                            {"Parameter": "Maximum Potential Storage (inches)", "Value": 10},
-                                            {"Parameter": "Initial Abstraction", "Value": 0.05},
-                                            {"Parameter": "Runoff Depth (inches)", "Value": 1},
-                                            {"Parameter": "Runoff/Precipitation Ratio", "Value": 0.2},
-                                            {"Parameter": "Runoff Volume (ft3)", "Value": 10000}
-                                        ],
-                                        columns=[
-                                            {"name": "Parameter", "id": "Parameter", "editable": False},
-                                            {"name": "Value", "id": "Value", "editable": True, "type": "numeric"}
-                                        ],
-                                        style_cell={
-                                            'textAlign': 'left',
-                                            'padding': '10px',
-                                            'fontFamily': 'Arial, sans-serif',
-                                            'fontSize': '14px',
-                                            'border': '1px solid #ddd'
-                                        },
-                                        style_header={
-                                            'backgroundColor': '#f8f9fa',
-                                            'fontWeight': 'bold',
-                                            'border': '1px solid #ddd'
-                                        },
-                                        style_data={
-                                            'backgroundColor': 'white',
-                                            'border': '1px solid #ddd'
-                                        },
-                                        style_data_conditional=[
-                                            {
-                                                'if': {'row_index': 'odd'},
-                                                'backgroundColor': '#f8f9fa'
-                                            }
-                                        ]
-                                    )
+                                    dbc.Row([
+                                        dbc.Col([
+                                            html.H6("Runoff Calculations", className="fw-bold mb-2"),
+                                            dash_table.DataTable(
+                                                id="runoff-calculations-table",
+                                                data=[
+                                                    {"Parameter": "Area (acres)", "Value": 10},
+                                                    {"Parameter": "Composite Curve Number", "Value": 50},
+                                                    {"Parameter": "24-hour Rainfall (inches)", "Value": 5},
+                                                    {"Parameter": "Maximum Potential Storage (inches)", "Value": 10},
+                                                    {"Parameter": "Initial Abstraction", "Value": 0.05},
+                                                    {"Parameter": "Runoff Depth (inches)", "Value": 1},
+                                                    {"Parameter": "Runoff/Precipitation Ratio", "Value": 0.2},
+                                                    {"Parameter": "Runoff Volume (ft3)", "Value": 10000}
+                                                ],
+                                                columns=[
+                                                    {"name": "Parameter", "id": "Parameter", "editable": False},
+                                                    {"name": "Value", "id": "Value", "editable": True, "type": "numeric"}
+                                                ],
+                                                style_cell={
+                                                    'textAlign': 'left',
+                                                    'padding': '10px',
+                                                    'fontFamily': 'Arial, sans-serif',
+                                                    'fontSize': '14px',
+                                                    'border': '1px solid #ddd'
+                                                },
+                                                style_header={
+                                                    'backgroundColor': '#f8f9fa',
+                                                    'fontWeight': 'bold',
+                                                    'border': '1px solid #ddd'
+                                                },
+                                                style_data={
+                                                    'backgroundColor': 'white',
+                                                    'border': '1px solid #ddd'
+                                                },
+                                                style_data_conditional=[
+                                                    {
+                                                        'if': {'row_index': 'odd'},
+                                                        'backgroundColor': '#f8f9fa'
+                                                    }
+                                                ]
+                                            )
+                                        ], width=6),
+                                        dbc.Col([
+                                            html.Div(id="rain-statistics-table-placeholder")
+                                        ], width=6)
+                                    ])
                                 ])
                             ])
                         ], width=12)

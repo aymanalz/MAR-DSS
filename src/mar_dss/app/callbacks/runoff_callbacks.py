@@ -1016,6 +1016,68 @@ def setup_runoff_callbacks(app):
         
         return current_table_data if current_table_data else dash.no_update
 
+    # Callback for "Download Rain Statistics" button in Runoff for Single Storm card
+    @app.callback(
+        Output('rain-statistics-table-placeholder', 'children'),
+        Input('download-rain-statistics-btn', 'n_clicks'),
+        [State('runoff-single-storm-latitude', 'value'),
+         State('runoff-single-storm-longitude', 'value')],
+        prevent_initial_call=True
+    )
+    def download_rain_statistics(n_clicks, lat, lon):
+        """Download rain statistics and display as table side by side with runoff calculations table."""
+        if n_clicks and n_clicks > 0 and lat is not None and lon is not None:
+            try:
+                # Get rain data
+                df_rain = get_rain_data(lat, lon)
+                
+                if df_rain is None or df_rain.empty:
+                    return html.P("No rain statistics data available.", className="text-warning")
+                
+                # Create rain statistics table
+                rain_statistics_table = dash_table.DataTable(
+                    data=df_rain.to_dict('records'),
+                    columns=[{"name": i, "id": i} for i in df_rain.columns],
+                    style_cell={
+                        'textAlign': 'left',
+                        'padding': '10px',
+                        'fontFamily': 'Arial, sans-serif',
+                        'fontSize': '14px',
+                        'border': '1px solid #ddd'
+                    },
+                    style_header={
+                        'backgroundColor': '#f8f9fa',
+                        'fontWeight': 'bold',
+                        'border': '1px solid #ddd'
+                    },
+                    style_data={
+                        'backgroundColor': 'white',
+                        'border': '1px solid #ddd'
+                    },
+                    style_data_conditional=[
+                        {
+                            'if': {'row_index': 'odd'},
+                            'backgroundColor': '#f8f9fa'
+                        }
+                    ],
+                    page_size=len(df_rain),
+                    sort_action="native",
+                    filter_action="native",
+                    export_format="csv"
+                )
+                
+                # Return table with heading
+                return html.Div([
+                    html.H6("Precipitation Frequency Estimates (NOAA Atlas 14)", className="fw-bold mb-2"),
+                    rain_statistics_table
+                ])
+                
+            except Exception as e:
+                print(f"Error downloading rain statistics: {e}")
+                return html.P(f"Error downloading rain statistics: {str(e)}", className="text-danger")
+        
+        return html.Div()
+
     # Callback for "Get Monthly Rainfall and Runoff" button in Monthly Runoff Estimation card
     @app.callback(
         Output('monthly-runoff-estimation-content', 'children'),
