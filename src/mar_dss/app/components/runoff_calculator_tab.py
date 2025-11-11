@@ -269,8 +269,12 @@ def create_runoff_calculator_tab():
                             dbc.Card([
                                 dbc.CardHeader("Runoff for Single Storm", className="fw-bold bg-primary text-white"),
                                 dbc.CardBody([
-                                    html.H5("Step 2: Estimate watershed area and rainfall information. You may use the Rain Fall Watershed tab to obtain this information", 
+                                    html.H5("Step 2: Provide watershed area upstream of the diversion point of interest, and compute runoff.", 
                                             className="fw-bold mb-3"),
+                                    html.Small(
+                                        "The single storm runoff calculation is useful for the design of the MAR spreading pond sizing and site storage needed. The storm intensity will be downloaded from NOAA at the coordinate provided.",
+                                        className="text-muted d-block mb-3"
+                                    ),
                                     dbc.Row([
                                         dbc.Col([
                                             html.Label("Latitude:", className="fw-bold mb-2"),

@@ -451,8 +451,12 @@ def setup_runoff_callbacks(app):
                 
                 # Create card for precipitation frequency table
                 df_rain_card = dbc.Card([
-                    dbc.CardHeader("Precipitation Frequency Estimates (NOAA Atlas 14)", className="fw-bold bg-primary text-white"),
+                    dbc.CardHeader("Precipitation Frequency Estimates (NOAA Atlas 14).  Precipitation is in inches.", className="fw-bold bg-primary text-white"),
                     dbc.CardBody([
+                        html.Small(
+                            "Note: The Annual Recurrence Interval (ARI), also known as the return period, is the average time interval between rainfall events of a given magnitude or greater. For example: An ARI of 100 years means that, on average, a precipitation event of that magnitude (e.g., 5.38 inches over 24-hr) or greater has a 1% chance (1/100) of being equaled or exceeded in any given year.",
+                            className="text-muted d-block mb-2"
+                        ),
                         df_rain_table
                     ])
                 ])
@@ -1068,7 +1072,11 @@ def setup_runoff_callbacks(app):
                 
                 # Return table with heading
                 return html.Div([
-                    html.H6("Precipitation Frequency Estimates (NOAA Atlas 14)", className="fw-bold mb-2"),
+                    html.H6("Precipitation Frequency Estimates (NOAA Atlas 14).  Precipitation is in inches.", className="fw-bold mb-2"),
+                    html.Small(
+                        "Note: The Annual Recurrence Interval (ARI), also known as the return period, is the average time interval between rainfall events of a given magnitude or greater. For example: An ARI of 100 years means that, on average, a precipitation event of that magnitude (e.g., 5.38 inches over 24-hr) or greater has a 1% chance (1/100) of being equaled or exceeded in any given year.",
+                        className="text-muted d-block mb-2"
+                    ),
                     rain_statistics_table
                 ])
                 
