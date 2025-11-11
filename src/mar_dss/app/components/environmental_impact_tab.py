@@ -142,11 +142,6 @@ def create_environmental_impact_content():
                     ], className="bg-light"),
                     dbc.CardBody([
                         html.P("Is TSS/Turbidity HIGH?", className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
-                        html.Small([
-                            html.Span("LOW: (TSS <10 mg/L, Turbidity <5 NTU)  ", style={"color": "#198754"}),
-                            html.Span("MODERATE: (TSS 10-20 mg/L, Turbidity 5-10 NTU)  ", style={"color": "#fd7e14"}),
-                            html.Span("HIGH: (TSS >20 mg/L, Turbidity >10 NTU)", style={"color": "#dc3545"}),
-                        ], className="d-block mb-2"),
                         dcc.RadioItems(
                             id="env-step1-input",
                             options=[
@@ -174,11 +169,6 @@ def create_environmental_impact_content():
                         dbc.Row([
                             dbc.Col([
                                 html.P("Question A: Is Dissolved Organic Carbon (DOC/TOC) HIGH?", className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
-                                html.Small([
-                                    html.Span("LOW: (DOC <5 mg/L)  ", style={"color": "#198754"}),
-                                    html.Span("MODERATE: (DOC 5-10 mg/L)  ", style={"color": "#fd7e14"}),
-                                    html.Span("HIGH: (DOC >10 mg/L)", style={"color": "#dc3545"}),
-                                ], className="d-block mb-2"),
                                 dcc.RadioItems(
                                     id="env-step2a-input",
                                     options=[
@@ -192,11 +182,6 @@ def create_environmental_impact_content():
                             ], width=12, md=6),
                             dbc.Col([
                                 html.P("Question B: Is pH/Alkalinity Significantly Different from Native Groundwater?", className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
-                                html.Small([
-                                    html.Span("LOW: (pH difference <0.5 units, similar alkalinity)  ", style={"color": "#198754"}),
-                                    html.Span("MODERATE: (pH difference 0.5-1.0 units)  ", style={"color": "#fd7e14"}),
-                                    html.Span("HIGH: (pH difference >1.0 unit, large alkalinity mismatch)", style={"color": "#dc3545"}),
-                                ], className="d-block mb-2"),
                                 dcc.RadioItems(
                                     id="env-step2b-input",
                                     options=[
@@ -223,11 +208,6 @@ def create_environmental_impact_content():
                     ], className="bg-light"),
                     dbc.CardBody([
                         html.P("Is TDS/Salinity significantly higher than Native Groundwater?", className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
-                        html.Small([
-                            html.Span("LOW: (TDS increase <250 mg/L)  ", style={"color": "#198754"}),
-                            html.Span("MODERATE: (TDS increase 250-500 mg/L)  ", style={"color": "#fd7e14"}),
-                            html.Span("HIGH: (TDS increase >500 mg/L)", style={"color": "#dc3545"}),
-                        ], className="d-block mb-2"),
                         dcc.RadioItems(
                             id="env-step3-input",
                             options=[
@@ -253,11 +233,6 @@ def create_environmental_impact_content():
                     ], className="bg-light"),
                     dbc.CardBody([
                         html.P("Are key Inorganic Contaminants above Regulatory Limits? (Arsenic (>10 µg/L), Nitrate (>50 mg/L as NO₃⁻), Heavy Metals: Pb, Cd, Cr, Hg (above drinking water limits), Fluoride (>1.5 mg/L), Selenium, Boron)", className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
-                        html.Small([
-                            html.Span("LOW: (<50% of standard)  ", style={"color": "#198754"}),
-                            html.Span("MODERATE: (50-100% of limit)  ", style={"color": "#fd7e14"}),
-                            html.Span("HIGH: (≥100% of limit)", style={"color": "#dc3545"}),
-                        ], className="d-block mb-2"),
                         dcc.RadioItems(
                             id="env-step4-input",
                             options=[
@@ -285,11 +260,6 @@ def create_environmental_impact_content():
                         dbc.Row([
                             dbc.Col([
                                 html.P("Question A: Are Emerging Contaminants Present at Risky Levels? (PFAS (>10-70 ng/L), Pharmaceuticals/Personal Care Products, Endocrine Disrupting Compounds, Pesticides/Herbicides (>regulatory limits), Microplastics)", className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
-                                html.Small([
-                                    html.Span("LOW: (Not detected or trace levels well below health-based values)  ", style={"color": "#198754"}),
-                                    html.Span("MODERATE: (Detected at low levels, <2x health-based guidance)  ", style={"color": "#fd7e14"}),
-                                    html.Span("HIGH: (Multiple compounds >health guidance OR PFAS >100 ng/L)", style={"color": "#dc3545"}),
-                                ], className="d-block mb-2"),
                                 dcc.RadioItems(
                                     id="env-step5a-input",
                                     options=[
@@ -303,11 +273,6 @@ def create_environmental_impact_content():
                             ], width=12, md=6),
                             dbc.Col([
                                 html.P("Question B: Is Source Water Redox State Incompatible with Native Aquifer?", className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
-                                html.Small([
-                                    html.Span("LOW: (Similar redox conditions, compatible chemistry)  ", style={"color": "#198754"}),
-                                    html.Span("MODERATE: (Some redox incompatibility, manageable precipitation/mobilization)  ", style={"color": "#fd7e14"}),
-                                    html.Span("HIGH: (Significant redox incompatibility, risk of Fe/Mn precipitation or As mobilization)", style={"color": "#dc3545"}),
-                                ], className="d-block mb-2"),
                                 dcc.RadioItems(
                                     id="env-step5b-input",
                                     options=[
