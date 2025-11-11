@@ -113,7 +113,7 @@ def _build_title_block() -> html.Div:
                                 className="text-center mb-0",
                                 style={
                                     "font-family": ("'Segoe UI', Tahoma, sans-serif"),
-                                    "font-size": "2.4rem",
+                                    "font-size": "2.88rem",
                                     "line-height": "1.2",
                                     "font-weight": "700",
                                     "color": "#2C3E50",
@@ -135,7 +135,7 @@ def _build_title_block() -> html.Div:
                                     src="assets/logos.jpg",
                                     alt="Partner Logos",
                                     style={
-                                        "height": "104px",
+                                        "height": "125px",
                                         "width": "auto",
                                         "vertical-align": "middle",
                                     },
