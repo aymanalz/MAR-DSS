@@ -284,17 +284,31 @@ def create_environmental_impact_content():
                 },
                 style_cell={
                     'textAlign': 'left',
-                    'minWidth': '80px', 'width': '120px', 'maxWidth': '300px',
-                    'whiteSpace': 'normal'
+                    'minWidth': '80px', 'width': '120px', 'maxWidth': '240px',
+                    'whiteSpace': 'normal',
+                    'border': '1px solid #dee2e6',
+                    'fontSize': '13px'
                 },
+                style_header_conditional=[
+                    {'if': {'column_id': 'Treatment Technology'}, 'backgroundColor': '#e3f2fd', 'color': '#0d47a1'},
+                    {'if': {'column_id': 'Cost Range ($/m³)'}, 'backgroundColor': '#e8f5e9', 'color': '#1b5e20'},
+                    {'if': {'column_id': 'Capital Cost Scale'}, 'backgroundColor': '#fff3e0', 'color': '#e65100'},
+                    {'if': {'column_id': "O&M Intensity"}, 'backgroundColor': '#f3e5f5', 'color': '#4a148c'},
+                    {'if': {'column_id': 'Best For'}, 'backgroundColor': '#ede7f6', 'color': '#283593'}
+                ],
                 style_data_conditional=[
-                    {
-                        'if': {'column_id': 'Cost Range ($/m³)'},
-                        'backgroundColor': '#e6f7ff',
-                    }
+                    {'if': {'column_id': 'Treatment Technology'}, 'backgroundColor': '#f5faff'},
+                    {'if': {'column_id': 'Cost Range ($/m³)'}, 'backgroundColor': '#f4fbf4'},
+                    {'if': {'column_id': 'Capital Cost Scale'}, 'backgroundColor': '#fff8ef'},
+                    {'if': {'column_id': "O&M Intensity"}, 'backgroundColor': '#faf4fb'},
+                    {'if': {'column_id': 'Best For'}, 'backgroundColor': '#f6f4fb'}
                 ],
                 export_format='csv'
             ),
-            className="mb-4"
+            className="mb-4",
+            style={
+                "maxWidth": "760px",
+                "overflowX": "auto"
+            }
         )
     ]
