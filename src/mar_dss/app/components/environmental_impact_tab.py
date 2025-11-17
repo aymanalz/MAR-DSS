@@ -388,8 +388,45 @@ def create_environmental_considerations_content():
         dbc.Card([
             dbc.CardHeader("Environmental Considerations", className="fw-bold bg-primary text-white"),
             dbc.CardBody([
-                html.P("This section will contain environmental considerations and impact assessments.", className="text-muted"),
-                html.Small("Content for environmental considerations will be implemented here.", className="text-muted")
+                html.H5("AI-Generated MAR Factors Analysis", className="mb-4 text-primary"),
+                html.P(
+                    "Enter a location to generate a comprehensive list of environmental, ecological, and cultural factors "
+                    "that must be considered for a Managed Aquifer Recharge (MAR) project at that location.",
+                    className="text-muted mb-4"
+                ),
+                
+                # Input section
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Label("Location:", className="fw-bold"),
+                        dbc.Input(
+                            id="mar-location-input",
+                            type="text",
+                            value="China Lake, CA",
+                            placeholder="Enter location (e.g., City, State or City, Country)",
+                            className="mb-3"
+                        ),
+                    ], width=12, md=8),
+                    dbc.Col([
+                        dbc.Label(" ", className="fw-bold"),  # Spacer for alignment
+                        html.Div([
+                            dbc.Button(
+                                [html.I(className="fas fa-search me-2"), "Generate MAR Factors"],
+                                id="generate-mar-factors-btn",
+                                color="primary",
+                                className="w-100",
+                                n_clicks=0
+                            )
+                        ], className="mb-3")
+                    ], width=12, md=4)
+                ]),
+                
+                # Results table with loading indicator
+                dcc.Loading(
+                    id="mar-factors-loading",
+                    type="default",
+                    children=html.Div(id="mar-factors-table-container", className="mt-4")
+                )
             ])
         ])
     ]

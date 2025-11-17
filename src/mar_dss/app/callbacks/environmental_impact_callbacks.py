@@ -2,13 +2,32 @@
 Callbacks for Environmental Impact tab - MAR Source Water Suitability Assessment.
 """
 
-from dash import Input, Output, html
+from dash import Input, Output, html, State, dcc
 import plotly.graph_objects as go
 import dash_table
+import pandas as pd
+import sys
+import os
+import dash_bootstrap_components as dbc
 from mar_dss.app.components.environmental_impact_tab import (
     DECISION_LOGIC,
     TREATMENT_OPTIONS,
 )
+
+# Import get_mar_factors from recycle_bin
+# Add the recycle_bin directory to the path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.join(current_dir, '..', '..', '..', '..')
+recycle_bin_path = os.path.join(project_root, 'recycle_bin')
+if recycle_bin_path not in sys.path:
+    sys.path.insert(0, recycle_bin_path)
+
+try:
+    from ai_environment import get_mar_factors
+except ImportError:
+    # Fallback if import fails
+    def get_mar_factors(location):
+        raise ImportError("Could not import get_mar_factors. Please ensure ai_environment.py is accessible.")
 
 
 def generate_required_treatment_summary(risks_and_treatments):
@@ -266,4 +285,162 @@ def setup_environmental_impact_callbacks(app):
             ]
             
         return decision_content, result_style, gauge_fig, risk_details, treatment_summary_table, recommendations_list
+
+    # Callback for MAR Factors Generation (Tab 4.2)
+    @app.callback(
+        Output('mar-factors-table-container', 'children'),
+        [
+            Input('generate-mar-factors-btn', 'n_clicks')
+        ],
+        [
+            State('mar-location-input', 'value')
+        ],
+        prevent_initial_call=True
+    )
+    def generate_mar_factors_table(n_clicks, location):
+        """Generate MAR factors table using AI."""
+        if n_clicks == 0 or not location or location.strip() == "":
+            return html.Div()
+        
+        try:
+            # Call the AI function (this may take a moment)
+            df = get_mar_factors(location.strip())
+            
+            if df is None or df.empty:
+                return html.Div([
+                    dbc.Alert([
+                        html.H5("No Data Generated", className="alert-heading"),
+                        html.P("No factors were generated. Please try again with a different location.", className="mb-0")
+                    ], color="warning")
+                ])
+            
+            # Create styled table with colors based on priority and category
+            # Define color schemes
+            priority_colors = {
+                'High': {'bg': '#f8d7da', 'text': '#721c24', 'border': '#dc3545'},
+                'Medium': {'bg': '#fff3cd', 'text': '#856404', 'border': '#ffc107'},
+                'Low': {'bg': '#d4edda', 'text': '#155724', 'border': '#28a745'}
+            }
+            
+            category_colors = {
+                'Environmental': {'header': '#e3f2fd', 'text': '#0d47a1'},
+                'Ecological': {'header': '#e8f5e9', 'text': '#1b5e20'},
+                'Cultural': {'header': '#fff3e0', 'text': '#e65100'}
+            }
+            
+            # Create conditional styling for rows based on priority
+            style_data_conditional = []
+            for idx, row in df.iterrows():
+                priority = str(row.get('priority', '')).strip()
+                priority_style = priority_colors.get(priority, {'bg': '#ffffff', 'text': '#000000', 'border': '#dee2e6'})
+                
+                style_data_conditional.append({
+                    'if': {'row_index': idx},
+                    'backgroundColor': priority_style['bg'],
+                    'color': priority_style['text'],
+                    'borderLeft': f"4px solid {priority_style['border']}"
+                })
+            
+            # Create conditional styling for headers based on category
+            style_header_conditional = []
+            for col in df.columns:
+                if col == 'category':
+                    # Apply category-based coloring to category column header
+                    style_header_conditional.append({
+                        'if': {'column_id': 'category'},
+                        'backgroundColor': '#f8f9fa',
+                        'fontWeight': 'bold'
+                    })
+                elif col == 'priority':
+                    style_header_conditional.append({
+                        'if': {'column_id': 'priority'},
+                        'backgroundColor': '#f8f9fa',
+                        'fontWeight': 'bold'
+                    })
+                else:
+                    style_header_conditional.append({
+                        'if': {'column_id': col},
+                        'backgroundColor': '#f8f9fa',
+                        'fontWeight': 'bold'
+                    })
+            
+            # Create the table
+            table = dash_table.DataTable(
+                id='mar-factors-datatable',
+                columns=[
+                    {"name": "Category", "id": "category"},
+                    {"name": "Data Point/Factor", "id": "data_point"},
+                    {"name": "Priority", "id": "priority"},
+                    {"name": "Justification", "id": "justification"}
+                ],
+                data=df.to_dict('records'),
+                style_header={
+                    'backgroundColor': '#f8f9fa',
+                    'fontWeight': 'bold',
+                    'textAlign': 'left',
+                    'border': '1px solid #dee2e6',
+                    'fontSize': '14px'
+                },
+                style_cell={
+                    'textAlign': 'left',
+                    'padding': '12px',
+                    'fontFamily': 'Arial, sans-serif',
+                    'fontSize': '13px',
+                    'whiteSpace': 'normal',
+                    'height': 'auto',
+                    'border': '1px solid #dee2e6'
+                },
+                style_data={
+                    'border': '1px solid #dee2e6'
+                },
+                style_data_conditional=style_data_conditional,
+                style_header_conditional=style_header_conditional,
+                page_size=20,
+                sort_action="native",
+                filter_action="native",
+                export_format="csv",
+                tooltip_data=[
+                    {
+                        column: {'value': str(value), 'type': 'markdown'}
+                        for column, value in row.items()
+                    } for row in df.to_dict('records')
+                ],
+                tooltip_duration=None
+            )
+            
+            # Wrap table in a card with summary
+            return html.Div([
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.H5(f"MAR Factors for {location}", className="mb-0 text-primary"),
+                        html.Small(f"Total factors: {len(df)}", className="text-muted")
+                    ], className="bg-light"),
+                    dbc.CardBody([
+                        html.Div([
+                            html.P([
+                                html.Strong("Categories: "),
+                                html.Span(f"Environmental: {len(df[df['category'] == 'Environmental'])}, ", className="text-info"),
+                                html.Span(f"Ecological: {len(df[df['category'] == 'Ecological'])}, ", className="text-success"),
+                                html.Span(f"Cultural: {len(df[df['category'] == 'Cultural'])}", className="text-warning")
+                            ], className="mb-3"),
+                            html.P([
+                                html.Strong("Priorities: "),
+                                html.Span(f"High: {len(df[df['priority'].astype(str).str.strip() == 'High'])}, ", className="text-danger"),
+                                html.Span(f"Medium: {len(df[df['priority'].astype(str).str.strip() == 'Medium'])}, ", className="text-warning"),
+                                html.Span(f"Low: {len(df[df['priority'].astype(str).str.strip() == 'Low'])}", className="text-success")
+                            ], className="mb-3")
+                        ]),
+                        html.Div(table, style={'overflowX': 'auto'})
+                    ])
+                ], className="mt-3")
+            ])
+            
+        except Exception as e:
+            error_msg = str(e)
+            return html.Div([
+                dbc.Alert([
+                    html.H5("Error generating MAR factors", className="alert-heading"),
+                    html.P(f"An error occurred: {error_msg}", className="mb-0")
+                ], color="danger")
+            ])
 
