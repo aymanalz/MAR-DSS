@@ -126,8 +126,8 @@ def create_step_card(step_id, title, question, options):
     })
 
 
-def create_environmental_impact_content():
-    """Create the Environmental Impact tab content."""
+def create_water_quality_content():
+    """Create the Water Quality and Geochemistry content (sub-tab 4.1)."""
     return [
         # Main content row
         dbc.Row([
@@ -299,6 +299,48 @@ def create_environmental_impact_content():
                     "Are pathogens present at risky levels? (Consider source type: wastewater > stormwater > surface water > groundwater)",
                     ["LOW RISK", "MODERATE RISK", "HIGH RISK"]
                 ),
+                
+                html.Hr(),
+                # Appendix / Detailed Treatment Table (moved under input cards)
+                html.H3("APPENDIX: Treatment Cost Summary Table", className="mt-3 mb-3 text-dark"),
+                html.Div(
+                    dash_table.DataTable(
+                        id='env-treatment-appendix-table',
+                        columns=[{"name": i, "id": i} for i in TREATMENT_DF.columns],
+                        data=TREATMENT_DF.to_dict('records'),
+                        style_header={
+                            'backgroundColor': '#f8f9fa',
+                            'fontWeight': 'bold'
+                        },
+                        style_cell={
+                            'textAlign': 'left',
+                            'minWidth': '80px', 'width': '120px', 'maxWidth': '240px',
+                            'whiteSpace': 'normal',
+                            'border': '1px solid #dee2e6',
+                            'fontSize': '13px'
+                        },
+                        style_header_conditional=[
+                            {'if': {'column_id': 'Treatment Technology'}, 'backgroundColor': '#e3f2fd', 'color': '#0d47a1'},
+                            {'if': {'column_id': 'Cost Range ($/m³)'}, 'backgroundColor': '#e8f5e9', 'color': '#1b5e20'},
+                            {'if': {'column_id': 'Capital Cost Scale'}, 'backgroundColor': '#fff3e0', 'color': '#e65100'},
+                            {'if': {'column_id': "O&M Intensity"}, 'backgroundColor': '#f3e5f5', 'color': '#4a148c'},
+                            {'if': {'column_id': 'Best For'}, 'backgroundColor': '#ede7f6', 'color': '#283593'}
+                        ],
+                        style_data_conditional=[
+                            {'if': {'column_id': 'Treatment Technology'}, 'backgroundColor': '#f5faff'},
+                            {'if': {'column_id': 'Cost Range ($/m³)'}, 'backgroundColor': '#f4fbf4'},
+                            {'if': {'column_id': 'Capital Cost Scale'}, 'backgroundColor': '#fff8ef'},
+                            {'if': {'column_id': "O&M Intensity"}, 'backgroundColor': '#faf4fb'},
+                            {'if': {'column_id': 'Best For'}, 'backgroundColor': '#f6f4fb'}
+                        ],
+                        export_format='csv'
+                    ),
+                    className="mb-4",
+                    style={
+                        "maxWidth": "760px",
+                        "overflowX": "auto"
+                    }
+                )
             ], width=12, lg=8, style={
                 "max-height": "calc(100vh - 200px)",
                 "overflow-y": "auto",
@@ -336,46 +378,36 @@ def create_environmental_impact_content():
             }),
         ]),
         
-        html.Hr(),
-        
-        # Appendix / Detailed Treatment Table
-        html.H3("APPENDIX: Treatment Cost Summary Table", className="mt-5 mb-3 text-dark"),
-        html.Div(
-            dash_table.DataTable(
-                id='env-treatment-appendix-table',
-                columns=[{"name": i, "id": i} for i in TREATMENT_DF.columns],
-                data=TREATMENT_DF.to_dict('records'),
-                style_header={
-                    'backgroundColor': '#f8f9fa',
-                    'fontWeight': 'bold'
-                },
-                style_cell={
-                    'textAlign': 'left',
-                    'minWidth': '80px', 'width': '120px', 'maxWidth': '240px',
-                    'whiteSpace': 'normal',
-                    'border': '1px solid #dee2e6',
-                    'fontSize': '13px'
-                },
-                style_header_conditional=[
-                    {'if': {'column_id': 'Treatment Technology'}, 'backgroundColor': '#e3f2fd', 'color': '#0d47a1'},
-                    {'if': {'column_id': 'Cost Range ($/m³)'}, 'backgroundColor': '#e8f5e9', 'color': '#1b5e20'},
-                    {'if': {'column_id': 'Capital Cost Scale'}, 'backgroundColor': '#fff3e0', 'color': '#e65100'},
-                    {'if': {'column_id': "O&M Intensity"}, 'backgroundColor': '#f3e5f5', 'color': '#4a148c'},
-                    {'if': {'column_id': 'Best For'}, 'backgroundColor': '#ede7f6', 'color': '#283593'}
-                ],
-                style_data_conditional=[
-                    {'if': {'column_id': 'Treatment Technology'}, 'backgroundColor': '#f5faff'},
-                    {'if': {'column_id': 'Cost Range ($/m³)'}, 'backgroundColor': '#f4fbf4'},
-                    {'if': {'column_id': 'Capital Cost Scale'}, 'backgroundColor': '#fff8ef'},
-                    {'if': {'column_id': "O&M Intensity"}, 'backgroundColor': '#faf4fb'},
-                    {'if': {'column_id': 'Best For'}, 'backgroundColor': '#f6f4fb'}
-                ],
-                export_format='csv'
+        # Removed bottom appendix; moved under Assessment Inputs column
+    ]
+
+
+def create_environmental_considerations_content():
+    """Create the Environmental Considerations content (sub-tab 4.2)."""
+    return [
+        dbc.Card([
+            dbc.CardHeader("Environmental Considerations", className="fw-bold bg-primary text-white"),
+            dbc.CardBody([
+                html.P("This section will contain environmental considerations and impact assessments.", className="text-muted"),
+                html.Small("Content for environmental considerations will be implemented here.", className="text-muted")
+            ])
+        ])
+    ]
+
+
+def create_environmental_impact_content():
+    """Create the Environmental Impact tab content with sub-tabs."""
+    return [
+        dbc.Tabs([
+            dbc.Tab(
+                label="4.1 Water Quality and Geochemistry",
+                tab_id="water-quality-tab",
+                children=create_water_quality_content()
             ),
-            className="mb-4",
-            style={
-                "maxWidth": "760px",
-                "overflowX": "auto"
-            }
-        )
+            dbc.Tab(
+                label="(4.2) Environmental Considerations",
+                tab_id="environmental-considerations-tab",
+                children=create_environmental_considerations_content()
+            )
+        ], id="environmental-subtabs", active_tab="water-quality-tab")
     ]
