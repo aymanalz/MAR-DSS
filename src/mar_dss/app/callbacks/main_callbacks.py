@@ -32,7 +32,6 @@ try:
         create_dss_algorithm_content,
     )
     from mar_dss.app.components.hydro_tab import create_hydro_tab_content
-    from mar_dss.app.components.reports_tab import create_reports_tab_content
     from mar_dss.app.components.scenarios_comparison_tab import (
         create_scenarios_comparison_content,
     )
@@ -56,7 +55,6 @@ except ImportError:
     )
     from .components.dss_algorithm_tab import create_dss_algorithm_content
     from .components.hydro_tab import create_hydro_tab_content
-    from .components.reports_tab import create_reports_tab_content
     from .components.scenarios_comparison_tab import (
         create_scenarios_comparison_content,
     )
@@ -110,8 +108,6 @@ def setup_main_callbacks(app, dashboard_instance):
             except ImportError:
                 from ..components.analysis_tab import create_analysis_tab_content
             return create_analysis_tab_content()
-        elif active_tab == "reports":
-            return create_reports_tab_content()
         else:
             return create_overview_content()
 

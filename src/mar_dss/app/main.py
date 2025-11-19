@@ -33,7 +33,6 @@ try:
     )
     from mar_dss.app.components.hydro_tab import create_hydro_tab_content
     from mar_dss.app.callbacks.hydro_callbacks import setup_hydro_callbacks
-    from mar_dss.app.components.reports_tab import create_reports_tab_content
     from mar_dss.app.components.scenarios_comparison_tab import (
         create_scenarios_comparison_content,
     )
@@ -55,7 +54,6 @@ except ImportError:
     )
     from .components.dss_algorithm_tab import create_dss_algorithm_content
     from .components.hydro_tab import create_hydro_tab_content
-    from .components.reports_tab import create_reports_tab_content
     from .components.scenarios_comparison_tab import (
         create_scenarios_comparison_content,
     )

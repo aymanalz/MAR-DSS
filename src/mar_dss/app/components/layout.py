@@ -331,21 +331,6 @@ def _build_tabs() -> dbc.Tabs:
                     "border": "1px solid #73b3e0"
                 }
             ),
-            dbc.Tab(
-                label="(7) Reports", 
-                tab_id="reports",
-                label_style={
-                    "color": "#ffffff", 
-                    "fontWeight": "bold",
-                    "backgroundColor": "#aed6f1",
-                    "border": "1px solid #aed6f1"
-                },
-                active_label_style={
-                    "color": "#ffffff", 
-                    "backgroundColor": "#9bc7e8",
-                    "border": "1px solid #9bc7e8"
-                }
-            ),
         ],
         id="top-tabs",
         active_tab="overview"

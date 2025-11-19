@@ -151,11 +151,67 @@ def create_location_map_section():
     ])
 
 
+def create_site_description_section():
+    """Create Site Description section for overview."""
+    # Get existing values from data storage if available
+    ground_slope = dash_storage.get_data("ground_surface_slope") or 0.5
+    max_area = dash_storage.get_data("max_available_area") or 1.0
+    land_use = dash_storage.get_data("land_use") or "Urban Residential"
+    
+    return dbc.Card([
+        dbc.CardHeader(
+            "Site Description",
+            className="fw-bold bg-primary text-white",
+        ),
+        dbc.CardBody([
+            html.Label("Ground Surface Slope (%):", className="fw-bold"),
+            dbc.Input(
+                id="ground-slope-input",
+                type="number",
+                placeholder="Enter ground surface slope percentage...",
+                value=ground_slope,
+                min=0,
+                step=0.1,
+                style={"margin-bottom": "15px"},
+            ),
+            html.Label("Maximum Available Area for Recharge (acres):", className="fw-bold"),
+            dbc.Input(
+                id="max-area-input",
+                type="number",
+                placeholder="Enter maximum available area...",
+                value=max_area,
+                min=0,
+                step=0.1,
+                style={"margin-bottom": "15px"},
+            ),
+            html.Label("Land Use:", className="fw-bold"),
+            html.P(
+                "Select the primary land use type for the recharge site:",
+                className="text-muted small",
+            ),
+            dcc.Dropdown(
+                id="land-use-dropdown",
+                options=[
+                    {"label": "Urban Residential", "value": "Urban Residential"},
+                    {"label": "Urban Nonresidential", "value": "Urban Nonresidential"},
+                    {"label": "Rural Agricultural", "value": "Rural Agricultural"},
+                    {"label": "Rural Open Space", "value": "Rural Open Space"},
+                ],
+                value=land_use,
+                style={"margin-top": "10px"},
+            ),
+        ])
+    ])
+
+
 def create_overview_content():
     """Create the complete overview tab content."""
     return [
         dbc.Row([
             dbc.Col([create_mar_purpose_section()], width=6),
             dbc.Col([create_location_map_section()], width=6),
+        ], className="mb-4"),
+        dbc.Row([
+            dbc.Col([create_site_description_section()], width=6),
         ], className="mb-4")
     ]
