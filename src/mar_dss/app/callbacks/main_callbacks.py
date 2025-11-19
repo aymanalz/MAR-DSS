@@ -186,6 +186,52 @@ def setup_main_callbacks(app, dashboard_instance):
         )
 
 
+    # Add callback to sync flow-data-store with dash_storage when tab is accessed
+    @app.callback(
+        Output("flow-data-store", "data"),
+        [
+            Input("top-tabs", "active_tab"),
+        ],
+        prevent_initial_call=False
+    )
+    def sync_flow_data_store(active_tab):
+        """Sync flow-data-store with dash_storage when water source tab is accessed."""
+        # Get flow data from dash_storage
+        months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        default_flows = [4500, 4200, 2800, 2200, 1800, 1500, 1200, 1000, 1300, 2000, 3800, 4100]
+        monthly_flows_raw = dash_storage.get_data("monthly_flow")
+        
+        # Handle case where data might be loaded as string from CSV
+        if monthly_flows_raw is None:
+            monthly_flows = default_flows
+        elif isinstance(monthly_flows_raw, str):
+            # Try to parse string representation of list
+            try:
+                import ast
+                monthly_flows = ast.literal_eval(monthly_flows_raw)
+                if not isinstance(monthly_flows, list) or len(monthly_flows) != 12:
+                    monthly_flows = default_flows
+            except (ValueError, SyntaxError):
+                monthly_flows = default_flows
+        elif isinstance(monthly_flows_raw, list):
+            monthly_flows = monthly_flows_raw
+        else:
+            monthly_flows = default_flows
+        
+        # Ensure we have exactly 12 values
+        if len(monthly_flows) != 12:
+            monthly_flows = default_flows
+        
+        # Ensure all values are numeric
+        try:
+            monthly_flows = [float(flow) if flow is not None else 0.0 for flow in monthly_flows]
+        except (ValueError, TypeError):
+            monthly_flows = default_flows
+        
+        # Convert list to dictionary format
+        flow_data = {month: flow for month, flow in zip(months, monthly_flows)}
+        return flow_data
+
     # Add callback to create the editable table
     @app.callback(
         Output("flow-table-container", "children"),
@@ -552,6 +598,10 @@ def setup_main_callbacks(app, dashboard_instance):
             dash_storage.set_data("water_ownership", "legal_rights")
             dash_storage.set_data("pumping_needed", "no")
             dash_storage.set_data("monthly_flow", [4500, 4200, 2800, 2200, 1800, 1500, 1200, 1000, 1300, 2000, 3800, 4100])
+            dash_storage.set_data("physical_parameters", [])
+            dash_storage.set_data("chemical_parameters", [])
+            dash_storage.set_data("biological_indicators", [])
+            dash_storage.set_data("emerging_contaminants", [])
             
             import dash_bootstrap_components as dbc
             return [
@@ -822,4 +872,108 @@ def setup_main_callbacks(app, dashboard_instance):
         dash_storage.set_data("pumping_needed", current_selection)
         
         return current_selection
+
+    # Callback for physical parameters checklist - saves to data storage
+    @app.callback(
+        Output("physical-parameters", "value"),
+        [
+            Input("physical-parameters", "value"),
+            Input("physical-parameters", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_physical_parameters_selection(value, component_id):
+        """Handle physical parameters checklist selections and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved physical parameters
+            physical_params = dash_storage.get_data("physical_parameters") or []
+            return physical_params
+        
+        # Get the current selections
+        current_selections = value if value else []
+        
+        # Save physical parameters to data storage
+        dash_storage.set_data("physical_parameters", current_selections)
+        
+        return current_selections
+
+    # Callback for chemical parameters checklist - saves to data storage
+    @app.callback(
+        Output("chemical-parameters", "value"),
+        [
+            Input("chemical-parameters", "value"),
+            Input("chemical-parameters", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_chemical_parameters_selection(value, component_id):
+        """Handle chemical parameters checklist selections and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved chemical parameters
+            chemical_params = dash_storage.get_data("chemical_parameters") or []
+            return chemical_params
+        
+        # Get the current selections
+        current_selections = value if value else []
+        
+        # Save chemical parameters to data storage
+        dash_storage.set_data("chemical_parameters", current_selections)
+        
+        return current_selections
+
+    # Callback for biological indicators checklist - saves to data storage
+    @app.callback(
+        Output("biological-indicators", "value"),
+        [
+            Input("biological-indicators", "value"),
+            Input("biological-indicators", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_biological_indicators_selection(value, component_id):
+        """Handle biological indicators checklist selections and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved biological indicators
+            biological_indicators = dash_storage.get_data("biological_indicators") or []
+            return biological_indicators
+        
+        # Get the current selections
+        current_selections = value if value else []
+        
+        # Save biological indicators to data storage
+        dash_storage.set_data("biological_indicators", current_selections)
+        
+        return current_selections
+
+    # Callback for emerging contaminants checklist - saves to data storage
+    @app.callback(
+        Output("emerging-contaminants", "value"),
+        [
+            Input("emerging-contaminants", "value"),
+            Input("emerging-contaminants", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_emerging_contaminants_selection(value, component_id):
+        """Handle emerging contaminants checklist selections and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved emerging contaminants
+            emerging_contaminants = dash_storage.get_data("emerging_contaminants") or []
+            return emerging_contaminants
+        
+        # Get the current selections
+        current_selections = value if value else []
+        
+        # Save emerging contaminants to data storage
+        dash_storage.set_data("emerging_contaminants", current_selections)
+        
+        return current_selections
 

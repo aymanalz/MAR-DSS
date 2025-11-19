@@ -138,6 +138,20 @@ def create_monthly_flow_chart(flow_data=None):
     return fig
 
 
+def _get_flow_store_data():
+    """Get flow data in dictionary format for flow-data-store from dash_storage."""
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    default_flows = [4500, 4200, 2800, 2200, 1800, 1500, 1200, 1000, 1300, 2000, 3800, 4100]
+    monthly_flows = dash_storage.get_data("monthly_flow") or default_flows
+    
+    # Ensure we have exactly 12 values
+    if len(monthly_flows) != 12:
+        monthly_flows = default_flows
+    
+    # Convert list to dictionary format
+    return {month: flow for month, flow in zip(months, monthly_flows)}
+
+
 def create_editable_flow_table():
     """Create an editable table for monthly flow data."""
     months = [
@@ -216,6 +230,10 @@ def create_water_source_info_tab():
     water_conveyance = dash_storage.get_data("water_conveyance") or "open_canals_ditches"
     water_ownership = dash_storage.get_data("water_ownership") or "legal_rights"
     pumping_needed = dash_storage.get_data("pumping_needed") or "no"
+    physical_parameters = dash_storage.get_data("physical_parameters") or []
+    chemical_parameters = dash_storage.get_data("chemical_parameters") or []
+    biological_indicators = dash_storage.get_data("biological_indicators") or []
+    emerging_contaminants = dash_storage.get_data("emerging_contaminants") or []
     
     return [
         html.H3("Water Source Information"),
@@ -417,20 +435,7 @@ def create_water_source_info_tab():
                                                         ),
                                                         dcc.Store(
                                                             id="flow-data-store",
-                                                            data={
-                                                                "Jan": 4500,
-                                                                "Feb": 4200,
-                                                                "Mar": 2800,
-                                                                "Apr": 2200,
-                                                                "May": 1800,
-                                                                "Jun": 1500,
-                                                                "Jul": 1200,
-                                                                "Aug": 1000,
-                                                                "Sep": 1300,
-                                                                "Oct": 2000,
-                                                                "Nov": 3800,
-                                                                "Dec": 4100,
-                                                            },
+                                                            data=_get_flow_store_data(),
                                                         ),
                                                         html.Div(id="flow-table-container"),
                                                     ],
@@ -492,7 +497,7 @@ def create_water_source_info_tab():
                                                                     "value": "tss",
                                                                 },
                                                             ],
-                                                            value=[],
+                                                            value=physical_parameters,
                                                             inline=False,
                                                         ),
                                                     ],
@@ -513,7 +518,7 @@ def create_water_source_info_tab():
                                                                 {"label": "Phosphate", "value": "phosphate"},
                                                                 {"label": "Trace Metals", "value": "trace_metals"},
                                                             ],
-                                                            value=[],
+                                                            value=chemical_parameters,
                                                             inline=False,
                                                         ),
                                                     ],
@@ -532,7 +537,7 @@ def create_water_source_info_tab():
                                                                 {"label": "Viruses", "value": "viruses"},
                                                                 {"label": "Protozoa", "value": "protozoa"},
                                                             ],
-                                                            value=[],
+                                                            value=biological_indicators,
                                                             inline=False,
                                                         ),
                                                     ],
@@ -550,7 +555,7 @@ def create_water_source_info_tab():
                                                                 {"label": "PFAS", "value": "pfas"},
                                                                 {"label": "Pesticides", "value": "pesticides"},
                                                             ],
-                                                            value=[],
+                                                            value=emerging_contaminants,
                                                             inline=False,
                                                         ),
                                                     ],
