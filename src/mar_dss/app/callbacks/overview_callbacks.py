@@ -307,3 +307,95 @@ def setup_overview_callbacks(app):
                 ] + overview_content
         return dash.no_update
 
+    # Callback for ground surface slope input - saves to data storage
+    @app.callback(
+        Output("ground-slope-input", "value"),
+        [
+            Input("ground-slope-input", "value"),
+            Input("ground-slope-input", "n_blur"),
+            Input("ground-slope-input", "n_submit"),
+            Input("ground-slope-input", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_ground_slope_input(value, n_blur, n_submit, component_id):
+        """Handle ground surface slope input for all triggers: value change, blur, submit, and load."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved ground slope
+            ground_slope = dash_storage.get_data("ground_surface_slope") or 0.5
+            return ground_slope
+        
+        # Get the current value from the input
+        current_value = value if value is not None else 0.5
+        
+        # Determine which trigger caused the callback
+        trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1]
+        
+        # Save ground slope for all triggers except initial load
+        if trigger_prop != "id":
+            dash_storage.set_data("ground_surface_slope", current_value)
+        
+        return current_value
+
+    # Callback for maximum available area input - saves to data storage
+    @app.callback(
+        Output("max-area-input", "value"),
+        [
+            Input("max-area-input", "value"),
+            Input("max-area-input", "n_blur"),
+            Input("max-area-input", "n_submit"),
+            Input("max-area-input", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_max_area_input(value, n_blur, n_submit, component_id):
+        """Handle maximum available area input for all triggers: value change, blur, submit, and load."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved max area
+            max_area = dash_storage.get_data("max_available_area") or 1.0
+            return max_area
+        
+        # Get the current value from the input
+        current_value = value if value is not None else 1.0
+        
+        # Determine which trigger caused the callback
+        trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1]
+        
+        # Save max area for all triggers except initial load
+        if trigger_prop != "id":
+            dash_storage.set_data("max_available_area", current_value)
+        
+        return current_value
+
+    # Callback for land use dropdown - saves to data storage
+    @app.callback(
+        Output("land-use-dropdown", "value"),
+        [
+            Input("land-use-dropdown", "value"),
+            Input("land-use-dropdown", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_land_use_selection(value, component_id):
+        """Handle land use dropdown selection and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved land use
+            land_use = dash_storage.get_data("land_use") or "Urban Residential"
+            return land_use
+        
+        # Get the current selection
+        current_selection = value if value else "Urban Residential"
+        
+        # Save land use selection to data storage
+        dash_storage.set_data("land_use", current_selection)
+        
+        return current_selection
+

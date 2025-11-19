@@ -537,6 +537,9 @@ def setup_main_callbacks(app, dashboard_instance):
             dash_storage.set_data("project_name", "")
             dash_storage.set_data("analysis_date", "")
             dash_storage.set_data("mar_purpose", ["secure_water_supply"])
+            dash_storage.set_data("ground_surface_slope", 0.5)
+            dash_storage.set_data("max_available_area", 1.0)
+            dash_storage.set_data("land_use", "Urban Residential")
             
             import dash_bootstrap_components as dbc
             return [
