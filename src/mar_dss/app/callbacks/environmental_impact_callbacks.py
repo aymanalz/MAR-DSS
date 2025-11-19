@@ -6,28 +6,12 @@ from dash import Input, Output, html, State, dcc
 import plotly.graph_objects as go
 import dash_table
 import pandas as pd
-import sys
-import os
 import dash_bootstrap_components as dbc
 from mar_dss.app.components.environmental_impact_tab import (
     DECISION_LOGIC,
     TREATMENT_OPTIONS,
 )
-
-# Import get_mar_factors from recycle_bin
-# Add the recycle_bin directory to the path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.join(current_dir, '..', '..', '..', '..')
-recycle_bin_path = os.path.join(project_root, 'recycle_bin')
-if recycle_bin_path not in sys.path:
-    sys.path.insert(0, recycle_bin_path)
-
-try:
-    from ai_environment import get_mar_factors
-except ImportError:
-    # Fallback if import fails
-    def get_mar_factors(location):
-        raise ImportError("Could not import get_mar_factors. Please ensure ai_environment.py is accessible.")
+from mar_dss.app.callbacks.ai_environment import get_mar_factors
 
 
 def generate_required_treatment_summary(risks_and_treatments):
@@ -314,55 +298,53 @@ def setup_environmental_impact_callbacks(app):
                     ], color="warning")
                 ])
             
-            # Create styled table with colors based on priority and category
-            # Define color schemes
+            # Create styled table with colors based on priority (only for Priority column)
+            # Define color schemes for priority
             priority_colors = {
-                'High': {'bg': '#f8d7da', 'text': '#721c24', 'border': '#dc3545'},
-                'Medium': {'bg': '#fff3cd', 'text': '#856404', 'border': '#ffc107'},
-                'Low': {'bg': '#d4edda', 'text': '#155724', 'border': '#28a745'}
+                'High': {'bg': '#f8d7da', 'text': '#721c24'},
+                'Medium': {'bg': '#fff3cd', 'text': '#856404'},
+                'Low': {'bg': '#d4edda', 'text': '#155724'}
             }
             
-            category_colors = {
-                'Environmental': {'header': '#e3f2fd', 'text': '#0d47a1'},
-                'Ecological': {'header': '#e8f5e9', 'text': '#1b5e20'},
-                'Cultural': {'header': '#fff3e0', 'text': '#e65100'}
-            }
-            
-            # Create conditional styling for rows based on priority
+            # Create conditional styling for Priority column cells only
             style_data_conditional = []
             for idx, row in df.iterrows():
                 priority = str(row.get('priority', '')).strip()
-                priority_style = priority_colors.get(priority, {'bg': '#ffffff', 'text': '#000000', 'border': '#dee2e6'})
-                
-                style_data_conditional.append({
-                    'if': {'row_index': idx},
-                    'backgroundColor': priority_style['bg'],
-                    'color': priority_style['text'],
-                    'borderLeft': f"4px solid {priority_style['border']}"
-                })
+                if priority in priority_colors:
+                    colors = priority_colors[priority]
+                    style_data_conditional.append({
+                        'if': {
+                            'row_index': idx,
+                            'column_id': 'priority'
+                        },
+                        'backgroundColor': colors['bg'],
+                        'color': colors['text'],
+                        'fontWeight': 'bold'
+                    })
             
-            # Create conditional styling for headers based on category
-            style_header_conditional = []
-            for col in df.columns:
-                if col == 'category':
-                    # Apply category-based coloring to category column header
-                    style_header_conditional.append({
-                        'if': {'column_id': 'category'},
-                        'backgroundColor': '#f8f9fa',
-                        'fontWeight': 'bold'
-                    })
-                elif col == 'priority':
-                    style_header_conditional.append({
-                        'if': {'column_id': 'priority'},
-                        'backgroundColor': '#f8f9fa',
-                        'fontWeight': 'bold'
-                    })
-                else:
-                    style_header_conditional.append({
-                        'if': {'column_id': col},
-                        'backgroundColor': '#f8f9fa',
-                        'fontWeight': 'bold'
-                    })
+            # Add alternating row colors (light blue) for all columns except priority
+            # Apply to each non-priority column separately
+            for idx in range(len(df)):
+                if idx % 2 == 0:  # Even rows get light blue
+                    for col in ['category', 'data_point', 'justification']:
+                        style_data_conditional.append({
+                            'if': {
+                                'row_index': idx,
+                                'column_id': col
+                            },
+                            'backgroundColor': '#e3f2fd'
+                        })
+            
+            # Create conditional styling for headers - all green
+            style_header_conditional = [
+                {
+                    'if': {'column_id': col},
+                    'backgroundColor': '#28a745',  # Green background
+                    'color': 'white',
+                    'fontWeight': 'bold'
+                }
+                for col in df.columns
+            ]
             
             # Create the table
             table = dash_table.DataTable(
@@ -375,17 +357,18 @@ def setup_environmental_impact_callbacks(app):
                 ],
                 data=df.to_dict('records'),
                 style_header={
-                    'backgroundColor': '#f8f9fa',
+                    'backgroundColor': '#28a745',  # Green background
+                    'color': 'white',
                     'fontWeight': 'bold',
                     'textAlign': 'left',
                     'border': '1px solid #dee2e6',
-                    'fontSize': '14px'
+                    'fontSize': '16px'
                 },
                 style_cell={
                     'textAlign': 'left',
                     'padding': '12px',
                     'fontFamily': 'Arial, sans-serif',
-                    'fontSize': '13px',
+                    'fontSize': '15px',
                     'whiteSpace': 'normal',
                     'height': 'auto',
                     'border': '1px solid #dee2e6'
@@ -397,7 +380,7 @@ def setup_environmental_impact_callbacks(app):
                 style_header_conditional=style_header_conditional,
                 page_size=20,
                 sort_action="native",
-                filter_action="native",
+                filter_action="none",
                 export_format="csv",
                 tooltip_data=[
                     {
@@ -416,6 +399,14 @@ def setup_environmental_impact_callbacks(app):
                         html.Small(f"Total factors: {len(df)}", className="text-muted")
                     ], className="bg-light"),
                     dbc.CardBody([
+                        # Disclaimer
+                        dbc.Alert([
+                            html.P([
+                                html.Strong("Important Disclaimer: "),
+                                f"The analysis of Managed Aquifer Recharge (MAR) factors specific to {location} was produced using the Google Gemini Large Language Model (LLM). Although this generation incorporates site-specific parameters, we cannot guarantee its accuracy or completeness. The data provided in the matrix below should be used with caution, as it is intended only to offer general guidance regarding MAR's potential environmental, ecological, and cultural considerations."
+                            ], className="mb-0")
+                        ], color="warning", className="mb-4"),
+                        
                         html.Div([
                             html.P([
                                 html.Strong("Categories: "),
@@ -430,8 +421,15 @@ def setup_environmental_impact_callbacks(app):
                                 html.Span(f"Low: {len(df[df['priority'].astype(str).str.strip() == 'Low'])}", className="text-success")
                             ], className="mb-3")
                         ]),
-                        html.Div(table, style={'overflowX': 'auto'})
-                    ])
+                        html.Div(
+                            table, 
+                            style={
+                                'overflowX': 'auto',
+                                'width': '80%',
+                                'margin': '0 auto'
+                            }
+                        )
+                    ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
                 ], className="mt-3")
             ])
             
