@@ -8,6 +8,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import requests
 from dash import dcc, dash_table, html
+import mar_dss.app.utils.data_storage as dash_storage
 from .runoff_calculator_tab import create_runoff_calculator_tab
 
 
@@ -153,23 +154,18 @@ def create_editable_flow_table():
         "Nov",
         "Dec",
     ]
+    # Get existing values from data storage if available
+    default_flows = [4500, 4200, 2800, 2200, 1800, 1500, 1200, 1000, 1300, 2000, 3800, 4100]
+    monthly_flows = dash_storage.get_data("monthly_flow") or default_flows
+    
+    # Ensure we have exactly 12 values
+    if len(monthly_flows) != 12:
+        monthly_flows = default_flows
+    
     df = pd.DataFrame(
         {
             "Month": months,
-            "Flow (m³/month)": [
-                4500,
-                4200,
-                2800,
-                2200,
-                1800,
-                1500,
-                1200,
-                1000,
-                1300,
-                2000,
-                3800,
-                4100,
-            ],
+            "Flow (m³/month)": monthly_flows,
         }
     )
     table = html.Div(
@@ -214,6 +210,13 @@ def create_editable_flow_table():
 
 def create_water_source_info_tab():
     """Create the content for the Water Source Information tab."""
+    # Get existing values from data storage if available
+    water_source = dash_storage.get_data("water_source") or "surface_water_sources"
+    proximity_distance = dash_storage.get_data("proximity_distance") or 1.0
+    water_conveyance = dash_storage.get_data("water_conveyance") or "open_canals_ditches"
+    water_ownership = dash_storage.get_data("water_ownership") or "legal_rights"
+    pumping_needed = dash_storage.get_data("pumping_needed") or "no"
+    
     return [
         html.H3("Water Source Information"),
         html.P("Water source details and configuration for your MAR project."),
@@ -269,7 +272,7 @@ def create_water_source_info_tab():
                                                                     "value": "other_non_conventional_sources",
                                                                 },
                                                             ],
-                                                            value="surface_water_sources",
+                                                            value=water_source,
                                                             placeholder="Select water source...",
                                                             style={"margin-top": "10px"},
                                                         ),
@@ -285,7 +288,7 @@ def create_water_source_info_tab():
                                                         dbc.Input(
                                                             id="proximity-distance-input",
                                                             type="number",
-                                                            value=1.0,
+                                                            value=proximity_distance,
                                                             min=0.1,
                                                             max=100.0,
                                                             step=0.1,
@@ -326,7 +329,7 @@ def create_water_source_info_tab():
                                                                 },
                                                                 {"label": "Other", "value": "other"},
                                                             ],
-                                                            value="open_canals_ditches",
+                                                            value=water_conveyance,
                                                             placeholder="Select conveyance method...",
                                                             style={"margin-top": "10px"},
                                                         ),
@@ -348,7 +351,7 @@ def create_water_source_info_tab():
                                                                 },
                                                                 {"label": "None", "value": "none"},
                                                             ],
-                                                            value="legal_rights",
+                                                            value=water_ownership,
                                                             inline=True,
                                                             style={"margin-top": "10px"},
                                                         ),
@@ -370,7 +373,7 @@ def create_water_source_info_tab():
                                                                 },
                                                                 {"label": "No", "value": "no"},
                                                             ],
-                                                            value="no",
+                                                            value=pumping_needed,
                                                             inline=True,
                                                             style={"margin-top": "10px"},
                                                         ),

@@ -204,13 +204,13 @@ def setup_main_callbacks(app, dashboard_instance):
 
         return create_editable_flow_table()
 
-    # Add callback for updating monthly flow chart from table
+    # Add callback for updating monthly flow chart from table and saving to data storage
     @app.callback(
         Output("monthly-flow-chart", "figure"),
         [Input("flow-data-table", "data")],
     )
     def update_monthly_flow_chart_from_table(table_data):
-        """Update the monthly flow chart based on table data."""
+        """Update the monthly flow chart based on table data and save to data storage."""
         if not table_data:
             # Return default chart if no data
             try:
@@ -223,12 +223,18 @@ def setup_main_callbacks(app, dashboard_instance):
                 )
             return create_monthly_flow_chart()
 
-        # Extract flow data from table
+        # Extract flow data from table and save to data storage as list of 12 values
+        monthly_flows = []
         flow_data = {}
         for row in table_data:
             month = row["Month"]
             flow = row.get("Flow (m³/month)", 0)
-            flow_data[month] = flow if flow is not None else 0
+            flow_value = flow if flow is not None else 0
+            flow_data[month] = flow_value
+            monthly_flows.append(flow_value)
+        
+        # Save to data storage as list of 12 values
+        dash_storage.set_data("monthly_flow", monthly_flows)
 
         # Create chart with the data
         try:
@@ -540,7 +546,12 @@ def setup_main_callbacks(app, dashboard_instance):
             dash_storage.set_data("ground_surface_slope", 0.5)
             dash_storage.set_data("max_available_area", 1.0)
             dash_storage.set_data("land_use", "Urban Residential")
+            dash_storage.set_data("water_source", "surface_water_sources")
+            dash_storage.set_data("proximity_distance", 1.0)
+            dash_storage.set_data("water_conveyance", "open_canals_ditches")
+            dash_storage.set_data("water_ownership", "legal_rights")
             dash_storage.set_data("pumping_needed", "no")
+            dash_storage.set_data("monthly_flow", [4500, 4200, 2800, 2200, 1800, 1500, 1200, 1000, 1300, 2000, 3800, 4100])
             
             import dash_bootstrap_components as dbc
             return [
@@ -674,6 +685,117 @@ def setup_main_callbacks(app, dashboard_instance):
         Input("water-source-tabs", "active_tab"),
         prevent_initial_call=True,
     )
+
+    # Callback for water source dropdown - saves to data storage
+    @app.callback(
+        Output("water-source-dropdown", "value"),
+        [
+            Input("water-source-dropdown", "value"),
+            Input("water-source-dropdown", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_water_source_selection(value, component_id):
+        """Handle water source selection and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved water source
+            water_source = dash_storage.get_data("water_source") or "surface_water_sources"
+            return water_source
+        
+        # Get the current selection
+        current_selection = value if value else "surface_water_sources"
+        
+        # Save water source selection to data storage
+        dash_storage.set_data("water_source", current_selection)
+        
+        return current_selection
+
+    # Callback for proximity distance input - saves to data storage
+    @app.callback(
+        Output("proximity-distance-input", "value"),
+        [
+            Input("proximity-distance-input", "value"),
+            Input("proximity-distance-input", "n_blur"),
+            Input("proximity-distance-input", "n_submit"),
+            Input("proximity-distance-input", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_proximity_distance_input(value, n_blur, n_submit, component_id):
+        """Handle proximity distance input for all triggers: value change, blur, submit, and load."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved proximity distance
+            proximity_distance = dash_storage.get_data("proximity_distance") or 1.0
+            return proximity_distance
+        
+        # Get the current value from the input
+        current_value = value if value is not None else 1.0
+        
+        # Determine which trigger caused the callback
+        trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1]
+        
+        # Save proximity distance for all triggers except initial load
+        if trigger_prop != "id":
+            dash_storage.set_data("proximity_distance", current_value)
+        
+        return current_value
+
+    # Callback for water conveyance dropdown - saves to data storage
+    @app.callback(
+        Output("water-conveyance-dropdown", "value"),
+        [
+            Input("water-conveyance-dropdown", "value"),
+            Input("water-conveyance-dropdown", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_water_conveyance_selection(value, component_id):
+        """Handle water conveyance selection and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved water conveyance
+            water_conveyance = dash_storage.get_data("water_conveyance") or "open_canals_ditches"
+            return water_conveyance
+        
+        # Get the current selection
+        current_selection = value if value else "open_canals_ditches"
+        
+        # Save water conveyance selection to data storage
+        dash_storage.set_data("water_conveyance", current_selection)
+        
+        return current_selection
+
+    # Callback for water ownership radio - saves to data storage
+    @app.callback(
+        Output("water-ownership-radio", "value"),
+        [
+            Input("water-ownership-radio", "value"),
+            Input("water-ownership-radio", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_water_ownership_selection(value, component_id):
+        """Handle water ownership selection and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved water ownership
+            water_ownership = dash_storage.get_data("water_ownership") or "legal_rights"
+            return water_ownership
+        
+        # Get the current selection
+        current_selection = value if value else "legal_rights"
+        
+        # Save water ownership selection to data storage
+        dash_storage.set_data("water_ownership", current_selection)
+        
+        return current_selection
 
     # Callback for pumping needed radio - saves to data storage
     @app.callback(
