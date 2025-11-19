@@ -406,12 +406,12 @@ def create_environmental_considerations_content():
                                     dbc.Button(
                                         [
                                             html.Div([
-                                                html.I(className="fas fa-brain mb-1", style={"display": "block", "fontSize": "3.6rem"}),
+                                                html.I(className="fas fa-brain mb-1", style={"display": "block", "fontSize": "3.6rem", "color": "#9c27b0"}),
                                                 html.Span("Generate MAR Factors", style={"fontSize": "0.65rem", "display": "block"})
                                             ], style={"display": "flex", "flexDirection": "column", "alignItems": "center", "justifyContent": "center"})
                                         ],
                                         id="generate-mar-factors-btn",
-                                        color="primary",
+                                        color="success",
                                         className="w-100",
                                         n_clicks=0,
                                         style={
@@ -455,12 +455,65 @@ def create_environmental_considerations_content():
             ], width=12, md=6),
             dbc.Col([
                 dbc.Card([
-                    dbc.CardHeader("Important Notes", className="fw-bold bg-secondary text-white"),
+                    dbc.CardHeader("AI model settings", className="fw-bold bg-info text-white"),
                     dbc.CardBody([
-                        html.P(
-                            "Use this section to record important notes, observations, or considerations related to environmental factors for your MAR project.",
-                            className="text-muted"
-                        )
+                        html.Div([
+                            html.P([
+                                html.Strong("(1) "),
+                                "To use the Gemini AI model, an API key is required. Go to ",
+                                html.A("Google AI Studio", href="https://aistudio.google.com/", target="_blank", className="text-primary"),
+                                " and click \"Create API Key\" to generate one."
+                            ], className="mb-3"),
+                            dcc.Upload(
+                                id="api-key-upload",
+                                children=html.Div([
+                                    html.A("Upload API Key File", className="btn btn-outline-primary btn-sm")
+                                ]),
+                                style={
+                                    "width": "100%",
+                                    "height": "40px",
+                                    "lineHeight": "40px",
+                                    "borderWidth": "1px",
+                                    "borderStyle": "dashed",
+                                    "borderRadius": "5px",
+                                    "textAlign": "center",
+                                    "marginBottom": "20px"
+                                },
+                                multiple=False
+                            ),
+                            html.P([
+                                html.Strong("(2) "),
+                                "Choose Gemini Model"
+                            ], className="mb-2"),
+                            dcc.Dropdown(
+                                id="gemini-model-dropdown",
+                                options=[
+                                    {"label": "gemini-2.5-pro", "value": "gemini-2.5-pro"},
+                                    {"label": "gemini-2.5-flash", "value": "gemini-2.5-flash"}
+                                ],
+                                value="gemini-2.5-flash",
+                                clearable=False,
+                                style={"marginBottom": "20px"}
+                            ),
+                            html.P([
+                                html.Strong("(3) "),
+                                "Temperature: Controls randomness."
+                            ], className="mb-2"),
+                            dcc.Slider(
+                                id="temperature-slider",
+                                min=0,
+                                max=1,
+                                step=0.1,
+                                value=0.5,
+                                marks={
+                                    0: "0",
+                                    0.5: "0.5",
+                                    1: "1"
+                                },
+                                tooltip={"placement": "bottom", "always_visible": True}
+                            ),
+                            html.Div(id="temperature-value-display", className="mt-2 mb-3", style={"fontSize": "0.9rem", "color": "#6c757d"})
+                        ])
                     ])
                 ])
             ], width=12, md=6)

@@ -391,46 +391,47 @@ def setup_environmental_impact_callbacks(app):
                 tooltip_duration=None
             )
             
-            # Wrap table in a card with summary
-            return html.Div([
-                dbc.Card([
-                    dbc.CardHeader([
-                        html.H5(f"MAR Factors for {location}", className="mb-0 text-primary"),
-                        html.Small(f"Total factors: {len(df)}", className="text-muted")
-                    ], className="bg-light"),
-                    dbc.CardBody([
-                        # Disclaimer
-                        dbc.Alert([
-                            html.P([
-                                html.Strong("Important Disclaimer: "),
-                                f"The analysis of Managed Aquifer Recharge (MAR) factors specific to {location} was produced using the Google Gemini Large Language Model (LLM). Although this generation incorporates site-specific parameters, we cannot guarantee its accuracy or completeness. The data provided in the matrix below should be used with caution, as it is intended only to offer general guidance regarding MAR's potential environmental, ecological, and cultural considerations."
-                            ], className="mb-0")
-                        ], color="warning", className="mb-4"),
-                        
-                        html.Div([
-                            html.P([
-                                html.Strong("Categories: "),
-                                html.Span(f"Environmental: {len(df[df['category'] == 'Environmental'])}, ", className="text-info"),
-                                html.Span(f"Ecological: {len(df[df['category'] == 'Ecological'])}, ", className="text-success"),
-                                html.Span(f"Cultural: {len(df[df['category'] == 'Cultural'])}", className="text-warning")
-                            ], className="mb-3"),
-                            html.P([
-                                html.Strong("Priorities: "),
-                                html.Span(f"High: {len(df[df['priority'].astype(str).str.strip() == 'High'])}, ", className="text-danger"),
-                                html.Span(f"Medium: {len(df[df['priority'].astype(str).str.strip() == 'Medium'])}, ", className="text-warning"),
-                                html.Span(f"Low: {len(df[df['priority'].astype(str).str.strip() == 'Low'])}", className="text-success")
-                            ], className="mb-3")
-                        ]),
-                        html.Div(
-                            table, 
-                            style={
-                                'overflowX': 'auto',
-                                'width': '80%',
-                                'margin': '0 auto'
-                            }
-                        )
-                    ], style={'display': 'flex', 'flexDirection': 'column', 'alignItems': 'center'})
-                ], className="mt-3")
+            # Wrap table in a card with summary - in its own full-width row
+            return dbc.Row([
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader([
+                            html.H5(f"MAR Factors for {location}", className="mb-0 text-primary"),
+                            html.Small(f"Total factors: {len(df)}", className="text-muted")
+                        ], className="bg-light"),
+                        dbc.CardBody([
+                            # Disclaimer
+                            dbc.Alert([
+                                html.P([
+                                    html.Strong("Important Disclaimer: "),
+                                    f"The analysis of Managed Aquifer Recharge (MAR) factors specific to {location} was produced using the Google Gemini Large Language Model (LLM). Although this generation incorporates site-specific parameters, we cannot guarantee its accuracy or completeness. The data provided in the matrix below should be used with caution, as it is intended only to offer general guidance regarding MAR's potential environmental, ecological, and cultural considerations."
+                                ], className="mb-0")
+                            ], color="warning", className="mb-4"),
+                            
+                            html.Div([
+                                html.P([
+                                    html.Strong("Categories: "),
+                                    html.Span(f"Environmental: {len(df[df['category'] == 'Environmental'])}, ", className="text-info"),
+                                    html.Span(f"Ecological: {len(df[df['category'] == 'Ecological'])}, ", className="text-success"),
+                                    html.Span(f"Cultural: {len(df[df['category'] == 'Cultural'])}", className="text-warning")
+                                ], className="mb-3"),
+                                html.P([
+                                    html.Strong("Priorities: "),
+                                    html.Span(f"High: {len(df[df['priority'].astype(str).str.strip() == 'High'])}, ", className="text-danger"),
+                                    html.Span(f"Medium: {len(df[df['priority'].astype(str).str.strip() == 'Medium'])}, ", className="text-warning"),
+                                    html.Span(f"Low: {len(df[df['priority'].astype(str).str.strip() == 'Low'])}", className="text-success")
+                                ], className="mb-3")
+                            ]),
+                            html.Div(
+                                table, 
+                                style={
+                                    'overflowX': 'auto',
+                                    'width': '100%'
+                                }
+                            )
+                        ])
+                    ], className="mt-3")
+                ], width=12)
             ])
             
         except Exception as e:
@@ -441,4 +442,15 @@ def setup_environmental_impact_callbacks(app):
                     html.P(f"An error occurred: {error_msg}", className="mb-0")
                 ], color="danger")
             ])
+
+    # Callback to display temperature value
+    @app.callback(
+        Output('temperature-value-display', 'children'),
+        [Input('temperature-slider', 'value')]
+    )
+    def update_temperature_display(temperature):
+        """Display the current temperature value."""
+        if temperature is not None:
+            return html.Span(f"Current value: {temperature:.1f}", className="text-muted")
+        return html.Span("Current value: 0.5", className="text-muted")
 
