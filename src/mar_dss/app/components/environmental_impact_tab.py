@@ -385,49 +385,85 @@ def create_water_quality_content():
 def create_environmental_considerations_content():
     """Create the Environmental Considerations content (sub-tab 4.2)."""
     return [
-        dbc.Card([
-            dbc.CardHeader("Environmental Considerations", className="fw-bold bg-primary text-white"),
-            dbc.CardBody([
-                html.H5("AI-Generated MAR Factors Analysis", className="mb-4 text-primary"),
-                html.P(
-                    "Enter a location to generate a comprehensive list of environmental, ecological, and cultural factors "
-                    "that must be considered for a Managed Aquifer Recharge (MAR) project at that location.",
-                    className="text-muted mb-4"
-                ),
-                
-                # Input section
-                dbc.Row([
-                    dbc.Col([
-                        dbc.Label("Location:", className="fw-bold"),
-                        dbc.Input(
-                            id="mar-location-input",
-                            type="text",
-                            value="China Lake, CA",
-                            placeholder="Enter location (e.g., City, State or City, Country)",
-                            className="mb-3"
-                        ),
-                    ], width=12, md=8),
-                    dbc.Col([
-                        dbc.Label(" ", className="fw-bold"),  # Spacer for alignment
-                        html.Div([
-                            dbc.Button(
-                                [html.I(className="fas fa-search me-2"), "Generate MAR Factors"],
-                                id="generate-mar-factors-btn",
-                                color="primary",
-                                className="w-100",
-                                n_clicks=0
-                            )
-                        ], className="mb-3")
-                    ], width=12, md=4)
-                ]),
-                
-                # Results table with loading indicator
-                dcc.Loading(
-                    id="mar-factors-loading",
-                    type="default",
-                    children=html.Div(id="mar-factors-table-container", className="mt-4")
-                )
-            ])
+        dbc.Row([
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardHeader("Environmental Considerations", className="fw-bold bg-primary text-white"),
+                    dbc.CardBody([
+                        html.H5("AI-Generated MAR Factors Analysis", className="mb-4 text-primary"),
+                        
+                        # Text and button on same row
+                        dbc.Row([
+                            dbc.Col([
+                                html.P(
+                                    "Enter a location to generate a comprehensive list of environmental, ecological, and cultural factors "
+                                    "that must be considered for a Managed Aquifer Recharge (MAR) project at that location.",
+                                    className="text-muted mb-0"
+                                ),
+                            ], width=12, md=8),
+                            dbc.Col([
+                                html.Div([
+                                    dbc.Button(
+                                        [
+                                            html.Div([
+                                                html.I(className="fas fa-brain mb-1", style={"display": "block", "fontSize": "3.6rem"}),
+                                                html.Span("Generate MAR Factors", style={"fontSize": "0.65rem", "display": "block"})
+                                            ], style={"display": "flex", "flexDirection": "column", "alignItems": "center", "justifyContent": "center"})
+                                        ],
+                                        id="generate-mar-factors-btn",
+                                        color="primary",
+                                        className="w-100",
+                                        n_clicks=0,
+                                        style={
+                                            "aspectRatio": "1",
+                                            "height": "auto",
+                                            "minHeight": "36px",
+                                            "maxWidth": "120px",
+                                            "display": "flex",
+                                            "alignItems": "center",
+                                            "justifyContent": "center",
+                                            "padding": "5px",
+                                            "margin": "0 auto"
+                                        }
+                                    )
+                                ], className="mb-3")
+                            ], width=12, md=4, style={"display": "flex", "alignItems": "center", "justifyContent": "center"})
+                        ], className="mb-4"),
+                        
+                        # Input section
+                        dbc.Row([
+                            dbc.Col([
+                                dbc.Label("Location:", className="fw-bold"),
+                                dbc.Input(
+                                    id="mar-location-input",
+                                    type="text",
+                                    value="China Lake, CA",
+                                    placeholder="Enter location (e.g., City, State or City, Country)",
+                                    className="mb-3"
+                                ),
+                            ], width=12)
+                        ]),
+                        
+                        # Results table with loading indicator
+                        dcc.Loading(
+                            id="mar-factors-loading",
+                            type="default",
+                            children=html.Div(id="mar-factors-table-container", className="mt-4")
+                        )
+                    ])
+                ])
+            ], width=12, md=6),
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardHeader("Important Notes", className="fw-bold bg-secondary text-white"),
+                    dbc.CardBody([
+                        html.P(
+                            "Use this section to record important notes, observations, or considerations related to environmental factors for your MAR project.",
+                            className="text-muted"
+                        )
+                    ])
+                ])
+            ], width=12, md=6)
         ])
     ]
 
