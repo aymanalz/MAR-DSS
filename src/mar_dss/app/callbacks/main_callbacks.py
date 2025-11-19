@@ -540,6 +540,7 @@ def setup_main_callbacks(app, dashboard_instance):
             dash_storage.set_data("ground_surface_slope", 0.5)
             dash_storage.set_data("max_available_area", 1.0)
             dash_storage.set_data("land_use", "Urban Residential")
+            dash_storage.set_data("pumping_needed", "no")
             
             import dash_bootstrap_components as dbc
             return [
@@ -673,4 +674,30 @@ def setup_main_callbacks(app, dashboard_instance):
         Input("water-source-tabs", "active_tab"),
         prevent_initial_call=True,
     )
+
+    # Callback for pumping needed radio - saves to data storage
+    @app.callback(
+        Output("pumping-needed-radio", "value"),
+        [
+            Input("pumping-needed-radio", "value"),
+            Input("pumping-needed-radio", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_pumping_needed_selection(value, component_id):
+        """Handle pumping needed selection and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved pumping needed value
+            pumping_needed = dash_storage.get_data("pumping_needed") or "no"
+            return pumping_needed
+        
+        # Get the current selection
+        current_selection = value if value else "no"
+        
+        # Save pumping needed selection to data storage
+        dash_storage.set_data("pumping_needed", current_selection)
+        
+        return current_selection
 

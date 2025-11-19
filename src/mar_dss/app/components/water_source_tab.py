@@ -352,6 +352,28 @@ def create_water_source_info_tab():
                                                             inline=True,
                                                             style={"margin-top": "10px"},
                                                         ),
+                                                        html.Hr(className="my-3"),
+                                                        html.Label(
+                                                            "Is pumping needed to move water from a source location to a recharge site for MAR?",
+                                                            className="fw-bold",
+                                                        ),
+                                                        html.P(
+                                                            "Select whether pumping is required:",
+                                                            className="text-muted small",
+                                                        ),
+                                                        dbc.RadioItems(
+                                                            id="pumping-needed-radio",
+                                                            options=[
+                                                                {
+                                                                    "label": "Yes",
+                                                                    "value": "yes",
+                                                                },
+                                                                {"label": "No", "value": "no"},
+                                                            ],
+                                                            value="no",
+                                                            inline=True,
+                                                            style={"margin-top": "10px"},
+                                                        ),
                                                     ],
                                                     width=6,
                                                 ),
