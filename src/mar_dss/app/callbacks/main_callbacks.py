@@ -657,7 +657,7 @@ def setup_main_callbacks(app, dashboard_instance):
             dash_storage.set_data("emerging_contaminants", [])
             # Reset hydrogeology data
             dash_storage.set_data("aquifer_type", "unconfined")
-            dash_storage.set_data("max_allowed_head", None)
+            dash_storage.set_data("max_allowed_head", 1.0)
             dash_storage.set_data("stratigraphy_data", [
                 {"layer": "Sand", "thickness": 60.0, "conductivity": 10.0, "storage": 0.0001, "yield": 0.25, "selected": False},
                 {"layer": "Silt", "thickness": 60.0, "conductivity": 0.01, "storage": 0.0001, "yield": 0.10, "selected": False},

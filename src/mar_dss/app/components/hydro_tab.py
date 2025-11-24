@@ -91,6 +91,14 @@ def _build_hydro_tab_header():
     # Get existing values from data storage if available
     aquifer_type = dash_storage.get_data("aquifer_type") or "unconfined"
     max_allowed_head = dash_storage.get_data("max_allowed_head")
+    # Ensure max_allowed_head is a float, default to 1.0
+    if max_allowed_head is not None:
+        try:
+            max_allowed_head = float(max_allowed_head)
+        except (ValueError, TypeError):
+            max_allowed_head = 1.0
+    else:
+        max_allowed_head = 1.0
     
     return [
         html.H3("Hydrogeology"),
@@ -102,7 +110,7 @@ def _build_hydro_tab_header():
             id="confined-head-input-container",
             style={"display": "none"},
             children=[
-                html.Label("Maximum Allowed Head (Pressure) (ft):", className="fw-bold mb-2"),
+                html.Label("Maximum Allowed Head (Pressure) (ft/foot of depth to the top of the confining layer):", className="fw-bold mb-2"),
                 dbc.Input(
                     id="max-allowed-head-input",
                     type="number",

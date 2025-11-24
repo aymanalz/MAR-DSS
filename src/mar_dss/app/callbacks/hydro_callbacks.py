@@ -95,18 +95,31 @@ def setup_hydro_callbacks(app):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved value
+            # Initial load - get saved value and ensure it's a float
             max_head = dash_storage.get_data("max_allowed_head")
+            if max_head is not None:
+                try:
+                    max_head = float(max_head)
+                except (ValueError, TypeError):
+                    max_head = 1.0
+            else:
+                max_head = 1.0
             return max_head
         
-        # Get the current value
-        current_value = value if value is not None else None
+        # Get the current value and convert to float
+        if value is not None:
+            try:
+                current_value = float(value)
+            except (ValueError, TypeError):
+                current_value = 1.0
+        else:
+            current_value = 1.0
         
         # Determine which trigger caused the callback
         trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1] if ctx.triggered else ""
         
-        # Save for all triggers except initial load
-        if trigger_prop != "id" and current_value is not None:
+        # Save for all triggers except initial load (ensure it's saved as float)
+        if trigger_prop != "id":
             dash_storage.set_data("max_allowed_head", current_value)
         
         return current_value
