@@ -5,28 +5,99 @@ Hydrogeology tab content for MAR DSS dashboard.
 import dash_bootstrap_components as dbc
 from dash import dcc, html
 import pandas as pd
+import mar_dss.app.utils.data_storage as dash_storage
 
 columns=["parameter", "Depth/Thickness (ft)", "Hydraulic Conductivity", "Storage Term"]
 default_stratigraphy_unconfined = pd.DataFrame(columns=columns)
 parameters = ["Depth of No MAR Storage Zone", "MAR Storage Zone", "Max. Groundwater Table Elevation", "Average Groundwater Table Elevation", "Min Groundwater Table Elevation", "Bedrock Depth"]
 
 
-def create_hydro_tab_content():
-    """Create the content for the Hydrogeology tab."""
+def _get_stratigraphy_data():
+    """Get stratigraphy data from dash_storage or return defaults."""
+    stored_data = dash_storage.get_data("stratigraphy_data")
+    if stored_data:
+        return stored_data
+    return [
+        {"layer": "Sand", "thickness": 60.0, "conductivity": 10.0, "storage": 0.0001, "yield": 0.25, "selected": False},
+        {"layer": "Silt", "thickness": 60.0, "conductivity": 0.01, "storage": 0.0001, "yield": 0.10, "selected": False},
+        {"layer": "Gravel", "thickness": 60.0, "conductivity": 100.0, "storage": 0.0001, "yield": 0.30, "selected": False}
+    ]
+
+
+def _get_groundwater_data():
+    """Get groundwater data from dash_storage or return defaults."""
+    stored_data = dash_storage.get_data("groundwater_data")
+    if stored_data:
+        return stored_data
+    return [
+        {"month": "January", "elevation": 75.0, "selected": False},
+        {"month": "February", "elevation": 72.0, "selected": False},
+        {"month": "March", "elevation": 78.0, "selected": False},
+        {"month": "April", "elevation": 82.0, "selected": False},
+        {"month": "May", "elevation": 85.0, "selected": False},
+        {"month": "June", "elevation": 88.0, "selected": False},
+        {"month": "July", "elevation": 90.0, "selected": False},
+        {"month": "August", "elevation": 89.0, "selected": False},
+        {"month": "September", "elevation": 86.0, "selected": False},
+        {"month": "October", "elevation": 83.0, "selected": False},
+        {"month": "November", "elevation": 79.0, "selected": False},
+        {"month": "December", "elevation": 76.0, "selected": False}
+    ]
+
+
+def create_hydrogeologic_settings_content():
+    """Create the content for the Hydrogeologic Settings sub-tab (3.1)."""
     return [
         *_build_hydro_tab_header(),
         _build_geometry_and_view_cards(),
     ]
 
 
+def create_hydrogeologic_feasibility_content():
+    """Create the content for the Hydrogeologic Feasibility sub-tab (3.2)."""
+    return [
+        html.H3("Hydrogeologic Feasibility"),
+        html.P(
+            "Assess the feasibility of MAR implementation based on hydrogeologic conditions.",
+            className="mb-4"
+        ),
+        dbc.Alert(
+            "This section will contain feasibility assessment tools and analysis.",
+            color="info"
+        ),
+    ]
+
+
+def create_hydro_tab_content():
+    """Create the content for the Hydrogeology tab with sub-tabs."""
+    return [
+        dbc.Tabs([
+            dbc.Tab(
+                label="(3.1) Hydrogeologic Settings",
+                tab_id="hydrogeologic-settings-tab",
+                children=create_hydrogeologic_settings_content()
+            ),
+            dbc.Tab(
+                label="(3.2) Hydrogeologic Feasibility",
+                tab_id="hydrogeologic-feasibility-tab",
+                children=create_hydrogeologic_feasibility_content()
+            )
+        ], id="hydrogeology-subtabs", active_tab="hydrogeologic-settings-tab")
+    ]
+
+
 def _build_hydro_tab_header():
     """Build the hydrogeology tab header."""
+    # Get existing values from data storage if available
+    aquifer_type = dash_storage.get_data("aquifer_type") or "unconfined"
+    max_allowed_head = dash_storage.get_data("max_allowed_head")
+    
     return [
         html.H3("Hydrogeology"),
         html.P(
             "Configure hydrogeological parameters for MAR project analysis."
         ),
-        _build_aquifer_type_selector(),
+        _build_aquifer_type_selector(aquifer_type),
         html.Div(
             id="confined-head-input-container",
             style={"display": "none"},
@@ -37,6 +108,7 @@ def _build_hydro_tab_header():
                     type="number",
                     placeholder="Enter maximum allowed head",
                     step=0.1,
+                    value=max_allowed_head,
                     className="mb-3"
                 )
             ],
@@ -45,7 +117,7 @@ def _build_hydro_tab_header():
     ]
 
 
-def _build_aquifer_type_selector():
+def _build_aquifer_type_selector(default_value="unconfined"):
     """Build the aquifer type radio button selector."""
     return html.Div(
         [
@@ -57,7 +129,7 @@ def _build_aquifer_type_selector():
                     {"label": "Confined", "value": "confined"},
                     {"label": "Semi-Confined", "value": "semi-confined"},
                 ],
-                value="unconfined",
+                value=default_value,
                 inline=True,
                 className="mb-3"
             )
@@ -249,12 +321,8 @@ def _build_stratigraphy_tab():
                         className="mb-3"
                     ),
                     
-                    # Store for table data
-                    dcc.Store(id="stratigraphy-data-store", data=[
-                        {"layer": "Sand", "thickness": 60.0, "conductivity": 10.0, "storage": 0.0001, "yield": 0.25, "selected": False},
-                        {"layer": "Silt", "thickness": 60.0, "conductivity": 0.01, "storage": 0.0001, "yield": 0.10, "selected": False},
-                        {"layer": "Gravel", "thickness": 60.0, "conductivity": 100.0, "storage": 0.0001, "yield": 0.30, "selected": False}
-                    ])
+                    # Store for table data - load from dash_storage if available
+                    dcc.Store(id="stratigraphy-data-store", data=_get_stratigraphy_data())
                 ],
                 id="stratigraphy-content"
             )
@@ -302,7 +370,7 @@ def _build_groundwater_level_tab():
                             dbc.Input(
                                 id="ground-surface-elevation",
                                 type="number",
-                                value=120.0,
+                                value=dash_storage.get_data("ground_surface_elevation") or 120.0,
                                 step=0.1,
                                 placeholder="Enter elevation",
                                 size="sm",
@@ -312,7 +380,7 @@ def _build_groundwater_level_tab():
                             dbc.Input(
                                 id="max-mar-storage-depth",
                                 type="number",
-                                value=20.0,
+                                value=dash_storage.get_data("max_mar_storage_depth") or 20.0,
                                 step=0.1,
                                 placeholder="Enter storage depth",
                                 size="sm"
@@ -340,21 +408,8 @@ def _build_groundwater_level_tab():
                         ], width=6)
                     ], className="mb-3"),
                     
-                    # Store for groundwater data
-                    dcc.Store(id="groundwater-data-store", data=[
-                        {"month": "January", "elevation": 75.0, "selected": False},
-                        {"month": "February", "elevation": 72.0, "selected": False},
-                        {"month": "March", "elevation": 78.0, "selected": False},
-                        {"month": "April", "elevation": 82.0, "selected": False},
-                        {"month": "May", "elevation": 85.0, "selected": False},
-                        {"month": "June", "elevation": 88.0, "selected": False},
-                        {"month": "July", "elevation": 90.0, "selected": False},
-                        {"month": "August", "elevation": 89.0, "selected": False},
-                        {"month": "September", "elevation": 86.0, "selected": False},
-                        {"month": "October", "elevation": 83.0, "selected": False},
-                        {"month": "November", "elevation": 79.0, "selected": False},
-                        {"month": "December", "elevation": 76.0, "selected": False}
-                    ])
+                    # Store for groundwater data - load from dash_storage if available
+                    dcc.Store(id="groundwater-data-store", data=_get_groundwater_data())
                 ],
                 id="groundwater-level-content"
             )
@@ -391,7 +446,7 @@ def _build_horizontal_extension_tab():
                             dbc.Input(
                                 id="extension-length",
                                 type="number",
-                                value=100.0,
+                                value=dash_storage.get_data("extension_length") or 100.0,
                                 step=0.1,
                                 placeholder="Enter length"
                             )
@@ -401,7 +456,7 @@ def _build_horizontal_extension_tab():
                             dbc.Input(
                                 id="extension-width",
                                 type="number",
-                                value=50.0,
+                                value=dash_storage.get_data("extension_width") or 50.0,
                                 step=0.1,
                                 placeholder="Enter width"
                             )
@@ -414,7 +469,7 @@ def _build_horizontal_extension_tab():
                             dbc.Input(
                                 id="extension-rotation",
                                 type="number",
-                                value=0.0,
+                                value=dash_storage.get_data("extension_rotation") or 0.0,
                                 step=1.0,
                                 placeholder="Enter rotation angle"
                             )
@@ -424,7 +479,7 @@ def _build_horizontal_extension_tab():
                             dbc.Input(
                                 id="upstream-head",
                                 type="number",
-                                value=10.0,
+                                value=dash_storage.get_data("upstream_head") or 10.0,
                                 step=0.1,
                                 placeholder="Enter upstream head"
                             )
@@ -437,7 +492,7 @@ def _build_horizontal_extension_tab():
                             dbc.Input(
                                 id="downstream-head",
                                 type="number",
-                                value=5.0,
+                                value=dash_storage.get_data("downstream_head") or 5.0,
                                 step=0.1,
                                 placeholder="Enter downstream head"
                             )

@@ -7,6 +7,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.graph_objects as go
 from dash import Input, Output, dcc, html, State, callback_context
+import mar_dss.app.utils.data_storage as dash_storage
 
 
 def setup_hydro_callbacks(app):
@@ -51,6 +52,313 @@ def setup_hydro_callbacks(app):
         
         # Return the corresponding view tab, or default to stratigraphy-cross-section
         return tab_mapping.get(active_geometry_tab, "stratigraphy-cross-section")
+    
+    # Callback to save aquifer type to data storage
+    @app.callback(
+        Output("aquifer-type-radio", "value"),
+        [
+            Input("aquifer-type-radio", "value"),
+            Input("aquifer-type-radio", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_aquifer_type_selection(value, component_id):
+        """Handle aquifer type selection and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved aquifer type
+            aquifer_type = dash_storage.get_data("aquifer_type") or "unconfined"
+            return aquifer_type
+        
+        # Get the current selection
+        current_selection = value if value else "unconfined"
+        
+        # Save aquifer type to data storage
+        dash_storage.set_data("aquifer_type", current_selection)
+        
+        return current_selection
+    
+    # Callback to save max allowed head to data storage
+    @app.callback(
+        Output("max-allowed-head-input", "value"),
+        [
+            Input("max-allowed-head-input", "value"),
+            Input("max-allowed-head-input", "n_blur"),
+            Input("max-allowed-head-input", "n_submit"),
+            Input("max-allowed-head-input", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_max_allowed_head_input(value, n_blur, n_submit, component_id):
+        """Handle max allowed head input and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved value
+            max_head = dash_storage.get_data("max_allowed_head")
+            return max_head
+        
+        # Get the current value
+        current_value = value if value is not None else None
+        
+        # Determine which trigger caused the callback
+        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1] if ctx.triggered else ""
+        
+        # Save for all triggers except initial load
+        if trigger_prop != "id" and current_value is not None:
+            dash_storage.set_data("max_allowed_head", current_value)
+        
+        return current_value
+    
+    # Callback to save stratigraphy data to dash_storage when store updates
+    @app.callback(
+        Output("stratigraphy-data-store", "data", allow_duplicate=True),
+        [Input("stratigraphy-data-store", "data")],
+        prevent_initial_call=True
+    )
+    def save_stratigraphy_to_storage(data):
+        """Save stratigraphy data to dash_storage when store updates."""
+        if data:
+            dash_storage.set_data("stratigraphy_data", data)
+        return dash.no_update
+    
+    # Callback to save groundwater data to dash_storage when store updates
+    @app.callback(
+        Output("groundwater-data-store", "data", allow_duplicate=True),
+        [Input("groundwater-data-store", "data")],
+        prevent_initial_call=True
+    )
+    def save_groundwater_to_storage(data):
+        """Save groundwater data to dash_storage when store updates."""
+        if data:
+            dash_storage.set_data("groundwater_data", data)
+        return dash.no_update
+    
+    # Callback to save ground surface elevation to data storage
+    @app.callback(
+        Output("ground-surface-elevation", "value"),
+        [
+            Input("ground-surface-elevation", "value"),
+            Input("ground-surface-elevation", "n_blur"),
+            Input("ground-surface-elevation", "n_submit"),
+            Input("ground-surface-elevation", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_ground_surface_elevation_input(value, n_blur, n_submit, component_id):
+        """Handle ground surface elevation input and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved value and ensure it's a float
+            elevation = dash_storage.get_data("ground_surface_elevation")
+            if elevation is not None:
+                try:
+                    elevation = float(elevation)
+                except (ValueError, TypeError):
+                    elevation = 120.0
+            else:
+                elevation = 120.0
+            return elevation
+        
+        # Get the current value and convert to float
+        if value is not None:
+            try:
+                current_value = float(value)
+            except (ValueError, TypeError):
+                current_value = 120.0
+        else:
+            current_value = 120.0
+        
+        # Determine which trigger caused the callback
+        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1] if ctx.triggered else ""
+        
+        # Save for all triggers except initial load (ensure it's saved as float)
+        if trigger_prop != "id":
+            dash_storage.set_data("ground_surface_elevation", current_value)
+        
+        return current_value
+    
+    # Callback to save max MAR storage depth to data storage
+    @app.callback(
+        Output("max-mar-storage-depth", "value"),
+        [
+            Input("max-mar-storage-depth", "value"),
+            Input("max-mar-storage-depth", "n_blur"),
+            Input("max-mar-storage-depth", "n_submit"),
+            Input("max-mar-storage-depth", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_max_mar_storage_depth_input(value, n_blur, n_submit, component_id):
+        """Handle max MAR storage depth input and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved value and ensure it's a float
+            depth = dash_storage.get_data("max_mar_storage_depth")
+            if depth is not None:
+                try:
+                    depth = float(depth)
+                except (ValueError, TypeError):
+                    depth = 20.0
+            else:
+                depth = 20.0
+            return depth
+        
+        # Get the current value and convert to float
+        if value is not None:
+            try:
+                current_value = float(value)
+            except (ValueError, TypeError):
+                current_value = 20.0
+        else:
+            current_value = 20.0
+        
+        # Determine which trigger caused the callback
+        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1] if ctx.triggered else ""
+        
+        # Save for all triggers except initial load (ensure it's saved as float)
+        if trigger_prop != "id":
+            dash_storage.set_data("max_mar_storage_depth", current_value)
+        
+        return current_value
+    
+    # Callback to save extension length to data storage
+    @app.callback(
+        Output("extension-length", "value"),
+        [
+            Input("extension-length", "value"),
+            Input("extension-length", "n_blur"),
+            Input("extension-length", "n_submit"),
+            Input("extension-length", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_extension_length_input(value, n_blur, n_submit, component_id):
+        """Handle extension length input and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            length = dash_storage.get_data("extension_length") or 100.0
+            return length
+        
+        current_value = value if value is not None else 100.0
+        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1] if ctx.triggered else ""
+        
+        if trigger_prop != "id":
+            dash_storage.set_data("extension_length", current_value)
+        
+        return current_value
+    
+    # Callback to save extension width to data storage
+    @app.callback(
+        Output("extension-width", "value"),
+        [
+            Input("extension-width", "value"),
+            Input("extension-width", "n_blur"),
+            Input("extension-width", "n_submit"),
+            Input("extension-width", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_extension_width_input(value, n_blur, n_submit, component_id):
+        """Handle extension width input and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            width = dash_storage.get_data("extension_width") or 50.0
+            return width
+        
+        current_value = value if value is not None else 50.0
+        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1] if ctx.triggered else ""
+        
+        if trigger_prop != "id":
+            dash_storage.set_data("extension_width", current_value)
+        
+        return current_value
+    
+    # Callback to save extension rotation to data storage
+    @app.callback(
+        Output("extension-rotation", "value"),
+        [
+            Input("extension-rotation", "value"),
+            Input("extension-rotation", "n_blur"),
+            Input("extension-rotation", "n_submit"),
+            Input("extension-rotation", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_extension_rotation_input(value, n_blur, n_submit, component_id):
+        """Handle extension rotation input and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            rotation = dash_storage.get_data("extension_rotation") or 0.0
+            return rotation
+        
+        current_value = value if value is not None else 0.0
+        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1] if ctx.triggered else ""
+        
+        if trigger_prop != "id":
+            dash_storage.set_data("extension_rotation", current_value)
+        
+        return current_value
+    
+    # Callback to save upstream head to data storage
+    @app.callback(
+        Output("upstream-head", "value"),
+        [
+            Input("upstream-head", "value"),
+            Input("upstream-head", "n_blur"),
+            Input("upstream-head", "n_submit"),
+            Input("upstream-head", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_upstream_head_input(value, n_blur, n_submit, component_id):
+        """Handle upstream head input and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            head = dash_storage.get_data("upstream_head") or 10.0
+            return head
+        
+        current_value = value if value is not None else 10.0
+        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1] if ctx.triggered else ""
+        
+        if trigger_prop != "id":
+            dash_storage.set_data("upstream_head", current_value)
+        
+        return current_value
+    
+    # Callback to save downstream head to data storage
+    @app.callback(
+        Output("downstream-head", "value"),
+        [
+            Input("downstream-head", "value"),
+            Input("downstream-head", "n_blur"),
+            Input("downstream-head", "n_submit"),
+            Input("downstream-head", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_downstream_head_input(value, n_blur, n_submit, component_id):
+        """Handle downstream head input and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            head = dash_storage.get_data("downstream_head") or 5.0
+            return head
+        
+        current_value = value if value is not None else 5.0
+        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1] if ctx.triggered else ""
+        
+        if trigger_prop != "id":
+            dash_storage.set_data("downstream_head", current_value)
+        
+        return current_value
     
     @app.callback(
         Output("stratigraphy-table-body", "children"),
@@ -352,8 +660,25 @@ def setup_hydro_callbacks(app):
     )
     def update_groundwater_plot(data, ground_elevation, max_storage_depth):
         """Update the groundwater level plot based on table data."""
+        
         if not data:
             return go.Figure()
+        
+        # Convert input values to float in case they're strings (from CSV storage)
+        ground_elevation_float = None
+        max_storage_depth_float = None
+        
+        if ground_elevation is not None:
+            try:
+                ground_elevation_float = float(ground_elevation)
+            except (ValueError, TypeError):
+                ground_elevation_float = None
+        
+        if max_storage_depth is not None:
+            try:
+                max_storage_depth_float = float(max_storage_depth)
+            except (ValueError, TypeError):
+                max_storage_depth_float = None
         
         # Convert data to DataFrame for easier handling
         df = pd.DataFrame(data)
@@ -379,7 +704,7 @@ def setup_hydro_callbacks(app):
         ))
         
         # Add filled area between MAR storage and groundwater if both values are provided
-        if max_storage_depth is not None and ground_elevation is not None:
+        if max_storage_depth_float is not None and ground_elevation_float is not None:
             mar_storage_line = ground_elevation - max_storage_depth
             
             # Create filled area between MAR storage line and groundwater elevation
@@ -412,20 +737,20 @@ def setup_hydro_callbacks(app):
             ))
         
         # Add horizontal lines if values are provided
-        if ground_elevation is not None:
+        if ground_elevation_float is not None:
             # Ground surface elevation line
             fig.add_hline(
-                y=ground_elevation,
+                y=ground_elevation_float,
                 line_dash="dash",
                 line_color="green",
                 line_width=2,
-                annotation_text=f"Ground Surface: {ground_elevation:.1f} ft",
+                annotation_text=f"Ground Surface: {ground_elevation_float:.1f} ft",
                 annotation_position="top right"
             )
         
-        if max_storage_depth is not None and ground_elevation is not None:
+        if max_storage_depth_float is not None and ground_elevation_float is not None:
             # Maximum MAR storage depth line (from ground surface)
-            mar_storage_line = ground_elevation - max_storage_depth
+            mar_storage_line = ground_elevation_float - max_storage_depth_float
             fig.add_hline(
                 y=mar_storage_line,
                 line_dash="dot",

@@ -231,6 +231,59 @@ def setup_main_callbacks(app, dashboard_instance):
         # Convert list to dictionary format
         flow_data = {month: flow for month, flow in zip(months, monthly_flows)}
         return flow_data
+    
+    # Add callback to sync stratigraphy-data-store with dash_storage when hydrogeology tab is accessed
+    @app.callback(
+        Output("stratigraphy-data-store", "data", allow_duplicate=True),
+        [
+            Input("top-tabs", "active_tab"),
+        ],
+        prevent_initial_call=True
+    )
+    def sync_stratigraphy_data_store(active_tab):
+        """Sync stratigraphy-data-store with dash_storage when hydrogeology tab is accessed."""
+        if active_tab == "hydrogeology":
+            stored_data = dash_storage.get_data("stratigraphy_data")
+            if stored_data:
+                return stored_data
+            # Return defaults if no stored data
+            return [
+                {"layer": "Sand", "thickness": 60.0, "conductivity": 10.0, "storage": 0.0001, "yield": 0.25, "selected": False},
+                {"layer": "Silt", "thickness": 60.0, "conductivity": 0.01, "storage": 0.0001, "yield": 0.10, "selected": False},
+                {"layer": "Gravel", "thickness": 60.0, "conductivity": 100.0, "storage": 0.0001, "yield": 0.30, "selected": False}
+            ]
+        return dash.no_update
+    
+    # Add callback to sync groundwater-data-store with dash_storage when hydrogeology tab is accessed
+    @app.callback(
+        Output("groundwater-data-store", "data", allow_duplicate=True),
+        [
+            Input("top-tabs", "active_tab"),
+        ],
+        prevent_initial_call=True
+    )
+    def sync_groundwater_data_store(active_tab):
+        """Sync groundwater-data-store with dash_storage when hydrogeology tab is accessed."""
+        if active_tab == "hydrogeology":
+            stored_data = dash_storage.get_data("groundwater_data")
+            if stored_data:
+                return stored_data
+            # Return defaults if no stored data
+            return [
+                {"month": "January", "elevation": 75.0, "selected": False},
+                {"month": "February", "elevation": 72.0, "selected": False},
+                {"month": "March", "elevation": 78.0, "selected": False},
+                {"month": "April", "elevation": 82.0, "selected": False},
+                {"month": "May", "elevation": 85.0, "selected": False},
+                {"month": "June", "elevation": 88.0, "selected": False},
+                {"month": "July", "elevation": 90.0, "selected": False},
+                {"month": "August", "elevation": 89.0, "selected": False},
+                {"month": "September", "elevation": 86.0, "selected": False},
+                {"month": "October", "elevation": 83.0, "selected": False},
+                {"month": "November", "elevation": 79.0, "selected": False},
+                {"month": "December", "elevation": 76.0, "selected": False}
+            ]
+        return dash.no_update
 
     # Add callback to create the editable table
     @app.callback(
@@ -602,6 +655,35 @@ def setup_main_callbacks(app, dashboard_instance):
             dash_storage.set_data("chemical_parameters", [])
             dash_storage.set_data("biological_indicators", [])
             dash_storage.set_data("emerging_contaminants", [])
+            # Reset hydrogeology data
+            dash_storage.set_data("aquifer_type", "unconfined")
+            dash_storage.set_data("max_allowed_head", None)
+            dash_storage.set_data("stratigraphy_data", [
+                {"layer": "Sand", "thickness": 60.0, "conductivity": 10.0, "storage": 0.0001, "yield": 0.25, "selected": False},
+                {"layer": "Silt", "thickness": 60.0, "conductivity": 0.01, "storage": 0.0001, "yield": 0.10, "selected": False},
+                {"layer": "Gravel", "thickness": 60.0, "conductivity": 100.0, "storage": 0.0001, "yield": 0.30, "selected": False}
+            ])
+            dash_storage.set_data("groundwater_data", [
+                {"month": "January", "elevation": 75.0, "selected": False},
+                {"month": "February", "elevation": 72.0, "selected": False},
+                {"month": "March", "elevation": 78.0, "selected": False},
+                {"month": "April", "elevation": 82.0, "selected": False},
+                {"month": "May", "elevation": 85.0, "selected": False},
+                {"month": "June", "elevation": 88.0, "selected": False},
+                {"month": "July", "elevation": 90.0, "selected": False},
+                {"month": "August", "elevation": 89.0, "selected": False},
+                {"month": "September", "elevation": 86.0, "selected": False},
+                {"month": "October", "elevation": 83.0, "selected": False},
+                {"month": "November", "elevation": 79.0, "selected": False},
+                {"month": "December", "elevation": 76.0, "selected": False}
+            ])
+            dash_storage.set_data("ground_surface_elevation", 120.0)
+            dash_storage.set_data("max_mar_storage_depth", 20.0)
+            dash_storage.set_data("extension_length", 100.0)
+            dash_storage.set_data("extension_width", 50.0)
+            dash_storage.set_data("extension_rotation", 0.0)
+            dash_storage.set_data("upstream_head", 10.0)
+            dash_storage.set_data("downstream_head", 5.0)
             
             import dash_bootstrap_components as dbc
             return [
