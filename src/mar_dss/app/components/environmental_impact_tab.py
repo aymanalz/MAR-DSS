@@ -531,7 +531,7 @@ def create_environmental_impact_content():
                 children=create_water_quality_content()
             ),
             dbc.Tab(
-                label="(4.2) Environmental Considerations",
+                label="(4.2) AI-Powered Feasibility",
                 tab_id="environmental-considerations-tab",
                 children=create_environmental_considerations_content()
             )

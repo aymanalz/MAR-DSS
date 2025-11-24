@@ -27,6 +27,21 @@ def _build_hydro_tab_header():
             "Configure hydrogeological parameters for MAR project analysis."
         ),
         _build_aquifer_type_selector(),
+        html.Div(
+            id="confined-head-input-container",
+            style={"display": "none"},
+            children=[
+                html.Label("Maximum Allowed Head (Pressure) (ft):", className="fw-bold mb-2"),
+                dbc.Input(
+                    id="max-allowed-head-input",
+                    type="number",
+                    placeholder="Enter maximum allowed head",
+                    step=0.1,
+                    className="mb-3"
+                )
+            ],
+            className="mb-3"
+        ),
     ]
 
 

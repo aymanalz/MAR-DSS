@@ -21,6 +21,19 @@ def setup_hydro_callbacks(app):
         "Clay": {"conductivity": 0.0001, "storage": 0.0001, "yield": 0.01}
     }
     
+    # Callback to show/hide maximum allowed head input for confined aquifers
+    @app.callback(
+        Output("confined-head-input-container", "style"),
+        [Input("aquifer-type-radio", "value")],
+        prevent_initial_call=False
+    )
+    def toggle_confined_head_input(aquifer_type):
+        """Show maximum allowed head input only when confined aquifer is selected."""
+        if aquifer_type == "confined":
+            return {"display": "block"}
+        else:
+            return {"display": "none"}
+    
     @app.callback(
         Output("stratigraphy-table-body", "children"),
         [Input("stratigraphy-data-store", "data")],

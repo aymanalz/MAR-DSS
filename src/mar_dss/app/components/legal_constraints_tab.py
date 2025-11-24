@@ -43,8 +43,8 @@ def _pill(label, color="secondary"):
     return html.Span(label, className=f"badge bg-{color} ms-2")
 
 
-def create_legal_constraints_content():
-    """Create the Legal Constraints tab content."""
+def create_basic_regulation_feasibility_content():
+    """Create the Basic Regulation Feasibility content (sub-tab 1)."""
     return [
         dbc.Row(
             [
@@ -308,4 +308,42 @@ def create_legal_constraints_content():
                 ),
             ]
         )
+    ]
+
+
+def create_ai_powered_feasibility_content():
+    """Create the AI-Powered Feasibility content (sub-tab 2)."""
+    return [
+        dbc.Card([
+            dbc.CardHeader("AI-Powered Regulatory Feasibility Analysis", className="fw-bold bg-info text-white"),
+            dbc.CardBody([
+                html.H5("AI-Powered Feasibility Assessment", className="mb-4 text-primary"),
+                html.P(
+                    "This AI-powered tool will analyze your project details and provide comprehensive regulatory feasibility assessment. "
+                    "Enter project information below to generate an AI-powered analysis.",
+                    className="text-muted mb-4"
+                ),
+                html.Div([
+                    html.P("AI-powered feasibility analysis coming soon...", className="text-center text-muted")
+                ])
+            ])
+        ])
+    ]
+
+
+def create_legal_constraints_content():
+    """Create the Legal Constraints tab content with sub-tabs."""
+    return [
+        dbc.Tabs([
+            dbc.Tab(
+                label="(1) Basic Regulation Feasibility",
+                tab_id="basic-regulation-tab",
+                children=create_basic_regulation_feasibility_content()
+            ),
+            dbc.Tab(
+                label="(2) AI-Powered Feasibility",
+                tab_id="ai-powered-feasibility-tab",
+                children=create_ai_powered_feasibility_content()
+            )
+        ], id="legal-subtabs", active_tab="basic-regulation-tab")
     ]
