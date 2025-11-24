@@ -52,6 +52,11 @@ DECISION_LOGIC = {
         "MODERATE RISK": {"score": 2, "color": "warning", "treatment_key": "S6_MOD", "rec": "Disinfection required. Conduct pathogen monitoring, evaluate disinfection effectiveness, ensure adequate contact time."},
         "HIGH RISK": {"score": 3, "color": "danger", "treatment_key": "S6_HIGH", "rec": "**MANDATORY:** Multi-barrier disinfection approach REQUIRED. Comprehensive pathogen monitoring, extended pilot testing, regulatory compliance verification. **WARNING:** Public health risk if not properly treated."},
     },
+    "step7_vadose": {
+        "None": {"score": 0, "color": "success", "treatment_key": "S7_NONE", "rec": "No vadose zone pollution detected. No additional treatment required."},
+        "Yes, biodegradable Pollution": {"score": 1, "color": "warning", "treatment_key": "S7_BIO", "rec": "Biodegradable pollution in vadose zone detected. Monitor natural attenuation, consider enhanced bioremediation if needed, implement vadose zone monitoring program."},
+        "Yes, highly toxic contaminants in the vadose zone (e.g., heavy metals, volatile organic compounds, radioactive materials)": {"score": 2, "color": "danger", "treatment_key": "S7_TOXIC", "rec": "**CRITICAL:** Highly toxic contaminants in vadose zone detected. Comprehensive site assessment REQUIRED, evaluate source control measures, consider vadose zone remediation, implement intensive monitoring. **WARNING:** Risk of contaminant migration to aquifer."},
+    },
 }
 
 # 2. Treatment Options Data (Keyed to the logic above)
@@ -77,6 +82,9 @@ TREATMENT_OPTIONS = {
     "S6_LOW": [],
     "S6_MOD": [("UV Disinfection", "Moderate to High"), ("Chlorination", "Low to Moderate"), ("Ozonation", "High"), ("Sand/Media Filtration", "Low to Moderate"), ("Membrane Filtration (MF/UF)", "High")],
     "S6_HIGH": [("Multi-barrier: Pre-treatment + UV + Chlorination", "Very High"), ("Membrane Filtration (MF/UF) + UV Disinfection", "Very High"), ("Advanced Oxidation (UV/H₂O₂ or O₃) + Filtration", "Very High"), ("Reverse Osmosis", "Very High - Prohibitive"), ("Extended SAT (Soil Aquifer Treatment)", "Moderate to High")],
+    "S7_NONE": [],
+    "S7_BIO": [("Enhanced Bioremediation (if needed)", "Moderate"), ("Vadose Zone Monitoring Program", "Low to Moderate"), ("Natural Attenuation Monitoring", "Low")],
+    "S7_TOXIC": [("Source Control Measures", "Moderate to High"), ("Vadose Zone Remediation (Soil Vapor Extraction, Bioremediation, Chemical Oxidation)", "Very High"), ("Intensive Vadose Zone Monitoring", "Moderate"), ("Containment Barriers (if needed)", "High"), ("Comprehensive Site Assessment", "Moderate + High Study")],
 }
 
 # 3. Full Treatment Table for Appendix/Summary
@@ -299,6 +307,31 @@ def create_water_quality_content():
                     "Are pathogens present at risky levels? (Consider source type: wastewater > stormwater > surface water > groundwater)",
                     ["LOW RISK", "MODERATE RISK", "HIGH RISK"]
                 ),
+                
+                # Step 7 (custom to include specific options)
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.H5("STEP 7: VADOSE ZONE POLLUTION", className="mb-0 text-success")
+                    ], className="bg-light"),
+                    dbc.CardBody([
+                        html.P("Indicates presence of pollution in the vadose zone.", className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
+                        dcc.RadioItems(
+                            id="env-step7-input",
+                            options=[
+                                {'label': "None", 'value': "None"},
+                                {'label': "Yes, biodegradable Pollution", 'value': "Yes, biodegradable Pollution"},
+                                {'label': "Yes, highly toxic contaminants in the vadose zone (e.g., heavy metals, volatile organic compounds, radioactive materials)", 'value': "Yes, highly toxic contaminants in the vadose zone (e.g., heavy metals, volatile organic compounds, radioactive materials)"},
+                            ],
+                            value="None",
+                            className="d-flex flex-column",
+                            labelStyle={'display': 'block', 'margin-bottom': '8px'}
+                        )
+                    ])
+                ], className="mb-3", style={
+                    "box-shadow": "0 4px 8px 0 rgba(0,0,0,0.2)",
+                    "transition": "0.3s",
+                    "border-left": "5px solid #004d40"
+                }),
                 
                 html.Hr(),
                 # Appendix / Detailed Treatment Table (moved under input cards)

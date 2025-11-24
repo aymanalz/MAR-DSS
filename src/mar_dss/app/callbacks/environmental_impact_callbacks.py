@@ -88,17 +88,18 @@ def setup_environmental_impact_callbacks(app):
             Input('env-step4-input', 'value'),
             Input('env-step5a-input', 'value'),
             Input('env-step5b-input', 'value'),
-            Input('env-step6-input', 'value')
+            Input('env-step6-input', 'value'),
+            Input('env-step7-input', 'value')
         ]
     )
     def update_dashboard(*inputs):
         """Update the dashboard based on input selections."""
         # Validate inputs - ensure they're not None
-        default_values = ["LOW RISK"] * 8
+        default_values = ["LOW RISK"] * 8 + ["None"]
         inputs = [inp if inp is not None else default_values[i] for i, inp in enumerate(inputs)]
         
         # Map inputs to logic keys
-        input_keys = ["step1_tss", "step2a_doc", "step2b_ph", "step3_tds", "step4_inorganic", "step5a_ec", "step5b_redox", "step6_pathogens"]
+        input_keys = ["step1_tss", "step2a_doc", "step2b_ph", "step3_tds", "step4_inorganic", "step5a_ec", "step5b_redox", "step6_pathogens", "step7_vadose"]
         
         total_score = 0
         risk_details = []
@@ -125,7 +126,7 @@ def setup_environmental_impact_callbacks(app):
                 required_treatments_raw.append((risk_factor_name, TREATMENT_OPTIONS[treatment_key]))
             
             # Aggregate recommendations
-            if value != "LOW RISK" and recommendation:
+            if value not in ["LOW RISK", "None"] and recommendation:
                 recommendations_list.append(
                     html.Li(
                         f"**{key.split('_')[0].upper()}: {value}** - {recommendation}", 
@@ -149,11 +150,13 @@ def setup_environmental_impact_callbacks(app):
             # Map risk level to background color
             bg_color_map = {
                 "LOW RISK": "#d4edda",  # Light green
+                "None": "#d4edda",  # Light green (same as LOW RISK)
                 "MODERATE RISK": "#fff3cd",  # Light yellow
                 "HIGH RISK": "#f8d7da"  # Light red
             }
             text_color_map = {
                 "LOW RISK": "#155724",  # Dark green text
+                "None": "#155724",  # Dark green text (same as LOW RISK)
                 "MODERATE RISK": "#856404",  # Dark yellow/brown text
                 "HIGH RISK": "#721c24"  # Dark red text
             }
