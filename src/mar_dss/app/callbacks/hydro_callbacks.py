@@ -34,6 +34,24 @@ def setup_hydro_callbacks(app):
         else:
             return {"display": "none"}
     
+    # Callback to synchronize geometry tabs with view tabs
+    @app.callback(
+        Output("view-tabs", "active_tab"),
+        [Input("geometry-tabs", "active_tab")],
+        prevent_initial_call=False
+    )
+    def sync_view_tabs_with_geometry_tabs(active_geometry_tab):
+        """Synchronize view tabs based on geometry tab selection."""
+        # Map geometry tabs to view tabs
+        tab_mapping = {
+            "stratigraphy-tab": "stratigraphy-cross-section",
+            "groundwater-level-tab": "available-mar-storage",
+            "horizontal-extension-tab": "xy-view"
+        }
+        
+        # Return the corresponding view tab, or default to stratigraphy-cross-section
+        return tab_mapping.get(active_geometry_tab, "stratigraphy-cross-section")
+    
     @app.callback(
         Output("stratigraphy-table-body", "children"),
         [Input("stratigraphy-data-store", "data")],
