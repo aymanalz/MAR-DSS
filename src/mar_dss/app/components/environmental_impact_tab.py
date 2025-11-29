@@ -7,6 +7,7 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html, dash_table
 import plotly.graph_objects as go
 import pandas as pd
+import mar_dss.app.utils.data_storage as dash_storage
 
 # --- Data Structures for Logic and Display ---
 
@@ -136,6 +137,17 @@ def create_step_card(step_id, title, question, options):
 
 def create_water_quality_content():
     """Create the Water Quality and Geochemistry content (sub-tab 4.1)."""
+    # Get existing values from data storage if available
+    tss_turbidity_risk = dash_storage.get_data("tss_turbidity_risk") or "LOW RISK"
+    doc_toc_risk = dash_storage.get_data("doc_toc_risk") or "LOW RISK"
+    ph_alkalinity_risk = dash_storage.get_data("ph_alkalinity_risk") or "LOW RISK"
+    tds_salinity_risk = dash_storage.get_data("tds_salinity_risk") or "LOW RISK"
+    inorganic_contaminants_risk = dash_storage.get_data("inorganic_contaminants_risk") or "LOW RISK"
+    emerging_contaminants_risk = dash_storage.get_data("emerging_contaminants_risk") or "LOW RISK"
+    redox_compatibility_risk = dash_storage.get_data("redox_compatibility_risk") or "LOW RISK"
+    pathogen_risk = dash_storage.get_data("pathogen_risk") or "LOW RISK"
+    vadose_zone_pollution = dash_storage.get_data("vadose_zone_pollution") or "None"
+    
     return [
         # Main content row
         dbc.Row([
@@ -157,7 +169,7 @@ def create_water_quality_content():
                                 {'label': "MODERATE RISK (TSS 10-20 mg/L, Turbidity 5-10 NTU)", 'value': "MODERATE RISK"},
                                 {'label': "HIGH RISK (TSS >20 mg/L, Turbidity >10 NTU)", 'value': "HIGH RISK"},
                             ],
-                            value="LOW RISK",
+                            value=tss_turbidity_risk,
                             className="d-flex flex-column",
                             labelStyle={'display': 'block', 'margin-bottom': '8px'}
                         )
@@ -184,7 +196,7 @@ def create_water_quality_content():
                                         {'label': "MODERATE RISK (DOC 5-10 mg/L)", 'value': "MODERATE RISK"},
                                         {'label': "HIGH RISK (DOC >10 mg/L)", 'value': "HIGH RISK"},
                                     ],
-                                    value="LOW RISK",
+                                    value=doc_toc_risk,
                                     labelStyle={'display': 'block', 'margin-bottom': '8px'}
                                 )
                             ], width=12, md=6),
@@ -197,7 +209,7 @@ def create_water_quality_content():
                                         {'label': "MODERATE RISK (pH difference 0.5-1.0 units)", 'value': "MODERATE RISK"},
                                         {'label': "HIGH RISK (pH difference >1.0 unit, large alkalinity mismatch)", 'value': "HIGH RISK"},
                                     ],
-                                    value="LOW RISK",
+                                    value=ph_alkalinity_risk,
                                     labelStyle={'display': 'block', 'margin-bottom': '8px'}
                                 )
                             ], width=12, md=6)
@@ -223,7 +235,7 @@ def create_water_quality_content():
                                 {'label': "MODERATE RISK (TDS increase 250-500 mg/L)", 'value': "MODERATE RISK"},
                                 {'label': "HIGH RISK (TDS increase >500 mg/L)", 'value': "HIGH RISK"},
                             ],
-                            value="LOW RISK",
+                            value=tds_salinity_risk,
                             className="d-flex flex-column",
                             labelStyle={'display': 'block', 'margin-bottom': '8px'}
                         )
@@ -248,7 +260,7 @@ def create_water_quality_content():
                                 {'label': "MODERATE RISK (50-100% of limit)", 'value': "MODERATE RISK"},
                                 {'label': "HIGH RISK (≥100% of limit)", 'value': "HIGH RISK"},
                             ],
-                            value="LOW RISK",
+                            value=inorganic_contaminants_risk,
                             className="d-flex flex-column",
                             labelStyle={'display': 'block', 'margin-bottom': '8px'}
                         )
@@ -275,7 +287,7 @@ def create_water_quality_content():
                                         {'label': "MODERATE RISK (Detected at low levels, <2x health-based guidance)", 'value': "MODERATE RISK"},
                                         {'label': "HIGH RISK (Multiple compounds >health guidance OR PFAS >100 ng/L)", 'value': "HIGH RISK"},
                                     ],
-                                    value="LOW RISK",
+                                    value=emerging_contaminants_risk,
                                     labelStyle={'display': 'block', 'margin-bottom': '8px'}
                                 )
                             ], width=12, md=6),
@@ -288,7 +300,7 @@ def create_water_quality_content():
                                         {'label': "MODERATE RISK (Some redox incompatibility, manageable precipitation/mobilization)", 'value': "MODERATE RISK"},
                                         {'label': "HIGH RISK (Significant redox incompatibility, risk of Fe/Mn precipitation or As mobilization)", 'value': "HIGH RISK"},
                                     ],
-                                    value="LOW RISK",
+                                    value=redox_compatibility_risk,
                                     labelStyle={'display': 'block', 'margin-bottom': '8px'}
                                 )
                             ], width=12, md=6)
@@ -301,12 +313,29 @@ def create_water_quality_content():
                 }),
                 
                 # Step 6
-                create_step_card(
-                    "env-step6-input",
-                    "STEP 6: PATHOGEN RISK (CRITICAL CHECKPOINT)",
-                    "Are pathogens present at risky levels? (Consider source type: wastewater > stormwater > surface water > groundwater)",
-                    ["LOW RISK", "MODERATE RISK", "HIGH RISK"]
-                ),
+                dbc.Card([
+                    dbc.CardHeader([
+                        html.H5("STEP 6: PATHOGEN RISK (CRITICAL CHECKPOINT)", className="mb-0 text-success")
+                    ], className="bg-light"),
+                    dbc.CardBody([
+                        html.P("Are pathogens present at risky levels? (Consider source type: wastewater > stormwater > surface water > groundwater)", className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
+                        dcc.RadioItems(
+                            id="env-step6-input",
+                            options=[
+                                {'label': "LOW RISK", 'value': "LOW RISK"},
+                                {'label': "MODERATE RISK", 'value': "MODERATE RISK"},
+                                {'label': "HIGH RISK", 'value': "HIGH RISK"},
+                            ],
+                            value=pathogen_risk,
+                            className="d-flex flex-column",
+                            labelStyle={'display': 'block', 'margin-bottom': '8px'}
+                        )
+                    ])
+                ], className="mb-3", style={
+                    "box-shadow": "0 4px 8px 0 rgba(0,0,0,0.2)",
+                    "transition": "0.3s",
+                    "border-left": "5px solid #004d40"
+                }),
                 
                 # Step 7 (custom to include specific options)
                 dbc.Card([
@@ -322,7 +351,7 @@ def create_water_quality_content():
                                 {'label': "Yes, biodegradable Pollution", 'value': "Yes, biodegradable Pollution"},
                                 {'label': "Yes, highly toxic contaminants in the vadose zone (e.g., heavy metals, volatile organic compounds, radioactive materials)", 'value': "Yes, highly toxic contaminants in the vadose zone (e.g., heavy metals, volatile organic compounds, radioactive materials)"},
                             ],
-                            value="None",
+                            value=vadose_zone_pollution,
                             className="d-flex flex-column",
                             labelStyle={'display': 'block', 'margin-bottom': '8px'}
                         )

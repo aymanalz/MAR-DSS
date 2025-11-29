@@ -317,7 +317,22 @@ def _build_tabs() -> dbc.Tabs:
                 }
             ),
             dbc.Tab(
-                label="(6) Analysis", 
+                label="(6) Engineering", 
+                tab_id="engineering-options",
+                label_style={
+                    "color": "#ffffff", 
+                    "fontWeight": "bold",
+                    "backgroundColor": "#85c1e9",
+                    "border": "1px solid #85c1e9"
+                },
+                active_label_style={
+                    "color": "#ffffff", 
+                    "backgroundColor": "#73b3e0",
+                    "border": "1px solid #73b3e0"
+                }
+            ),
+            dbc.Tab(
+                label="(7) Analysis", 
                 tab_id="analysis",
                 label_style={
                     "color": "#ffffff", 

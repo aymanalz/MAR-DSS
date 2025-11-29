@@ -101,6 +101,13 @@ def setup_main_callbacks(app, dashboard_instance):
             except ImportError:
                 from ..components.legal_constraints_tab import create_legal_constraints_content
             return create_legal_constraints_content()
+        elif active_tab == "engineering-options":
+            # Import engineering options tab content
+            try:
+                from mar_dss.app.components.engineering_options_tab import create_engineering_options_content
+            except ImportError:
+                from ..components.engineering_options_tab import create_engineering_options_content
+            return create_engineering_options_content()
         elif active_tab == "analysis":
             # Import analysis tab content
             try:
@@ -655,6 +662,16 @@ def setup_main_callbacks(app, dashboard_instance):
             dash_storage.set_data("chemical_parameters", [])
             dash_storage.set_data("biological_indicators", [])
             dash_storage.set_data("emerging_contaminants", [])
+            # Reset water quality and geochemistry data
+            dash_storage.set_data("tss_turbidity_risk", "LOW RISK")
+            dash_storage.set_data("doc_toc_risk", "LOW RISK")
+            dash_storage.set_data("ph_alkalinity_risk", "LOW RISK")
+            dash_storage.set_data("tds_salinity_risk", "LOW RISK")
+            dash_storage.set_data("inorganic_contaminants_risk", "LOW RISK")
+            dash_storage.set_data("emerging_contaminants_risk", "LOW RISK")
+            dash_storage.set_data("redox_compatibility_risk", "LOW RISK")
+            dash_storage.set_data("pathogen_risk", "LOW RISK")
+            dash_storage.set_data("vadose_zone_pollution", "None")
             # Reset hydrogeology data
             dash_storage.set_data("aquifer_type", "unconfined")
             dash_storage.set_data("max_allowed_head", 1.0)

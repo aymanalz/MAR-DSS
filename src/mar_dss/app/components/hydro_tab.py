@@ -17,11 +17,14 @@ def _get_stratigraphy_data():
     stored_data = dash_storage.get_data("stratigraphy_data")
     if stored_data:
         return stored_data
-    return [
+    # Return defaults and save them to storage
+    default_data = [
         {"layer": "Sand", "thickness": 60.0, "conductivity": 10.0, "storage": 0.0001, "yield": 0.25, "selected": False},
         {"layer": "Silt", "thickness": 60.0, "conductivity": 0.01, "storage": 0.0001, "yield": 0.10, "selected": False},
         {"layer": "Gravel", "thickness": 60.0, "conductivity": 100.0, "storage": 0.0001, "yield": 0.30, "selected": False}
     ]
+    dash_storage.set_data("stratigraphy_data", default_data)
+    return default_data
 
 
 def _get_groundwater_data():
@@ -29,7 +32,8 @@ def _get_groundwater_data():
     stored_data = dash_storage.get_data("groundwater_data")
     if stored_data:
         return stored_data
-    return [
+    # Return defaults and save them to storage
+    default_data = [
         {"month": "January", "elevation": 75.0, "selected": False},
         {"month": "February", "elevation": 72.0, "selected": False},
         {"month": "March", "elevation": 78.0, "selected": False},
@@ -43,6 +47,8 @@ def _get_groundwater_data():
         {"month": "November", "elevation": 79.0, "selected": False},
         {"month": "December", "elevation": 76.0, "selected": False}
     ]
+    dash_storage.set_data("groundwater_data", default_data)
+    return default_data
 
 
 def create_hydrogeologic_settings_content():

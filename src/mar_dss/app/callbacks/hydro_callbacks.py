@@ -67,8 +67,9 @@ def setup_hydro_callbacks(app):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved aquifer type
+            # Initial load - get saved aquifer type or use default, and save it
             aquifer_type = dash_storage.get_data("aquifer_type") or "unconfined"
+            dash_storage.set_data("aquifer_type", aquifer_type)
             return aquifer_type
         
         # Get the current selection
@@ -95,7 +96,7 @@ def setup_hydro_callbacks(app):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved value and ensure it's a float
+            # Initial load - get saved value and ensure it's a float, then save it
             max_head = dash_storage.get_data("max_allowed_head")
             if max_head is not None:
                 try:
@@ -104,6 +105,7 @@ def setup_hydro_callbacks(app):
                     max_head = 1.0
             else:
                 max_head = 1.0
+            dash_storage.set_data("max_allowed_head", max_head)
             return max_head
         
         # Get the current value and convert to float
@@ -164,7 +166,7 @@ def setup_hydro_callbacks(app):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved value and ensure it's a float
+            # Initial load - get saved value and ensure it's a float, then save it
             elevation = dash_storage.get_data("ground_surface_elevation")
             if elevation is not None:
                 try:
@@ -173,6 +175,7 @@ def setup_hydro_callbacks(app):
                     elevation = 120.0
             else:
                 elevation = 120.0
+            dash_storage.set_data("ground_surface_elevation", elevation)
             return elevation
         
         # Get the current value and convert to float
@@ -209,7 +212,7 @@ def setup_hydro_callbacks(app):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved value and ensure it's a float
+            # Initial load - get saved value and ensure it's a float, then save it
             depth = dash_storage.get_data("max_mar_storage_depth")
             if depth is not None:
                 try:
@@ -218,6 +221,7 @@ def setup_hydro_callbacks(app):
                     depth = 20.0
             else:
                 depth = 20.0
+            dash_storage.set_data("max_mar_storage_depth", depth)
             return depth
         
         # Get the current value and convert to float
@@ -254,7 +258,9 @@ def setup_hydro_callbacks(app):
         ctx = dash.callback_context
         
         if not ctx.triggered:
+            # Initial load - get saved value or use default, and save it
             length = dash_storage.get_data("extension_length") or 100.0
+            dash_storage.set_data("extension_length", length)
             return length
         
         current_value = value if value is not None else 100.0
@@ -281,7 +287,9 @@ def setup_hydro_callbacks(app):
         ctx = dash.callback_context
         
         if not ctx.triggered:
+            # Initial load - get saved value or use default, and save it
             width = dash_storage.get_data("extension_width") or 50.0
+            dash_storage.set_data("extension_width", width)
             return width
         
         current_value = value if value is not None else 50.0
@@ -308,7 +316,9 @@ def setup_hydro_callbacks(app):
         ctx = dash.callback_context
         
         if not ctx.triggered:
+            # Initial load - get saved value or use default, and save it
             rotation = dash_storage.get_data("extension_rotation") or 0.0
+            dash_storage.set_data("extension_rotation", rotation)
             return rotation
         
         current_value = value if value is not None else 0.0
@@ -335,7 +345,9 @@ def setup_hydro_callbacks(app):
         ctx = dash.callback_context
         
         if not ctx.triggered:
+            # Initial load - get saved value or use default, and save it
             head = dash_storage.get_data("upstream_head") or 10.0
+            dash_storage.set_data("upstream_head", head)
             return head
         
         current_value = value if value is not None else 10.0
@@ -362,7 +374,9 @@ def setup_hydro_callbacks(app):
         ctx = dash.callback_context
         
         if not ctx.triggered:
+            # Initial load - get saved value or use default, and save it
             head = dash_storage.get_data("downstream_head") or 5.0
+            dash_storage.set_data("downstream_head", head)
             return head
         
         current_value = value if value is not None else 5.0
