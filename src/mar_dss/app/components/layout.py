@@ -287,7 +287,7 @@ def _build_tabs() -> dbc.Tabs:
                 }
             ),
             dbc.Tab(
-                label=("(4) Environment and Water Quality"), 
+                label=("(4) Environment"), 
                 tab_id="environmental",
                 label_style={
                     "color": "#ffffff", 
@@ -302,7 +302,7 @@ def _build_tabs() -> dbc.Tabs:
                 }
             ),
             dbc.Tab(
-                label=("(5) Regulations and Permits"), 
+                label=("(5) Regulations"), 
                 tab_id="legal",
                 label_style={
                     "color": "#ffffff", 

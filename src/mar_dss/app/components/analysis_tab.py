@@ -14,6 +14,7 @@ try:
     from mar_dss.app.components.scenarios_comparison_tab import create_scenarios_comparison_content
     from mar_dss.app.components.ai_generated_decision_tab import create_ai_generated_decision_content
     from mar_dss.app.components.data_export_tab import create_data_export_content
+    from mar_dss.app.components.engineering_options_tab import create_cost_content
 except ImportError:
     from .dashboard_tab import create_dashboard_content
     from .dss_algorithm_tab import create_dss_algorithm_content
@@ -22,6 +23,7 @@ except ImportError:
     from .scenarios_comparison_tab import create_scenarios_comparison_content
     from .ai_generated_decision_tab import create_ai_generated_decision_content
     from .data_export_tab import create_data_export_content
+    from .engineering_options_tab import create_cost_content
 
 
 def create_analysis_tab_content():
@@ -43,6 +45,22 @@ def create_analysis_tab_content():
                         "color": "#ffffff", 
                         "backgroundColor": "#0056b3",
                         "border": "1px solid #0056b3"
+                    },
+                ),
+                dbc.Tab(
+                    label="Cost",
+                    tab_id="analysis-cost",
+                    children=create_cost_content(),
+                    label_style={
+                        "color": "#ffffff", 
+                        "fontWeight": "bold",
+                        "backgroundColor": "#85c1e9",
+                        "border": "1px solid #85c1e9"
+                    },
+                    active_label_style={
+                        "color": "#ffffff", 
+                        "backgroundColor": "#73b3e0",
+                        "border": "1px solid #73b3e0"
                     },
                 ),
                 dbc.Tab(
