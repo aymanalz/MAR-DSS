@@ -849,8 +849,9 @@ def setup_main_callbacks(app, dashboard_instance):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved water source
+            # Initial load - get saved water source or use default, and save it
             water_source = dash_storage.get_data("water_source") or "surface_water_sources"
+            dash_storage.set_data("water_source", water_source)
             return water_source
         
         # Get the current selection
@@ -877,8 +878,9 @@ def setup_main_callbacks(app, dashboard_instance):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved proximity distance
+            # Initial load - get saved proximity distance or use default, and save it
             proximity_distance = dash_storage.get_data("proximity_distance") or 1.0
+            dash_storage.set_data("proximity_distance", proximity_distance)
             return proximity_distance
         
         # Get the current value from the input
@@ -908,8 +910,9 @@ def setup_main_callbacks(app, dashboard_instance):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved water conveyance
+            # Initial load - get saved water conveyance or use default, and save it
             water_conveyance = dash_storage.get_data("water_conveyance") or "open_canals_ditches"
+            dash_storage.set_data("water_conveyance", water_conveyance)
             return water_conveyance
         
         # Get the current selection
@@ -934,8 +937,9 @@ def setup_main_callbacks(app, dashboard_instance):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved water ownership
+            # Initial load - get saved water ownership or use default, and save it
             water_ownership = dash_storage.get_data("water_ownership") or "legal_rights"
+            dash_storage.set_data("water_ownership", water_ownership)
             return water_ownership
         
         # Get the current selection
@@ -960,8 +964,9 @@ def setup_main_callbacks(app, dashboard_instance):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved pumping needed value
+            # Initial load - get saved pumping needed value or use default, and save it
             pumping_needed = dash_storage.get_data("pumping_needed") or "no"
+            dash_storage.set_data("pumping_needed", pumping_needed)
             return pumping_needed
         
         # Get the current selection
@@ -986,8 +991,9 @@ def setup_main_callbacks(app, dashboard_instance):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved physical parameters
+            # Initial load - get saved physical parameters or use default, and save it
             physical_params = dash_storage.get_data("physical_parameters") or []
+            dash_storage.set_data("physical_parameters", physical_params)
             return physical_params
         
         # Get the current selections
@@ -1012,8 +1018,9 @@ def setup_main_callbacks(app, dashboard_instance):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved chemical parameters
+            # Initial load - get saved chemical parameters or use default, and save it
             chemical_params = dash_storage.get_data("chemical_parameters") or []
+            dash_storage.set_data("chemical_parameters", chemical_params)
             return chemical_params
         
         # Get the current selections
@@ -1038,8 +1045,9 @@ def setup_main_callbacks(app, dashboard_instance):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved biological indicators
+            # Initial load - get saved biological indicators or use default, and save it
             biological_indicators = dash_storage.get_data("biological_indicators") or []
+            dash_storage.set_data("biological_indicators", biological_indicators)
             return biological_indicators
         
         # Get the current selections
@@ -1064,8 +1072,9 @@ def setup_main_callbacks(app, dashboard_instance):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved emerging contaminants
+            # Initial load - get saved emerging contaminants or use default, and save it
             emerging_contaminants = dash_storage.get_data("emerging_contaminants") or []
+            dash_storage.set_data("emerging_contaminants", emerging_contaminants)
             return emerging_contaminants
         
         # Get the current selections

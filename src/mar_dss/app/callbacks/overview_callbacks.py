@@ -36,8 +36,9 @@ def setup_overview_callbacks(app):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved project name
+            # Initial load - get saved project name or use default, and save it
             project_name = dash_storage.get_data("project_name") or ""
+            dash_storage.set_data("project_name", project_name)
             return project_name
         
         # Get the current value from the input
@@ -69,26 +70,32 @@ def setup_overview_callbacks(app):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved analysis date
+            # Initial load - get saved analysis date or use default, and save it
             analysis_date = dash_storage.get_data("analysis_date")
             if analysis_date:
                 # Ensure date is in YYYY-MM-DD format
                 try:
                     if isinstance(analysis_date, str) and len(analysis_date) == 10 and analysis_date[4] == '-' and analysis_date[7] == '-':
-                        return analysis_date
+                        formatted_date = analysis_date
                     else:
                         # Try to parse and reformat the date
                         from datetime import datetime
                         parsed_date = helpers.parse_unknown_date(analysis_date)
-                        return parsed_date.strftime("%Y-%m-%d")
+                        formatted_date = parsed_date.strftime("%Y-%m-%d")
+                    dash_storage.set_data("analysis_date", formatted_date)
+                    return formatted_date
                 except:
                     # If parsing fails, use today's date
                     from datetime import datetime
-                    return datetime.now().strftime("%Y-%m-%d")
+                    default_date = datetime.now().strftime("%Y-%m-%d")
+                    dash_storage.set_data("analysis_date", default_date)
+                    return default_date
             else:
                 # No data in storage, use today's date
                 from datetime import datetime
-                return datetime.now().strftime("%Y-%m-%d")
+                default_date = datetime.now().strftime("%Y-%m-%d")
+                dash_storage.set_data("analysis_date", default_date)
+                return default_date
         
         # Get the current value from the input
         current_value = value if value else ""
@@ -130,8 +137,9 @@ def setup_overview_callbacks(app):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved MAR purpose selections
+            # Initial load - get saved MAR purpose selections or use default, and save it
             mar_purpose = dash_storage.get_data("mar_purpose") or ["secure_water_supply"]
+            dash_storage.set_data("mar_purpose", mar_purpose)
             return mar_purpose
         
         # Get the current selections
@@ -185,8 +193,9 @@ def setup_overview_callbacks(app):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved workspace
+            # Initial load - get saved workspace or use default, and save it
             workspace = dash_storage.get_data("workspace") or ""
+            dash_storage.set_data("workspace", workspace)
             return workspace
         
         # Get the current value from the input
@@ -218,8 +227,9 @@ def setup_overview_callbacks(app):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved filename
+            # Initial load - get saved filename or use default, and save it
             filename = dash_storage.get_data("filename") or ""
+            dash_storage.set_data("filename", filename)
             return filename
         
         # Get the current value from the input
@@ -332,8 +342,9 @@ def setup_overview_callbacks(app):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved ground slope
+            # Initial load - get saved ground slope or use default, and save it
             ground_slope = dash_storage.get_data("ground_surface_slope") or 0.5
+            dash_storage.set_data("ground_surface_slope", ground_slope)
             return ground_slope
         
         # Get the current value from the input
@@ -365,8 +376,9 @@ def setup_overview_callbacks(app):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved max area
+            # Initial load - get saved max area or use default, and save it
             max_area = dash_storage.get_data("max_available_area") or 1.0
+            dash_storage.set_data("max_available_area", max_area)
             return max_area
         
         # Get the current value from the input
@@ -396,8 +408,9 @@ def setup_overview_callbacks(app):
         ctx = dash.callback_context
         
         if not ctx.triggered:
-            # Initial load - get saved land use
+            # Initial load - get saved land use or use default, and save it
             land_use = dash_storage.get_data("land_use") or "Urban Residential"
+            dash_storage.set_data("land_use", land_use)
             return land_use
         
         # Get the current selection

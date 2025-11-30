@@ -20,21 +20,59 @@ def create_engineering_elements_content():
                                     [
                                         html.H4("Design Metrics"),
                                         html.P(
-                                            "Note: Water source can be obtained "
-                                            "from the \"(2) Water Source\" tab "
-                                            "and \"Water Source:\" dropdown.",
-                                            className="text-muted small mb-2"
+                                            "Choose Method for Hydrologic "
+                                            "Design Parameters:",
+                                            className="mt-3 mb-2"
+                                        ),
+                                        dbc.RadioItems(
+                                            options=[
+                                                {
+                                                    "label": "User Supplied "
+                                                    "Parameters",
+                                                    "value": "user_supplied"
+                                                },
+                                                {
+                                                    "label": "Import from "
+                                                    "Runoff Calculation Tab",
+                                                    "value": "import_runoff"
+                                                }
+                                            ],
+                                            value="user_supplied",
+                                            id="hydrologic-design-method-radio",
                                         ),
                                         html.Label(
-                                            "Water Source:",
+                                            "Peak Flow Available for "
+                                            "Recharge (gpm):",
+                                            className="form-label mt-3"
+                                        ),
+                                        dbc.Input(
+                                            type="number",
+                                            value=0.0,
+                                            id="peak-flow-available-input",
+                                            min=0,
+                                            step=0.1,
+                                            className="mb-2"
+                                        ),
+                                        html.Label(
+                                            "Fraction of Flow to Capture:",
                                             className="form-label"
                                         ),
+                                        dbc.Input(
+                                            type="number",
+                                            value=0.0,
+                                            id="fraction-flow-capture-input",
+                                            min=0,
+                                            max=1,
+                                            step=0.01,
+                                            className="mb-2"
+                                        ),
                                         html.Div(
-                                            id="design-metrics-water-source-display",
-                                            children="Not selected",
-                                            className="mb-2",
+                                            id="design-flow-rate-display",
+                                            children="Design Flow Rate is: 0.0",
+                                            className="mt-2 mb-2",
                                             style={
                                                 "font-weight": "bold",
+                                                "font-size": "16px",
                                                 "color": "#2c3e50"
                                             }
                                         ),
