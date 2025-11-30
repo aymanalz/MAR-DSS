@@ -920,17 +920,46 @@ def setup_hydro_callbacks(app):
         """Update the XY view plot with rectangle and contour lines."""
         import numpy as np
         
-        # Default values if inputs are None
+        # Default values if inputs are None, and convert to float
         if length is None:
             length = 100.0
+        else:
+            try:
+                length = float(length)
+            except (ValueError, TypeError):
+                length = 100.0
+        
         if width is None:
             width = 50.0
+        else:
+            try:
+                width = float(width)
+            except (ValueError, TypeError):
+                width = 50.0
+        
         if rotation is None:
             rotation = 0.0
+        else:
+            try:
+                rotation = float(rotation)
+            except (ValueError, TypeError):
+                rotation = 0.0
+        
         if upstream_head is None:
             upstream_head = 10.0
+        else:
+            try:
+                upstream_head = float(upstream_head)
+            except (ValueError, TypeError):
+                upstream_head = 10.0
+        
         if downstream_head is None:
             downstream_head = 5.0
+        else:
+            try:
+                downstream_head = float(downstream_head)
+            except (ValueError, TypeError):
+                downstream_head = 5.0
         
         # Create the plot
         fig = go.Figure()
