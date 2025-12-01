@@ -7,6 +7,26 @@ import plotly.graph_objects as go
 from dash import dcc, html
 import dash_leaflet as dl
 from dash import dash_table
+import mar_dss.app.utils.data_storage as dash_storage
+
+
+def _get_runoff_calculations_data():
+    """Get runoff calculations table data from storage or return defaults."""
+    saved_data = dash_storage.get_data("runoff_calculations_table")
+    if saved_data:
+        return saved_data
+    
+    # Return default data
+    return [
+        {"Parameter": "Area (acres)", "Value": 10},
+        {"Parameter": "Composite Curve Number", "Value": 50},
+        {"Parameter": "24-hour Rainfall (inches)", "Value": 5},
+        {"Parameter": "Maximum Potential Storage (inches)", "Value": 10},
+        {"Parameter": "Initial Abstraction", "Value": 0.05},
+        {"Parameter": "Runoff Depth (inches)", "Value": 1},
+        {"Parameter": "Runoff/Precipitation Ratio", "Value": 0.2},
+        {"Parameter": "Runoff Volume (ft3)", "Value": 10000}
+    ]
 
 
 def create_runoff_map(lat=38.5816, lon=-121.4944, zoom=10):
@@ -309,16 +329,7 @@ def create_runoff_calculator_tab():
                                             html.H6("Runoff Calculations", className="fw-bold mb-2"),
                                             dash_table.DataTable(
                                                 id="runoff-calculations-table",
-                                                data=[
-                                                    {"Parameter": "Area (acres)", "Value": 10},
-                                                    {"Parameter": "Composite Curve Number", "Value": 50},
-                                                    {"Parameter": "24-hour Rainfall (inches)", "Value": 5},
-                                                    {"Parameter": "Maximum Potential Storage (inches)", "Value": 10},
-                                                    {"Parameter": "Initial Abstraction", "Value": 0.05},
-                                                    {"Parameter": "Runoff Depth (inches)", "Value": 1},
-                                                    {"Parameter": "Runoff/Precipitation Ratio", "Value": 0.2},
-                                                    {"Parameter": "Runoff Volume (ft3)", "Value": 10000}
-                                                ],
+                                                data=_get_runoff_calculations_data(),
                                                 columns=[
                                                     {"name": "Parameter", "id": "Parameter", "editable": False},
                                                     {"name": "Value", "id": "Value", "editable": True, "type": "numeric"}

@@ -17,6 +17,7 @@ import requests
 import numpy as np
 import plotly.graph_objects as go
 from scipy.special import exp1
+import mar_dss.app.utils.data_storage as dash_storage
 
 
 try:
@@ -491,6 +492,98 @@ def setup_runoff_callbacks(app):
         ])
         return [], html.Div("Click 'Get Watershed Info' to retrieve watershed data."), default_rain_content, html.Div("")
 
+    # Callback to save impervious outlet option (1A/1B) to data storage
+    @app.callback(
+        Output('impervious-outlet-option', 'value'),
+        [
+            Input('impervious-outlet-option', 'value'),
+            Input('impervious-outlet-option', 'id')
+        ],
+        prevent_initial_call=False
+    )
+    def handle_impervious_outlet_option(value, component_id):
+        """Handle impervious outlet option selection and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved value or use default, and save it
+            outlet_option = dash_storage.get_data("impervious_outlet_option")
+            dash_storage.set_data("impervious_outlet_option", outlet_option)
+            return outlet_option
+        
+        # Save to data storage
+        dash_storage.set_data("impervious_outlet_option", value)
+        return value
+    
+    # Callback to save impervious curve number select to data storage
+    @app.callback(
+        Output('impervious-curve-number-select', 'value'),
+        [
+            Input('impervious-curve-number-select', 'value'),
+            Input('impervious-curve-number-select', 'id')
+        ],
+        prevent_initial_call=False
+    )
+    def handle_impervious_curve_number_select(value, component_id):
+        """Handle impervious curve number selection and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved value or use default, and save it
+            impervious_cn = dash_storage.get_data("impervious_curve_number_select")
+            dash_storage.set_data("impervious_curve_number_select", impervious_cn)
+            return impervious_cn
+        
+        # Save to data storage
+        dash_storage.set_data("impervious_curve_number_select", value)
+        return value
+    
+    # Callback to save cover description select to data storage
+    @app.callback(
+        Output('cover-description-select', 'value'),
+        [
+            Input('cover-description-select', 'value'),
+            Input('cover-description-select', 'id')
+        ],
+        prevent_initial_call=False
+    )
+    def handle_cover_description_select(value, component_id):
+        """Handle cover description selection and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved value or use default, and save it
+            cover_desc = dash_storage.get_data("cover_description_select")
+            dash_storage.set_data("cover_description_select", cover_desc)
+            return cover_desc
+        
+        # Save to data storage
+        dash_storage.set_data("cover_description_select", value)
+        return value
+    
+    # Callback to save soil type select to data storage
+    @app.callback(
+        Output('soil-type-select', 'value'),
+        [
+            Input('soil-type-select', 'value'),
+            Input('soil-type-select', 'id')
+        ],
+        prevent_initial_call=False
+    )
+    def handle_soil_type_select(value, component_id):
+        """Handle soil type selection and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved value or use default, and save it
+            soil_type = dash_storage.get_data("soil_type_select")
+            dash_storage.set_data("soil_type_select", soil_type)
+            return soil_type
+        
+        # Save to data storage
+        dash_storage.set_data("soil_type_select", value)
+        return value
+    
     # Callback for impervious curve number selection
     @app.callback(
         Output('selected-impervious-curve-number-display', 'children'),
@@ -746,6 +839,8 @@ def setup_runoff_callbacks(app):
                     }
                 ]
             )
+            # Save table data to storage
+            dash_storage.set_data("composite_cn_datatable", table_data)
             return table, table_data
         
         return html.Div("No data available for this option.", className="text-warning"), None
@@ -762,6 +857,9 @@ def setup_runoff_callbacks(app):
         """Recompute Composite CN when any table value is edited."""
         if not table_data or not selected_option:
             return dash.no_update, dash.no_update
+        
+        # Save table data to storage
+        dash_storage.set_data("composite_cn_datatable", table_data)
         
         # Make a copy to avoid modifying the original
         updated_data = [row.copy() for row in table_data]
@@ -828,6 +926,9 @@ def setup_runoff_callbacks(app):
             ]
         )
         
+        # Save updated data to storage
+        dash_storage.set_data("composite_cn_datatable", updated_data)
+        
         return table, updated_data
     
     # Callback to sync Composite CN to runoff calculations table
@@ -842,8 +943,13 @@ def setup_runoff_callbacks(app):
         """Sync Composite CN value to runoff calculations table."""
         ctx = dash.callback_context
         if not ctx.triggered:
-            # Initial load - use default data
-            return current_table_data if current_table_data else [
+            # Initial load - get saved data or use default data
+            saved_data = dash_storage.get_data("runoff_calculations_table")
+            if saved_data:
+                dash_storage.set_data("runoff_calculations_table", saved_data)
+                return saved_data
+            
+            default_data = [
                 {"Parameter": "Area (acres)", "Value": 10},
                 {"Parameter": "Composite Curve Number", "Value": 50},
                 {"Parameter": "24-hour Rainfall (inches)", "Value": 5},
@@ -853,6 +959,8 @@ def setup_runoff_callbacks(app):
                 {"Parameter": "Runoff/Precipitation Ratio", "Value": 0.2},
                 {"Parameter": "Runoff Volume (ft3)", "Value": 10000}
             ]
+            dash_storage.set_data("runoff_calculations_table", default_data)
+            return default_data
         
         trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
         
@@ -938,6 +1046,8 @@ def setup_runoff_callbacks(app):
                         row["Value"] = round(runoff_precip_ratio, 2)
                     elif row.get("Parameter") == "Runoff Volume (ft3)":
                         row["Value"] = round(runoff_volume, 2)
+                # Save to data storage
+                dash_storage.set_data("runoff_calculations_table", updated_data)
                 return updated_data
         
         # If table data was edited, check for changes and recalculate dependent values
@@ -1016,9 +1126,118 @@ def setup_runoff_callbacks(app):
                         row["Value"] = round(runoff_volume, 2)
                         break
             
+            # Save to data storage
+            dash_storage.set_data("runoff_calculations_table", updated_data)
             return updated_data
         
-        return current_table_data if current_table_data else dash.no_update
+        # If no changes, return current data but still save to storage if it exists
+        if current_table_data:
+            dash_storage.set_data("runoff_calculations_table", current_table_data)
+            return current_table_data
+        
+        return dash.no_update
+    
+    # Additional callback to ensure table data is saved when edited
+    @app.callback(
+        Output('runoff-calculations-table', 'data', allow_duplicate=True),
+        Input('runoff-calculations-table', 'data'),
+        prevent_initial_call=True
+    )
+    def save_runoff_calculations_table(table_data):
+        """Save runoff calculations table data to storage when edited."""
+        if table_data:
+            dash_storage.set_data("runoff_calculations_table", table_data)
+        return dash.no_update
+
+    # Callback to save runoff single storm latitude to data storage
+    @app.callback(
+        Output('runoff-single-storm-latitude', 'value'),
+        [
+            Input('runoff-single-storm-latitude', 'value'),
+            Input('runoff-single-storm-latitude', 'n_blur'),
+            Input('runoff-single-storm-latitude', 'n_submit'),
+            Input('runoff-single-storm-latitude', 'id')
+        ],
+        prevent_initial_call=False
+    )
+    def handle_runoff_single_storm_latitude(value, n_blur, n_submit, component_id):
+        """Handle runoff single storm latitude input and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved value or use default, and save it
+            latitude = dash_storage.get_data("runoff_single_storm_latitude")
+            if latitude is None:
+                latitude = 38.5816  # Default value
+            else:
+                try:
+                    latitude = float(latitude)
+                except (ValueError, TypeError):
+                    latitude = 38.5816
+            dash_storage.set_data("runoff_single_storm_latitude", latitude)
+            return latitude
+        
+        # Get the current value from the input
+        current_value = value if value is not None else 38.5816
+        
+        # Determine which trigger caused the callback
+        trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1]
+        
+        # Save latitude for all triggers except initial load
+        if trigger_prop != "id":
+            try:
+                current_value = float(current_value)
+                dash_storage.set_data("runoff_single_storm_latitude", current_value)
+            except (ValueError, TypeError):
+                pass
+        
+        return current_value
+    
+    # Callback to save runoff single storm longitude to data storage
+    @app.callback(
+        Output('runoff-single-storm-longitude', 'value'),
+        [
+            Input('runoff-single-storm-longitude', 'value'),
+            Input('runoff-single-storm-longitude', 'n_blur'),
+            Input('runoff-single-storm-longitude', 'n_submit'),
+            Input('runoff-single-storm-longitude', 'id')
+        ],
+        prevent_initial_call=False
+    )
+    def handle_runoff_single_storm_longitude(value, n_blur, n_submit, component_id):
+        """Handle runoff single storm longitude input and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved value or use default, and save it
+            longitude = dash_storage.get_data("runoff_single_storm_longitude")
+            if longitude is None:
+                longitude = -121.4944  # Default value
+            else:
+                try:
+                    longitude = float(longitude)
+                except (ValueError, TypeError):
+                    longitude = -121.4944
+            dash_storage.set_data("runoff_single_storm_longitude", longitude)
+            return longitude
+        
+        # Get the current value from the input
+        current_value = value if value is not None else -121.4944
+        
+        # Determine which trigger caused the callback
+        trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1]
+        
+        # Save longitude for all triggers except initial load
+        if trigger_prop != "id":
+            try:
+                current_value = float(current_value)
+                dash_storage.set_data("runoff_single_storm_longitude", current_value)
+            except (ValueError, TypeError):
+                pass
+        
+        return current_value
 
     # Callback for "Download Rain Statistics" button in Runoff for Single Storm card
     @app.callback(
