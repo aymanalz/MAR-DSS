@@ -3,9 +3,10 @@ Callbacks for Cost calculations and display in the Engineering tab.
 """
 
 import dash
-from dash import Input, Output, html, dash_table
+from dash import Input, Output, State, html, dash_table
 import dash_bootstrap_components as dbc
 import pandas as pd
+import mar_dss.app.utils.data_storage as dash_storage
 
 
 try:
@@ -80,7 +81,7 @@ def setup_cost_callbacks(app):
     )
     def update_water_source_data_table(active_tab):
         """Update water source data table in Design Metrics card."""
-        import mar_dss.app.utils.data_storage as dash_storage
+        
         
         # Get all water source data from storage
         water_source = dash_storage.get_data("water_source") or "Not set"
@@ -192,36 +193,60 @@ def setup_cost_callbacks(app):
             Output("npv-table-content", "children"),
         ],
         [
-            Input("flow-capture-pump-check", "value"),
-            Input("conveyance-method-radio", "value"),
-            Input("distance-collection-to-sediment", "value"),
-            Input("sediment-removal-pond-check", "value"),
-            Input("sediment-removal-target-radio", "value"),
-            Input("pumped-conveyance-storage-check", "value"),
-            Input("storage-pond-check", "value"),
-            Input("pumped-conveyance-infiltration-check", "value"),
-            Input("infiltration-method-radio", "value"),
+            Input("top-tabs", "active_tab"),
+            Input("analysis-tabs", "active_tab"),
         ],
         prevent_initial_call=True
     )
     def update_cost_calculations(
-        flow_capture_values,
-        conveyance_method,
-        distance_to_sediment,
-        sediment_pond_values,
-        sediment_target,
-        pumped_storage_values,
-        storage_pond_values,
-        pumped_infiltration_values,
-        infiltration_method,
+        top_tab,
+        analysis_tab,
     ):
         """Update cost calculations based on engineering inputs."""
         
+        # Only calculate if we're on the Analysis tab and Cost sub-tab is selected
+        if top_tab != "analysis" or analysis_tab != "analysis-cost":
+            return (
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
+                dash.no_update,
+            )
+        
+        # Read all values from dash_storage (components may not be in DOM)
+        flow_capture_values = dash_storage.get_data("flow_capture_values") or ["flow_capture_structure", "rough_grading"]
+        conveyance_method = dash_storage.get_data("conveyance_method") or "trapezoidal"
+        distance_to_sediment = dash_storage.get_data("distance_to_sediment") or 1.0
+        sediment_pond_values = dash_storage.get_data("sediment_pond_values") or ["trash_rack"]
+        sediment_target = dash_storage.get_data("sediment_target") or "medium_silt"
+        pumped_storage_values = dash_storage.get_data("pumped_storage_values") or []
+        storage_pond_values = dash_storage.get_data("storage_pond_values") or []
+        pumped_infiltration_values = dash_storage.get_data("pumped_infiltration_values") or []
+        infiltration_method = dash_storage.get_data("infiltration_method") or "infiltration_basin"
+        
         # For now, return default values
         # TODO: Implement actual cost calculations using CostCalculator
-
-        cost_calculator = CostCalculator()
-        #cost_calculator.calculate_cost()
+        storm_design_depth = 1.8
+        cost_calculator = CostCalculator(
+        water_source="stormwater", storm_design_depth=storm_design_depth,
+        drainage_basin_area_acres=35,
+        total_storm_volume_af=6.52,
+        basin_soil_type_infiltration_rate_in_per_hr=0.2,
+        peak_flow_rate_gpm=3958,
+        fine_sediment_removal_goal="Fine Silt",
+        distance_collection_to_sediment_pond_ft=2640,
+        distance_sediment_to_storage_pond_ft=2640,
+        dry_well_infiltration_rate_in_per_hr=5,
+        dry_well_transfer_rate_gpm=50,
+        injection_well_transfer_rate_gpm=50,
+        number_of_injection_wells=5,
+        collection_to_sediment_removal__conveyance_method="trapezoidal",
+        dry_well_diameter_ft=6,
+        recharge_method="dry_well"
+    )
+        cost_calculator.calculate_cost()
         
         capital_cost = "$0"
         annual_maintenance_cost = "$0"
