@@ -1239,9 +1239,87 @@ def setup_runoff_callbacks(app):
         
         return current_value
 
+    # Helper function to create rain statistics table display
+    def _create_rain_statistics_display(df_rain):
+        """Create the rain statistics table display component."""
+        if df_rain is None or df_rain.empty:
+            return html.P("No rain statistics data available.", className="text-warning")
+        
+        # Create rain statistics table
+        rain_statistics_table = dash_table.DataTable(
+            data=df_rain.to_dict('records'),
+            columns=[{"name": i, "id": i} for i in df_rain.columns],
+            style_cell={
+                'textAlign': 'left',
+                'padding': '10px',
+                'fontFamily': 'Arial, sans-serif',
+                'fontSize': '14px',
+                'border': '1px solid #ddd'
+            },
+            style_header={
+                'backgroundColor': '#f8f9fa',
+                'fontWeight': 'bold',
+                'border': '1px solid #ddd'
+            },
+            style_data={
+                'backgroundColor': 'white',
+                'border': '1px solid #ddd'
+            },
+            style_data_conditional=[
+                {
+                    'if': {'row_index': 'odd'},
+                    'backgroundColor': '#f8f9fa'
+                }
+            ],
+            page_size=len(df_rain),
+            sort_action="native",
+            filter_action="native",
+            export_format="csv"
+        )
+        
+        # Return table with heading
+        return html.Div([
+            html.H6("Precipitation Frequency Estimates (NOAA Atlas 14).  Precipitation is in inches.", className="fw-bold mb-2"),
+            html.Small(
+                "Note: The Annual Recurrence Interval (ARI), also known as the return period, is the average time interval between rainfall events of a given magnitude or greater. For example: An ARI of 100 years means that, on average, a precipitation event of that magnitude (e.g., 5.38 inches over 24-hr) or greater has a 1% chance (1/100) of being equaled or exceeded in any given year.",
+                className="text-muted d-block mb-2"
+            ),
+            rain_statistics_table
+        ])
+    
+    # Callback to load rain statistics table from storage on initial load
+    @app.callback(
+        Output('rain-statistics-table-placeholder', 'children', allow_duplicate=True),
+        [
+            Input('top-tabs', 'active_tab'),
+            Input('runoff-calculator-tabs', 'active_tab')
+        ],
+        prevent_initial_call=True
+    )
+    def load_rain_statistics_from_storage(top_tab, runoff_tab):
+        """Load rain statistics table from storage when tab is accessed."""
+        ctx = dash.callback_context
+        
+        # Only load if we're on the water source tab (which contains runoff calculator)
+        if top_tab != "water-source":
+            return dash.no_update
+        
+        # Get saved rain statistics data
+        saved_data = dash_storage.get_data("rain_statistics_table")
+        if saved_data:
+            try:
+                # Convert saved data back to DataFrame
+                df_rain = pd.DataFrame(saved_data)
+                return _create_rain_statistics_display(df_rain)
+            except Exception as e:
+                print(f"Error loading rain statistics from storage: {e}")
+                return dash.no_update
+        
+        return dash.no_update
+    
     # Callback for "Download Rain Statistics" button in Runoff for Single Storm card
     @app.callback(
-        Output('rain-statistics-table-placeholder', 'children'),
+        Output('rain-statistics-table-placeholder', 'children', allow_duplicate=True),
         Input('download-rain-statistics-btn', 'n_clicks'),
         [State('runoff-single-storm-latitude', 'value'),
          State('runoff-single-storm-longitude', 'value')],
@@ -1257,53 +1335,18 @@ def setup_runoff_callbacks(app):
                 if df_rain is None or df_rain.empty:
                     return html.P("No rain statistics data available.", className="text-warning")
                 
-                # Create rain statistics table
-                rain_statistics_table = dash_table.DataTable(
-                    data=df_rain.to_dict('records'),
-                    columns=[{"name": i, "id": i} for i in df_rain.columns],
-                    style_cell={
-                        'textAlign': 'left',
-                        'padding': '10px',
-                        'fontFamily': 'Arial, sans-serif',
-                        'fontSize': '14px',
-                        'border': '1px solid #ddd'
-                    },
-                    style_header={
-                        'backgroundColor': '#f8f9fa',
-                        'fontWeight': 'bold',
-                        'border': '1px solid #ddd'
-                    },
-                    style_data={
-                        'backgroundColor': 'white',
-                        'border': '1px solid #ddd'
-                    },
-                    style_data_conditional=[
-                        {
-                            'if': {'row_index': 'odd'},
-                            'backgroundColor': '#f8f9fa'
-                        }
-                    ],
-                    page_size=len(df_rain),
-                    sort_action="native",
-                    filter_action="native",
-                    export_format="csv"
-                )
+                # Save to data storage
+                rain_data_dict = df_rain.to_dict('records')
+                dash_storage.set_data("rain_statistics_table", rain_data_dict)
                 
-                # Return table with heading
-                return html.Div([
-                    html.H6("Precipitation Frequency Estimates (NOAA Atlas 14).  Precipitation is in inches.", className="fw-bold mb-2"),
-                    html.Small(
-                        "Note: The Annual Recurrence Interval (ARI), also known as the return period, is the average time interval between rainfall events of a given magnitude or greater. For example: An ARI of 100 years means that, on average, a precipitation event of that magnitude (e.g., 5.38 inches over 24-hr) or greater has a 1% chance (1/100) of being equaled or exceeded in any given year.",
-                        className="text-muted d-block mb-2"
-                    ),
-                    rain_statistics_table
-                ])
+                # Create and return display
+                return _create_rain_statistics_display(df_rain)
                 
             except Exception as e:
                 print(f"Error downloading rain statistics: {e}")
                 return html.P(f"Error downloading rain statistics: {str(e)}", className="text-danger")
         
-        return html.Div()
+        return dash.no_update
 
     # Callback for "Get Monthly Rainfall and Runoff" button in Monthly Runoff Estimation card
     @app.callback(
