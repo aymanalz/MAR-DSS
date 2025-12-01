@@ -1348,9 +1348,140 @@ def setup_runoff_callbacks(app):
         
         return dash.no_update
 
+    # Helper function to create monthly runoff display
+    def _create_monthly_runoff_display(monthly_rain):
+        """Create the monthly runoff table and chart display component."""
+        if monthly_rain is None or monthly_rain.empty:
+            return html.P("No monthly rain data available.", className="text-warning")
+        
+        # Create monthly rain table with different colors for each column
+        # Define colors for each column
+        column_colors = {
+            'Month': {'header': '#2c5aa0', 'data': '#e8f4f8'},
+            'Rain (inches)': {'header': '#28a745', 'data': '#d4edda'},
+            'Runoff depth (in/day)': {'header': '#ff6b35', 'data': '#ffe5d9'},
+            'Runoff Volume (ft3)': {'header': '#6f42c1', 'data': '#e9d5ff'}
+        }
+        
+        # Build conditional styling for columns
+        style_data_conditional = []
+        style_header_conditional = []
+        
+        for col in monthly_rain.columns:
+            if col in column_colors:
+                style_data_conditional.append({
+                    'if': {'column_id': col},
+                    'backgroundColor': column_colors[col]['data']
+                })
+                style_header_conditional.append({
+                    'if': {'column_id': col},
+                    'backgroundColor': column_colors[col]['header'],
+                    'color': 'white'
+                })
+        
+        monthly_rain_table = dash_table.DataTable(
+            data=monthly_rain.to_dict('records'),
+            columns=[{"name": i, "id": i} for i in monthly_rain.columns],
+            style_cell={
+                'textAlign': 'left',
+                'padding': '10px',
+                'fontFamily': 'Arial, sans-serif',
+                'fontSize': '14px',
+                'border': '1px solid #ddd'
+            },
+            style_header={
+                'backgroundColor': '#f8f9fa',
+                'fontWeight': 'bold',
+                'border': '1px solid #ddd',
+                'color': 'black'
+            },
+            style_data={
+                'backgroundColor': 'white',
+                'border': '1px solid #ddd'
+            },
+            style_data_conditional=style_data_conditional,
+            style_header_conditional=style_header_conditional,
+            page_size=len(monthly_rain),
+            sort_action="native",
+            filter_action="native",
+            export_format="csv"
+        )
+        
+        # Create grouped bar chart for monthly rain and runoff depth
+        fig = go.Figure(data=[
+            go.Bar(
+                name='Rainfall',
+                x=monthly_rain['Month'],
+                y=monthly_rain['Rain (inches)'],
+                marker_color='steelblue',
+                text=monthly_rain['Rain (inches)'].round(2),
+                textposition='outside'
+            ),
+            go.Bar(
+                name='Runoff depth (in/day)',
+                x=monthly_rain['Month'],
+                y=monthly_rain['Runoff depth (in/day)'],
+                marker_color='orange',
+                text=monthly_rain['Runoff depth (in/day)'].round(2),
+                textposition='outside'
+            )
+        ])
+        
+        fig.update_layout(
+            title='Monthly Average Precipitation and Runoff Depth',
+            xaxis_title='Month',
+            yaxis_title='Depth (inches)',
+            xaxis={'tickangle': -45},
+            barmode='group',  # Group bars side by side
+            height=400,
+            margin=dict(l=50, r=50, t=50, b=100),
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            )
+        )
+        monthly_rain_chart = dcc.Graph(figure=fig)
+        
+        # Return table and chart side by side
+        return dbc.Row([
+            dbc.Col([monthly_rain_table], width=6),
+            dbc.Col([monthly_rain_chart], width=6)
+        ])
+    
+    # Callback to load monthly runoff data from storage on initial load
+    @app.callback(
+        Output('monthly-runoff-estimation-content', 'children', allow_duplicate=True),
+        [
+            Input('top-tabs', 'active_tab'),
+            Input('runoff-calculator-tabs', 'active_tab')
+        ],
+        prevent_initial_call=True
+    )
+    def load_monthly_runoff_from_storage(top_tab, runoff_tab):
+        """Load monthly runoff table from storage when tab is accessed."""
+        # Only load if we're on the water source tab (which contains runoff calculator)
+        if top_tab != "water-source":
+            return dash.no_update
+        
+        # Get saved monthly runoff data
+        saved_data = dash_storage.get_data("monthly_runoff_table")
+        if saved_data:
+            try:
+                # Convert saved data back to DataFrame
+                monthly_rain = pd.DataFrame(saved_data)
+                return _create_monthly_runoff_display(monthly_rain)
+            except Exception as e:
+                print(f"Error loading monthly runoff from storage: {e}")
+                return dash.no_update
+        
+        return dash.no_update
+    
     # Callback for "Get Monthly Rainfall and Runoff" button in Monthly Runoff Estimation card
     @app.callback(
-        Output('monthly-runoff-estimation-content', 'children'),
+        Output('monthly-runoff-estimation-content', 'children', allow_duplicate=True),
         Input('get-monthly-rain-btn', 'n_clicks'),
         [State('runoff-single-storm-latitude', 'value'),
          State('runoff-single-storm-longitude', 'value'),
@@ -1412,107 +1543,19 @@ def setup_runoff_callbacks(app):
                 if len(runoff_volume)>0:
                     monthly_rain['Runoff depth (in/day)'] = runoff_depth
                     monthly_rain['Runoff Volume (ft3)'] = runoff_volume
-                # Create monthly rain table with different colors for each column
-                # Define colors for each column
-                column_colors = {
-                    'Month': {'header': '#2c5aa0', 'data': '#e8f4f8'},
-                    'Rain (inches)': {'header': '#28a745', 'data': '#d4edda'},
-                    'Runoff depth (in/day)': {'header': '#ff6b35', 'data': '#ffe5d9'},
-                    'Runoff Volume (ft3)': {'header': '#6f42c1', 'data': '#e9d5ff'}
-                }
                 
-                # Build conditional styling for columns
-                style_data_conditional = []
-                style_header_conditional = []
+                # Save to data storage
+                monthly_rain_dict = monthly_rain.to_dict('records')
+                dash_storage.set_data("monthly_runoff_table", monthly_rain_dict)
                 
-                for col in monthly_rain.columns:
-                    if col in column_colors:
-                        style_data_conditional.append({
-                            'if': {'column_id': col},
-                            'backgroundColor': column_colors[col]['data']
-                        })
-                        style_header_conditional.append({
-                            'if': {'column_id': col},
-                            'backgroundColor': column_colors[col]['header'],
-                            'color': 'white'
-                        })
-                
-                monthly_rain_table = dash_table.DataTable(
-                    data=monthly_rain.to_dict('records'),
-                    columns=[{"name": i, "id": i} for i in monthly_rain.columns],
-                    style_cell={
-                        'textAlign': 'left',
-                        'padding': '10px',
-                        'fontFamily': 'Arial, sans-serif',
-                        'fontSize': '14px',
-                        'border': '1px solid #ddd'
-                    },
-                    style_header={
-                        'backgroundColor': '#f8f9fa',
-                        'fontWeight': 'bold',
-                        'border': '1px solid #ddd',
-                        'color': 'black'
-                    },
-                    style_data={
-                        'backgroundColor': 'white',
-                        'border': '1px solid #ddd'
-                    },
-                    style_data_conditional=style_data_conditional,
-                    style_header_conditional=style_header_conditional,
-                    page_size=len(monthly_rain),
-                    sort_action="native",
-                    filter_action="native",
-                    export_format="csv"
-                )
-                
-                # Create grouped bar chart for monthly rain and runoff depth
-                fig = go.Figure(data=[
-                    go.Bar(
-                        name='Rainfall',
-                        x=monthly_rain['Month'],
-                        y=monthly_rain['Rain (inches)'],
-                        marker_color='steelblue',
-                        text=monthly_rain['Rain (inches)'].round(2),
-                        textposition='outside'
-                    ),
-                    go.Bar(
-                        name='Runoff depth (in/day)',
-                        x=monthly_rain['Month'],
-                        y=monthly_rain['Runoff depth (in/day)'],
-                        marker_color='orange',
-                        text=monthly_rain['Runoff depth (in/day)'].round(2),
-                        textposition='outside'
-                    )
-                ])
-                fig.update_layout(
-                    title='Monthly Average Precipitation and Runoff Depth',
-                    xaxis_title='Month',
-                    yaxis_title='Depth (inches)',
-                    xaxis={'tickangle': -45},
-                    barmode='group',  # Group bars side by side
-                    height=400,
-                    margin=dict(l=50, r=50, t=50, b=100),
-                    legend=dict(
-                        orientation="h",
-                        yanchor="bottom",
-                        y=1.02,
-                        xanchor="right",
-                        x=1
-                    )
-                )
-                monthly_rain_chart = dcc.Graph(figure=fig)
-                
-                # Return table and chart side by side
-                return dbc.Row([
-                    dbc.Col([monthly_rain_table], width=6),
-                    dbc.Col([monthly_rain_chart], width=6)
-                ])
+                # Create and return display using helper function
+                return _create_monthly_runoff_display(monthly_rain)
                 
             except Exception as e:
                 print(f"Error getting monthly rain data: {e}")
                 return html.P(f"Error getting monthly rain data: {str(e)}", className="text-danger")
         
-        return html.Div("Click 'Get Monthly Rainfall and Runoff' to retrieve monthly precipitation data.", className="text-muted")
+        return dash.no_update
 
 
 

@@ -382,12 +382,24 @@ def create_runoff_calculator_tab():
                                 dbc.CardBody([
                                     html.H5("Step 3: Estimate Annual Runoff", 
                                             className="fw-bold mb-3"),
-                                    dbc.Button(
-                                        "Get Monthly Rainfall and Runoff",
-                                        id="get-monthly-rain-btn",
-                                        color="primary",
-                                        className="mb-3"
-                                    ),
+                                    dbc.Row([
+                                        dbc.Col([
+                                            dbc.Button(
+                                                "Get Monthly Rainfall and Runoff",
+                                                id="get-monthly-rain-btn",
+                                                color="primary",
+                                                className="mb-3"
+                                            )
+                                        ], width="auto"),
+                                        dbc.Col([
+                                            dbc.Checkbox(
+                                                id="use-runoff-for-recharge-check",
+                                                label="Use Runoff For Recharge",
+                                                value=False,
+                                                className="mb-3 ms-3"
+                                            )
+                                        ], width="auto")
+                                    ]),
                                     html.Div(id="monthly-runoff-estimation-content")
                                 ])
                             ])
