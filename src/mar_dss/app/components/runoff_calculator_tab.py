@@ -219,21 +219,15 @@ def create_results_card():
     ], style={'minHeight': '500px'})
 
 
-def create_runoff_calculator_tab():
+def create_curve_number_tab():
     """Create the content for the Runoff Calculator tab."""
     return [
         html.H3("Runoff Calculator", className="mb-4"),
-        html.P("Calculate and analyze runoff patterns for your MAR project location.", className="mb-4"),
-
-        dbc.Tabs([
-            dbc.Tab(
-                label="Curve Number",
-                tab_id="curve-number-tab",
-                children=[
-                    dbc.Card([
-                        dbc.CardBody([
-                            html.H5("Step 1: Composite Curve Number Based on % Impervious Cover Calculator (Pick 1A or 1B)", 
-                                    className="fw-bold mb-3"),
+        html.P("Calculate curve numbers and runoff patterns for your MAR project location.", className="mb-4"),
+        dbc.Card([
+            dbc.CardBody([
+                html.H5("Step 1: Composite Curve Number Based on % Impervious Cover Calculator (Pick 1A or 1B)", 
+                        className="fw-bold mb-3"),
                             dbc.Row([
                                 dbc.Col([
                                     dbc.RadioItems(
@@ -405,8 +399,16 @@ def create_runoff_calculator_tab():
                             ])
                         ], width=12)
                     ], className="mt-4")
-                ]
-            ),
+    ]
+
+
+def create_runoff_calculator_tab():
+    """Create the content for the Watershed Information tab."""
+    return [
+        html.H3("Watershed Information", className="mb-4"),
+        html.P("Calculate and analyze runoff patterns for your MAR project location.", className="mb-4"),
+
+        dbc.Tabs([
             dbc.Tab(
                 label="Rainfall and Watershed Information",
                 tab_id="rainfall-watershed-tab",

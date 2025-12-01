@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 import requests
 from dash import dcc, dash_table, html
 import mar_dss.app.utils.data_storage as dash_storage
-from .runoff_calculator_tab import create_runoff_calculator_tab
+from .runoff_calculator_tab import create_runoff_calculator_tab, create_curve_number_tab
 
 
 def get_location_details(lat, lon):
@@ -577,7 +577,7 @@ def create_water_source_info_tab():
 
 
 def create_general_tab_content():
-    """Create the main tab structure with Water Source Information and Runoff Calculator tabs."""
+    """Create the main tab structure with Water Source Information, Curve Number, and Runoff Calculator tabs."""
     return [
         dbc.Tabs(
             [
@@ -599,6 +599,22 @@ def create_general_tab_content():
                 ),
                 dbc.Tab(
                     label="Runoff Calculator",
+                    tab_id="curve-number",
+                    children=create_curve_number_tab(),
+                    label_style={
+                        "color": "#ffffff", 
+                        "fontWeight": "bold",
+                        "backgroundColor": "#28a745",
+                        "border": "1px solid #28a745"
+                    },
+                    active_label_style={
+                        "color": "#ffffff", 
+                        "backgroundColor": "#1e7e34",
+                        "border": "1px solid #1e7e34"
+                    },
+                ),
+                dbc.Tab(
+                    label="Watershed Information",
                     tab_id="runoff-calculator",
                     children=create_runoff_calculator_tab(),
                     label_style={
