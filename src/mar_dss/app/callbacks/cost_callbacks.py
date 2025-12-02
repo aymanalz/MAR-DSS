@@ -589,7 +589,98 @@ def setup_cost_callbacks(app):
         annual_maintenance_cost = f"${maintenance_cost_num:,.0f}"
         npv_20_years = f"${net_val:,.0f}"
         
-        capital_cost_table = html.P("Capital Cost Table will be displayed here.")
+        # Create Capital Cost Table
+        capital_df = cost_calculator.capital_costs_calculations.copy()
+        # Reset index to make it a column
+        capital_df = capital_df.reset_index()
+        # Rename the index column if it exists
+        if 'index' in capital_df.columns:
+            capital_df = capital_df.rename(columns={'index': 'Row Label'})
+        
+        # Format numeric columns
+        if 'Number of Units' in capital_df.columns:
+            def format_units(x):
+                try:
+                    if pd.notna(x) and x != '' and str(x).strip() != '':
+                        return f"{float(x):.2f}"
+                    return ''
+                except (ValueError, TypeError):
+                    return ''
+            capital_df['Number of Units'] = capital_df['Number of Units'].apply(format_units)
+        
+        if 'Total Cost ($)' in capital_df.columns:
+            def format_cost(x):
+                try:
+                    if pd.notna(x) and x != '' and str(x).strip() != '':
+                        return f"{float(x):,.0f}"
+                    return ''
+                except (ValueError, TypeError):
+                    return ''
+            capital_df['Total Cost ($)'] = capital_df['Total Cost ($)'].apply(format_cost)
+        
+        # Fill NaN values with empty strings for better display
+        capital_df = capital_df.fillna('')
+        
+        # Get unique categories and assign colors
+        categories = capital_df['Category'].dropna().unique() if 'Category' in capital_df.columns else []
+        # Color palette for categories
+        category_colors = [
+            '#e8f5e9',  # Light green
+            '#e3f2fd',  # Light blue
+            '#fff3e0',  # Light orange
+            '#f3e5f5',  # Light purple
+            '#fce4ec',  # Light pink
+            '#e0f2f1',  # Light teal
+            '#fff9c4',  # Light yellow
+            '#e1f5fe',  # Light cyan
+        ]
+        
+        # Create conditional styling for categories
+        category_styles = []
+        for idx, category in enumerate(categories):
+            if category and str(category).strip() != '':
+                color = category_colors[idx % len(category_colors)]
+                category_styles.append({
+                    'if': {
+                        'filter_query': f'{{Category}} = "{category}"'
+                    },
+                    'backgroundColor': color
+                })
+        
+        # Add summary row styling
+        summary_styles = [
+            {
+                'if': {
+                    'filter_query': '{Row Label} contains "Total" || {Row Label} contains "Subtotal" || {Row Label} contains "Capital" || {Item} = null'
+                },
+                'backgroundColor': '#ecf0f1',
+                'fontWeight': 'bold'
+            }
+        ]
+        
+        capital_cost_table = dash_table.DataTable(
+            data=capital_df.to_dict('records'),
+            columns=[
+                {'name': col, 'id': col} for col in capital_df.columns
+            ],
+            style_cell={
+                'textAlign': 'left',
+                'padding': '10px',
+                'fontFamily': 'Arial, sans-serif'
+            },
+            style_header={
+                'backgroundColor': '#2c3e50',
+                'color': 'white',
+                'fontWeight': 'bold',
+                'textAlign': 'center'
+            },
+            style_data={
+                'whiteSpace': 'normal',
+                'height': 'auto'
+            },
+            style_data_conditional=category_styles + summary_styles,
+            page_size=50
+        )
         maintenance_cost_table = html.P(
             "Maintenance Cost Table will be displayed here."
         )
