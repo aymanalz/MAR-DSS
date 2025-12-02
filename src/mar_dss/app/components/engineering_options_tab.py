@@ -41,8 +41,7 @@ def create_engineering_elements_content():
                                             id="hydrologic-design-method-radio",
                                         ),
                                         html.Label(
-                                            "Peak Flow Available for "
-                                            "Recharge (gpm):",
+                                            "Total Runoff (ft3):",
                                             className="form-label mt-3"
                                         ),
                                         dbc.Input(
@@ -237,6 +236,18 @@ def create_engineering_elements_content():
                                             ],
                                             id="pumped-conveyance-storage-check",
                                             switch=True,
+                                        ),
+                                        html.Label(
+                                            "Distance to Storage Pond (ft):",
+                                            className="form-label mt-3"
+                                        ),
+                                        dbc.Input(
+                                            type="number",
+                                            value=500.0,
+                                            id="distance-to-storage-pond-input",
+                                            min=0,
+                                            step=0.1,
+                                            className="mb-2"
                                         ),
                                     ]
                                 ),

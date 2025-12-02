@@ -116,10 +116,12 @@ class DashboardApp:
         except ImportError:
             from .callbacks.legal_constraints_callbacks import setup_legal_constraints_callbacks
         setup_legal_constraints_callbacks(self.app)
-        
+
         # Set up cost callbacks
         try:
-            from mar_dss.app.callbacks.cost_callbacks import setup_cost_callbacks
+            from mar_dss.app.callbacks.cost_callbacks import (
+                setup_cost_callbacks,
+            )
         except ImportError:
             from .callbacks.cost_callbacks import setup_cost_callbacks
         setup_cost_callbacks(self.app)

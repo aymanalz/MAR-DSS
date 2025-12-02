@@ -2,7 +2,7 @@ import pandas as pd
 from typing import Optional
 import numpy as np
 
-FAKE = True
+FAKE = False
 
 
 class CostCalculator:
@@ -11,10 +11,10 @@ class CostCalculator:
         water_source: Optional[str] = None,
         storm_design_depth: Optional[float] = None,
         drainage_basin_area_acres: Optional[float] = None,
-        total_storm_volume_af: Optional[float] = None,
+        total_storm_volume_af: Optional[float] = None, # likely not needed
         basin_soil_type_infiltration_rate_in_per_hr: Optional[float] = None,
         percentage_storm_volume_to_capture: Optional[float] = None,
-        peak_flow_rate_gpm: Optional[float] = None,
+        total_runoff_volume_ft3: Optional[float] = None,
         distance_collection_to_sediment_pond_ft: Optional[float] = None,
         distance_sediment_to_storage_pond_ft: Optional[float] = None,
         sediment_pond_area_available_acres: Optional[float] = None,
@@ -35,14 +35,15 @@ class CostCalculator:
                 self.drainage_basin_area_acres = (
                     drainage_basin_area_acres
                 )
-                self.total_storm_volume_af = total_storm_volume_af
+                self.total_storm_volume_af = total_runoff_volume_ft3/43560.0
+                # todo: not used, remove if not needed
                 self.basin_soil_type_infiltration_rate_in_per_hr = (
                     basin_soil_type_infiltration_rate_in_per_hr
                 )
                 self.percentage_storm_volume_to_capture = (
                     percentage_storm_volume_to_capture
                 )
-                self.peak_flow_rate_gpm = peak_flow_rate_gpm
+                self.total_runoff_volume_ft3 = total_runoff_volume_ft3
             elif water_source_lower == "treated_wastewater":
                 pass
             elif water_source_lower == "brackish_water":
@@ -135,6 +136,7 @@ class CostCalculator:
         self.maintenance_costs()
         self.net_present_value()
 
+
     def hydro_calculations(self):
         class Hydro:
             pass
@@ -143,23 +145,38 @@ class CostCalculator:
         hydro.basin_area_ft2 = (
             self.drainage_basin_area_acres * 43560
         )
-        hydro.storm_design_depth_inches = self.storm_design_depth
+        if 0:# not used
+            hydro.storm_design_depth_inches = self.storm_design_depth
+
+        peak_flow_rate_ft3_per_hour = self.total_runoff_volume_ft3/12.0
+        self.peak_flow_rate_gpm = peak_flow_rate_ft3_per_hour * 0.124675
         hydro.total_storm_volume_gals = (
             self.total_storm_volume_af * 325851.43
         )
-        hydro.infil_rate_ft_per_hr = (
-            self.basin_soil_type_infiltration_rate_in_per_hr / 12
-        )
-        hydro.infil_vol_gals_per_12_hours = (
-            hydro.basin_area_ft2 * hydro.infil_rate_ft_per_hr * 12 * 7.48
-        )
-        if FAKE:
-            hydro.infil_vol_gals_per_12_hours = 304920
+        
+        # todo: not used, remove if not needed
+        if 0:
+            hydro.infil_rate_ft_per_hr = (
+                self.basin_soil_type_infiltration_rate_in_per_hr / 12
+            )
 
-        hydro.volume_infiltrated_ft3 = (
-            hydro.total_storm_volume_gals -
-            hydro.infil_vol_gals_per_12_hours
-        )
+        # todo: not used, remove if not needed
+        if 0:
+            hydro.infil_vol_gals_per_12_hours = (
+                hydro.basin_area_ft2 * hydro.infil_rate_ft_per_hr * 12 * 7.48
+            )
+        
+        # todo: not used, remove if not needed
+        if 0:
+            hydro.volume_infiltrated_ft3 = (
+                hydro.total_storm_volume_gals -
+                hydro.infil_vol_gals_per_12_hours
+            )
+        
+
+        # assuming triangular unit hydrograph, height is h and base 24 hours
+        # the peak flow if total runoff volume is V
+        
         self.hydro = hydro
 
     def conveyance_calculations(self):
