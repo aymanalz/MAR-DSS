@@ -681,8 +681,87 @@ def setup_cost_callbacks(app):
             style_data_conditional=category_styles + summary_styles,
             page_size=50
         )
-        maintenance_cost_table = html.P(
-            "Maintenance Cost Table will be displayed here."
+        
+        # Create Maintenance Cost Table
+        maintenance_df = cost_calculator.maintenance_costs_calculations.copy()
+        # Reset index to make it a column
+        maintenance_df = maintenance_df.reset_index()
+        # Rename the index column if it exists
+        if 'index' in maintenance_df.columns:
+            maintenance_df = maintenance_df.rename(columns={'index': 'Row Label'})
+        
+        # Format numeric columns
+        if 'Number of Units' in maintenance_df.columns:
+            def format_units(x):
+                try:
+                    if pd.notna(x) and x != '' and str(x).strip() != '':
+                        return f"{float(x):.2f}"
+                    return ''
+                except (ValueError, TypeError):
+                    return ''
+            maintenance_df['Number of Units'] = maintenance_df['Number of Units'].apply(format_units)
+        
+        if 'Total Cost ($)' in maintenance_df.columns:
+            def format_cost(x):
+                try:
+                    if pd.notna(x) and x != '' and str(x).strip() != '':
+                        return f"{float(x):,.0f}"
+                    return ''
+                except (ValueError, TypeError):
+                    return ''
+            maintenance_df['Total Cost ($)'] = maintenance_df['Total Cost ($)'].apply(format_cost)
+        
+        # Fill NaN values with empty strings for better display
+        maintenance_df = maintenance_df.fillna('')
+        
+        # Get unique categories and assign colors (same as capital cost table)
+        maintenance_categories = maintenance_df['Category'].dropna().unique() if 'Category' in maintenance_df.columns else []
+        
+        # Create conditional styling for categories
+        maintenance_category_styles = []
+        for idx, category in enumerate(maintenance_categories):
+            if category and str(category).strip() != '':
+                color = category_colors[idx % len(category_colors)]
+                maintenance_category_styles.append({
+                    'if': {
+                        'filter_query': f'{{Category}} = "{category}"'
+                    },
+                    'backgroundColor': color
+                })
+        
+        # Add summary row styling for maintenance costs
+        maintenance_summary_styles = [
+            {
+                'if': {
+                    'filter_query': '{Row Label} contains "Total" || {Row Label} contains "Subtotal" || {Row Label} contains "Maintenance" || {Item} = null'
+                },
+                'backgroundColor': '#ecf0f1',
+                'fontWeight': 'bold'
+            }
+        ]
+        
+        maintenance_cost_table = dash_table.DataTable(
+            data=maintenance_df.to_dict('records'),
+            columns=[
+                {'name': col, 'id': col} for col in maintenance_df.columns
+            ],
+            style_cell={
+                'textAlign': 'left',
+                'padding': '10px',
+                'fontFamily': 'Arial, sans-serif'
+            },
+            style_header={
+                'backgroundColor': '#2c3e50',
+                'color': 'white',
+                'fontWeight': 'bold',
+                'textAlign': 'center'
+            },
+            style_data={
+                'whiteSpace': 'normal',
+                'height': 'auto'
+            },
+            style_data_conditional=maintenance_category_styles + maintenance_summary_styles,
+            page_size=50
         )
         npv_table = html.P("Net Present Value Table will be displayed here.")
         
