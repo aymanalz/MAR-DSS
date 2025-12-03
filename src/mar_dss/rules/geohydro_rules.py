@@ -384,12 +384,15 @@ def compute_surface_recharge_suitability(gs_slope_significance, inflitration_sig
     surface_recharge_suitability = True
     if (inflitration_significance is None) or (not inflitration_significance):
         surface_recharge_suitability = False
+        return surface_recharge_suitability
         
     if gs_slope_significance is None or not (gs_slope_significance in ["Gentle", "Moderate"]):
         surface_recharge_suitability = False
+        return surface_recharge_suitability
     
     if rechargability < defaults["maximum_rechargability"]:
         surface_recharge_suitability = False
+        return surface_recharge_suitability
     
     if not (remediate):
         surface_recharge_suitability = False

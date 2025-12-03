@@ -894,7 +894,7 @@ def setup_cost_callbacks(app):
             xaxis=dict(tickmode='linear', tick0=1, dtick=1),
             yaxis=dict(tickformat='$,.0f'),
             height=500,
-            autosize=False,
+            autosize=True,
             margin=dict(l=50, r=50, t=50, b=50),
             plot_bgcolor='white',
             paper_bgcolor='white'
@@ -935,20 +935,24 @@ def setup_cost_callbacks(app):
         )
         
         # Combine table and plot in a row layout
-        npv_table = dbc.Row([
-            dbc.Col([
-                html.H5("Net Present Value Chart", className="mb-3"),
-                dcc.Graph(
-                    figure=npv_plot,
-                    id='npv-chart',
-                    style={'height': '500px'}
-                )
-            ], width=8),
-            dbc.Col([
-                html.H5("Net Present Value Table", className="mb-3"),
-                npv_table
-            ], width=4)
-        ])
+        npv_table = dbc.Container([
+            dbc.Row([
+                dbc.Col([
+                    html.H5("Net Present Value Chart", className="mb-3"),
+                    dcc.Graph(
+                        figure=npv_plot,
+                        id='npv-chart',
+                        style={'height': '500px'}
+                    )
+                ], width=12)
+            ]),
+            dbc.Row([
+                dbc.Col([
+                    html.H5("Net Present Value Table", className="mb-3"),
+                    npv_table
+                ], width=12)
+            ])
+        ], fluid=True)
         
         return (
             capital_cost,

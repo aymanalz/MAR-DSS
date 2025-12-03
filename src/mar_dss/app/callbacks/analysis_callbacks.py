@@ -53,7 +53,7 @@ def get_session_graph():
     graph = dash_storage.get_data("decision_graph")
     if graph is None:
         graph = read_knowledge()
-        dash_storage.set_data("decision_graph", graph)
+        
     return graph
 
 def get_graph_inputs():
@@ -90,6 +90,8 @@ def run_feasibility_analysis():
     graph = get_session_graph()
     inputs = get_graph_inputs()
     results = graph.evaluate(inputs)
+    dash_storage.set_data("decision_graph", graph)
+
     
     # print("\nAll results:")
     # graph.plotly()
