@@ -8,6 +8,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import requests
 from dash import dcc, dash_table, html
+from dash.dash_table.Format import Format, Scheme
 import mar_dss.app.utils.data_storage as dash_storage
 from .runoff_calculator_tab import create_runoff_calculator_tab, create_curve_number_tab
 
@@ -125,8 +126,8 @@ def create_monthly_flow_chart(flow_data=None):
     fig.update_layout(
         title="Monthly Flow and Cumulative Annual Flow",
         xaxis_title="Month",
-        yaxis=dict(title="Monthly Flow (m³/month)", side="left"),
-        yaxis2=dict(title="Cumulative Flow (m³)", side="right", overlaying="y"),
+        yaxis=dict(title="Monthly Flow (ft³/month)", side="left"),
+        yaxis2=dict(title="Cumulative Flow (ft³)", side="right", overlaying="y"),
         height=480,
         width=800,
         margin=dict(l=0, r=50, t=50, b=50),
@@ -179,7 +180,7 @@ def create_editable_flow_table():
     df = pd.DataFrame(
         {
             "Month": months,
-            "Flow (m³/month)": monthly_flows,
+            "Flow (ft³/month)": monthly_flows,
         }
     )
     table = html.Div(
@@ -190,10 +191,11 @@ def create_editable_flow_table():
                 columns=[
                     {"name": "Month", "id": "Month", "type": "text", "editable": False},
                     {
-                        "name": "Flow (m³/month)",
-                        "id": "Flow (m³/month)",
+                        "name": "Flow (ft³/month)",
+                        "id": "Flow (ft³/month)",
                         "type": "numeric",
                         "editable": True,
+                        "format": Format(precision=1, scheme=Scheme.fixed),
                     },
                 ],
                 style_cell={
@@ -430,7 +432,7 @@ def create_water_source_info_tab():
                                                             className="fw-bold mb-3",
                                                         ),
                                                         html.P(
-                                                            "Click on any cell to edit the flow values (m³/month):",
+                                                            "Click on any cell to edit the flow values (ft³/month):",
                                                             className="text-muted small mb-3",
                                                         ),
                                                         dcc.Store(

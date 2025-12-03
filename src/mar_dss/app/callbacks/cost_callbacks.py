@@ -3,9 +3,10 @@ Callbacks for Cost calculations and display in the Engineering tab.
 """
 
 import dash
-from dash import Input, Output, State, html, dash_table
+from dash import Input, Output, State, html, dash_table, dcc
 import dash_bootstrap_components as dbc
 import pandas as pd
+import plotly.graph_objects as go
 import mar_dss.app.utils.data_storage as dash_storage
 
 
@@ -500,6 +501,89 @@ def setup_cost_callbacks(app):
         dash_storage.set_data("infiltration_method", current_selection)
         return current_selection
     
+    # Callback to save maximum infiltration area to data storage
+    @app.callback(
+        Output("max-infiltration-area-input", "value"),
+        [
+            Input("max-infiltration-area-input", "value"),
+            Input("max-infiltration-area-input", "n_blur"),
+            Input("max-infiltration-area-input", "n_submit"),
+            Input("max-infiltration-area-input", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_max_infiltration_area(value, n_blur, n_submit, component_id):
+        """Handle maximum infiltration area input and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved value or calculate default (60% of max available area)
+            max_infiltration_area = dash_storage.get_data("max_infiltration_area")
+            if max_infiltration_area is None:
+                max_available_area = dash_storage.get_data("max_available_area")
+                if max_available_area is None:
+                    max_available_area = 1.0
+                else:
+                    try:
+                        max_available_area = float(max_available_area)
+                    except (ValueError, TypeError):
+                        max_available_area = 1.0
+                max_infiltration_area = round(0.6 * max_available_area, 2)
+            else:
+                try:
+                    max_infiltration_area = float(max_infiltration_area)
+                except (ValueError, TypeError):
+                    max_available_area = dash_storage.get_data("max_available_area")
+                    if max_available_area is None:
+                        max_available_area = 1.0
+                    else:
+                        try:
+                            max_available_area = float(max_available_area)
+                        except (ValueError, TypeError):
+                            max_available_area = 1.0
+                    max_infiltration_area = round(0.6 * max_available_area, 2)
+            dash_storage.set_data("max_infiltration_area", max_infiltration_area)
+            return max_infiltration_area
+        
+        # User changed the value
+        if value is not None:
+            try:
+                value = float(value)
+            except (ValueError, TypeError):
+                value = None
+            if value is not None:
+                dash_storage.set_data("max_infiltration_area", value)
+                return value
+        
+        # Return saved value if no new value provided
+        saved_value = dash_storage.get_data("max_infiltration_area")
+        if saved_value is None:
+            max_available_area = dash_storage.get_data("max_available_area")
+            if max_available_area is None:
+                max_available_area = 1.0
+            else:
+                try:
+                    max_available_area = float(max_available_area)
+                except (ValueError, TypeError):
+                    max_available_area = 1.0
+            saved_value = round(0.6 * max_available_area, 2)
+            dash_storage.set_data("max_infiltration_area", saved_value)
+        else:
+            try:
+                saved_value = float(saved_value)
+            except (ValueError, TypeError):
+                max_available_area = dash_storage.get_data("max_available_area")
+                if max_available_area is None:
+                    max_available_area = 1.0
+                else:
+                    try:
+                        max_available_area = float(max_available_area)
+                    except (ValueError, TypeError):
+                        max_available_area = 1.0
+                saved_value = round(0.6 * max_available_area, 2)
+                dash_storage.set_data("max_infiltration_area", saved_value)
+        return saved_value
+    
     @app.callback(
         [
             Output("capital-cost-display", "children"),
@@ -763,7 +847,108 @@ def setup_cost_callbacks(app):
             style_data_conditional=maintenance_category_styles + maintenance_summary_styles,
             page_size=50
         )
-        npv_table = html.P("Net Present Value Table will be displayed here.")
+        
+        # Create Net Present Value Table and Plot
+        npv_df = cost_calculator.net_present_value_calculations.copy()
+        # Reset index to make Year a column
+        npv_df = npv_df.reset_index()
+        # Rename the index column if it exists
+        if 'index' in npv_df.columns:
+            npv_df = npv_df.rename(columns={'index': 'Year'})
+        elif 'Year' not in npv_df.columns and npv_df.index.name == 'Year':
+            npv_df.index.name = None
+            npv_df = npv_df.reset_index()
+            npv_df = npv_df.rename(columns={'index': 'Year'})
+        
+        # Keep a copy of numeric values for the plot
+        npv_df_plot = npv_df.copy()
+        
+        # Format the Total Net Present Value column for table display
+        if 'Total Net Present Value' in npv_df.columns:
+            def format_npv(x):
+                try:
+                    if pd.notna(x) and x != '' and str(x).strip() != '':
+                        return f"${float(x):,.0f}"
+                    return ''
+                except (ValueError, TypeError):
+                    return ''
+            npv_df['Total Net Present Value'] = npv_df['Total Net Present Value'].apply(format_npv)
+        
+        # Fill NaN values with empty strings for better display
+        npv_df = npv_df.fillna('')
+        
+        # Create the bar plot
+        npv_plot = go.Figure()
+        npv_plot.add_trace(go.Bar(
+            x=npv_df_plot['Year'],
+            y=npv_df_plot['Total Net Present Value'],
+            marker_color='#3498db',
+            text=[f"${val:,.0f}" for val in npv_df_plot['Total Net Present Value']],
+            textposition='outside',
+            hovertemplate='Year: %{x}<br>Total Net Present Value: $%{y:,.0f}<extra></extra>'
+        ))
+        npv_plot.update_layout(
+            title='Net Present Value Over 20 Years',
+            xaxis_title='Year',
+            yaxis_title='Total Net Present Value ($)',
+            xaxis=dict(tickmode='linear', tick0=1, dtick=1),
+            yaxis=dict(tickformat='$,.0f'),
+            height=500,
+            autosize=False,
+            margin=dict(l=50, r=50, t=50, b=50),
+            plot_bgcolor='white',
+            paper_bgcolor='white'
+        )
+        
+        npv_table = dash_table.DataTable(
+            data=npv_df.to_dict('records'),
+            columns=[
+                {'name': col, 'id': col} for col in npv_df.columns
+            ],
+            style_cell={
+                'textAlign': 'left',
+                'padding': '10px',
+                'fontFamily': 'Arial, sans-serif'
+            },
+            style_header={
+                'backgroundColor': '#2c3e50',
+                'color': 'white',
+                'fontWeight': 'bold',
+                'textAlign': 'center'
+            },
+            style_data={
+                'whiteSpace': 'normal',
+                'height': 'auto'
+            },
+            style_data_conditional=[
+                {
+                    'if': {'row_index': 'odd'},
+                    'backgroundColor': '#f8f9fa'
+                },
+                {
+                    'if': {'row_index': len(npv_df) - 1},
+                    'backgroundColor': '#ecf0f1',
+                    'fontWeight': 'bold'
+                }
+            ],
+            page_size=25
+        )
+        
+        # Combine table and plot in a row layout
+        npv_table = dbc.Row([
+            dbc.Col([
+                html.H5("Net Present Value Chart", className="mb-3"),
+                dcc.Graph(
+                    figure=npv_plot,
+                    id='npv-chart',
+                    style={'height': '500px'}
+                )
+            ], width=8),
+            dbc.Col([
+                html.H5("Net Present Value Table", className="mb-3"),
+                npv_table
+            ], width=4)
+        ])
         
         return (
             capital_cost,

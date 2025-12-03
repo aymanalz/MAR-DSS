@@ -10,7 +10,7 @@ def create_dashboard_content():
     """Create content for Feasible MAR Technologies tab."""
     return html.Div(
         [
-            html.H3("Feasible MAR Technologies", className="mb-4"),
+            html.H3("Feasible MAR Technologies", className="mb-4", id="feasibility-summary-title"),
             
             # Key Metrics Summary
             dbc.Row(

@@ -334,7 +334,7 @@ def setup_main_callbacks(app, dashboard_instance):
         flow_data = {}
         for row in table_data:
             month = row["Month"]
-            flow = row.get("Flow (m³/month)", 0)
+            flow = row.get("Flow (ft³/month)", 0)
             flow_value = flow if flow is not None else 0
             flow_data[month] = flow_value
             monthly_flows.append(flow_value)
@@ -604,6 +604,9 @@ def setup_main_callbacks(app, dashboard_instance):
                 # covert the data to pandas dataframe, keys are in a column called "key" and values are in a column called "value"
                 df_ = []
                 for key, value in data.items():
+                    if key in ["decision_graph"]:
+                        # skip writing decision_graph to csv
+                        continue
                     df_.append([key, value])
                 df = pd.DataFrame(df_, columns=["key", "value"])
                 df.to_csv(fn, index=False)

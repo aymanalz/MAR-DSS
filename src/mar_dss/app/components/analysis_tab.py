@@ -3,7 +3,7 @@ Analysis tab component with all analysis sub-tabs.
 """
 
 import dash_bootstrap_components as dbc
-from dash import html
+from dash import html, dcc
 
 # Import all the analysis components
 try:
@@ -32,7 +32,7 @@ def create_analysis_tab_content():
         dbc.Tabs(
             [
                 dbc.Tab(
-                    label="Feasible MAR Technologies",
+                    label="Feasibility Summary",
                     tab_id="analysis-dashboard",
                     children=create_dashboard_content(),  # Load immediately
                     label_style={
@@ -162,5 +162,7 @@ def create_analysis_tab_content():
             ],
             id="analysis-tabs",
             active_tab="analysis-dashboard",
-        )
+        ),
+        # Hidden store to trigger knowledge graph initialization
+        dcc.Store(id="knowledge-graph-store", data={"initialized": False})
     ]

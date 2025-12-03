@@ -175,6 +175,7 @@ def create_site_description_section():
                 style={"margin-bottom": "15px"},
             ),
             html.Label("Maximum Available Area for Recharge (acres):", className="fw-bold"),
+            html.Small("This area is the total area available for the MAR site", className="text-muted d-block mb-2"),
             dbc.Input(
                 id="max-area-input",
                 type="number",

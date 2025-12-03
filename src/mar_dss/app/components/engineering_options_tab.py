@@ -7,6 +7,28 @@ from dash import html, dcc
 import mar_dss.app.utils.data_storage as dash_storage
 
 
+def _get_max_infiltration_area_value():
+    """Get the default value for maximum infiltration area (60% of max available area)."""
+    max_available_area = dash_storage.get_data("max_available_area")
+    if max_available_area is None:
+        max_available_area = 1.0
+    else:
+        try:
+            max_available_area = float(max_available_area)
+        except (ValueError, TypeError):
+            max_available_area = 1.0
+    
+    max_infiltration_area = dash_storage.get_data("max_infiltration_area")
+    if max_infiltration_area is None:
+        # Calculate 60% of max available area
+        return round(0.6 * max_available_area, 2)
+    else:
+        try:
+            return float(max_infiltration_area)
+        except (ValueError, TypeError):
+            return round(0.6 * max_available_area, 2)
+
+
 def create_engineering_elements_content():
     """Create the Engineering Elements sub-tab content."""
     return [
@@ -340,6 +362,22 @@ def create_engineering_elements_content():
                                             ],
                                             value="infiltration_basin",
                                             id="infiltration-method-radio",
+                                        ),
+                                        html.Label(
+                                            "Maximum Area Available for infiltration (Acres):",
+                                            className="form-label mt-3"
+                                        ),
+                                        html.Small(
+                                            "Default value is 60% of the total MAR site area",
+                                            className="text-muted d-block mb-2"
+                                        ),
+                                        dbc.Input(
+                                            type="number",
+                                            value=_get_max_infiltration_area_value(),
+                                            id="max-infiltration-area-input",
+                                            min=0,
+                                            step=0.1,
+                                            className="mb-2"
                                         ),
                                     ]
                                 ),

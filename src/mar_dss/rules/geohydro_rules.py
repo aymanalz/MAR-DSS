@@ -148,7 +148,7 @@ def check_topsoil_limiting(limiting_layer, k_min_vadose):
 def check_topsoil_removable(top_soil_limiting, strat_df):
     
     if top_soil_limiting:
-        top_soil_thickness = strat_df.iloc[0]["thickness"].values[0]
+        top_soil_thickness = strat_df["thickness"].values[0]
         if top_soil_thickness < 6:
             return True
         else:

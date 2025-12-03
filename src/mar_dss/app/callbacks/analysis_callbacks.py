@@ -1,10 +1,14 @@
 """
 Callbacks for the Analysis tab lazy loading.
 """
-
+from pathlib import Path
 import dash
 from dash import Input, Output, html
-
+import mar_dss
+import mar_dss.app.utils.data_storage as dash_storage
+from mar_dss.base import DecisionGraph
+import pandas as pd
+import os
 # Import all the analysis components
 try:
     from mar_dss.app.components.dss_algorithm_tab import create_dss_algorithm_content
@@ -21,9 +25,120 @@ except ImportError:
     from ..components.ai_generated_decision_tab import create_ai_generated_decision_content
     from ..components.data_export_tab import create_data_export_content
 
+def read_knowledge():
+    """Test function to read knowledge files and create graph."""
+    # Get the path to the knowledge directory relative to the mar_dss package
+    # Find the mar_dss package root
+    
+    mar_dss_path = Path(mar_dss.__file__).parent
+    knowledge_dir = mar_dss_path / "knowledge"
+    
+    input_fn = knowledge_dir / "input.yaml"
+    rules_fn = knowledge_dir / "rules.yaml"
+    
+    # Check if files exist
+    if not input_fn.exists():
+        raise FileNotFoundError(f"Knowledge file not found: {input_fn}")
+    if not rules_fn.exists():
+        raise FileNotFoundError(f"Knowledge file not found: {rules_fn}")
+    
+    graph = DecisionGraph()
+    graph.from_yamls(
+        [str(input_fn.resolve()), str(rules_fn.resolve())]
+    )
+    return graph
+
+def get_session_graph():
+    """Get or create the knowledge graph for this session."""
+    graph = dash_storage.get_data("decision_graph")
+    if graph is None:
+        graph = read_knowledge()
+        dash_storage.set_data("decision_graph", graph)
+    return graph
+
+def get_graph_inputs():
+    """Get the inputs for the graph."""
+    inputs = {}    
+    inputs["aq_type"] = dash_storage.get_data("aquifer_type")
+    max_infiltration_area = dash_storage.get_data("max_infiltration_area")
+    if max_infiltration_area is None:
+        max_infiltration_area = 1e7
+    else:
+        try:
+            max_infiltration_area = float(max_infiltration_area)
+        except (ValueError, TypeError):
+            max_infiltration_area = 1e7
+    max_infiltration_area_ft2 = max_infiltration_area * 43560
+    if max_infiltration_area_ft2 <= 0:
+        max_infiltration_area_ft2 = 1e7
+    inputs["max_available_area"] = max_infiltration_area_ft2
+    start_table = dash_storage.get_data("stratigraphy_data")
+    start_df = pd.DataFrame(start_table)
+    start_stable = start_df[['thickness', 'conductivity', 'yield']].values.tolist()
+    inputs["stratigraphy_table"]= start_stable
+    gw_data = pd.DataFrame(dash_storage.get_data("groundwater_data"))
+    gs_elevation = dash_storage.get_data("ground_surface_elevation")
+    depth_to_gw = float(gs_elevation) - gw_data['elevation'].values
+    inputs["monthly_gw_depth"] = depth_to_gw
+    source_water_volume = dash_storage.get_data("monthly_flow")
+    inputs["source_water_volume"] = source_water_volume
+    inputs["d_gw_min"] = 5.0
+    return inputs
+
+def run_feasibility_analysis():
+    """Run the feasibility analysis."""
+    graph = get_session_graph()
+    inputs = get_graph_inputs()
+    results = graph.evaluate(inputs)
+    
+    # print("\nAll results:")
+    # graph.plotly()
+
+    
+    return 1
 
 def setup_analysis_callbacks(app):
     """Set up callbacks for lazy loading analysis tab content."""
+    
+    # Callback to initialize knowledge graph when Analysis tab is accessed
+    @app.callback(
+        Output("knowledge-graph-store", "data"),
+        [Input("top-tabs", "active_tab")],
+        prevent_initial_call=False
+    )
+    def initialize_knowledge_graph(active_tab):
+        """Initialize knowledge graph when Analysis tab is accessed."""
+        if active_tab == "analysis":
+            # Initialize the graph and store in data_storage
+            graph = read_knowledge()
+            dash_storage.set_data("decision_graph", graph)
+            return {"initialized": True}
+        return dash.no_update
+    
+    # Callback to update title and print when Analysis tab or Feasibility Summary tab is selected
+    @app.callback(
+        [Output("feasibility-summary-title", "children"),
+         Output("knowledge-graph-store", "data", allow_duplicate=True)],
+        [Input("top-tabs", "active_tab"),
+         Input("analysis-tabs", "active_tab")],
+        prevent_initial_call='initial_duplicate'
+    )
+    def handle_feasibility_summary_tab(top_tab, analysis_tab):
+        """Handle when Analysis tab or Feasibility Summary tab is selected."""
+
+
+        # Trigger when Analysis tab is selected OR when Feasibility Summary sub-tab is selected
+        if top_tab == "analysis" or analysis_tab == "analysis-dashboard":
+            run_feasibility_analysis()
+            # Get project name from data_storage
+            project_name = dash_storage.get_data("project_name") or ""
+            # Update title with project name
+            if project_name:
+                title = f"Feasible MAR Technologies - {project_name}"
+            else:
+                title = "Feasible MAR Technologies"
+            return title, dash.no_update
+        return dash.no_update, dash.no_update
     
     # Callback for MAR technology selection - only feasible technologies are selectable
     @app.callback(
