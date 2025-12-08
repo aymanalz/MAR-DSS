@@ -93,8 +93,8 @@ def run_feasibility_analysis():
     dash_storage.set_data("decision_graph", graph)
 
     
-    # print("\nAll results:")
-    # graph.plotly()
+    print("\nAll results:")
+    graph.plotly()
 
     
     return 1

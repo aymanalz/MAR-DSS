@@ -606,11 +606,10 @@ def setup_cost_callbacks(app):
         """Update cost calculations based on engineering inputs."""
         
         # Debug: Print to see if callback is triggered
-        print(f"DEBUG: update_cost_calculations called - top_tab: {top_tab}, analysis_tab: {analysis_tab}")
         
         # Only calculate if we're on the Analysis tab and Cost sub-tab is selected
         if not top_tab or not analysis_tab or top_tab != "analysis" or analysis_tab != "analysis-cost":
-            print(f"DEBUG: Conditions not met - returning no_update")
+          
             return (
                 dash.no_update,
                 dash.no_update,
@@ -620,31 +619,17 @@ def setup_cost_callbacks(app):
                 dash.no_update,
             )
         
-        print(f"DEBUG: Conditions met - proceeding with calculations")
+       
         
         total_runoff_ft3 = dash_storage.get_data("total_runoff_ft3") or 0.0
         fraction_flow_capture = dash_storage.get_data("fraction_flow_capture") or 0.0
         runoff_volume_ft3 = float(total_runoff_ft3) * float(fraction_flow_capture)
-
-        # storm_stat = pd.DataFrame(dash_storage.get_data("runoff_calculations_table"))
-        # storm_design_depth = storm_stat.loc[storm_stat["Parameter"] == "24-hour Rainfall (inches)", "Value"].values[0]
-        # drainage_basin_area_acres = storm_stat.loc[storm_stat["Parameter"] == "Area (acres)", "Value"].values[0]
-        # runoff_volume_ft3 = storm_stat.loc[storm_stat["Parameter"] == "Runoff Volume (ft3)", "Value"].values[0]
-        # # flow_capture_values = dash_storage.get_data("flow_capture_values") or ["flow_capture_structure", "rough_grading"]
-        # # conveyance_method = dash_storage.get_data("conveyance_method") or "trapezoidal"
         distance_to_sediment_miles = dash_storage.get_data("distance_to_sediment") or 1.0
         distance_to_sediment_ft = float(distance_to_sediment_miles) * 5280.0
         distance_to_storage_pond_ft = float(dash_storage.get_data("distance_to_storage_pond_ft")) or 1.0
-        # sediment_pond_values = dash_storage.get_data("sediment_pond_values") or ["trash_rack"]
         sediment_target = dash_storage.get_data("sediment_target") 
         sediment_target_display = "Medium Silt" if sediment_target == "medium_silt" else "Fine Silt"
-        # pumped_storage_values = dash_storage.get_data("pumped_storage_values") or []
-        # storage_pond_values = dash_storage.get_data("storage_pond_values") or []
-        # pumped_infiltration_values = dash_storage.get_data("pumped_infiltration_values") or []
-        # infiltration_method = dash_storage.get_data("infiltration_method") or "infiltration_basin"
         
-        # For now, return default values
-        # TODO: Implement actual cost calculations using CostCalculator
         storm_design_depth = 1.8
         cost_calculator = CostCalculator(
         water_source="stormwater", storm_design_depth=storm_design_depth,
