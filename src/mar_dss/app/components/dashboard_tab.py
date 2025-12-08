@@ -42,7 +42,7 @@ def create_dashboard_content():
                 ]
             ),
             
-            # Technology Selection Section - Side by Side
+            # Technology Selection Section - Three Cards Side by Side
             dbc.Row(
                 [
                     # Feasible Options Section
@@ -54,29 +54,36 @@ def create_dashboard_content():
                                 ),
                     dbc.CardBody(
                         [
-                                        dbc.RadioItems(
-                                            id="feasible-technologies",
-                                            options=[
-                                                {"label": "Aquifer Storage and Recovery (ASR)", "value": "asr"},
-                                                {"label": "Infiltration Basins", "value": "infiltration_basins"},
-                                                {"label": "Sand Dams", "value": "sand_dams"},
-                                                {"label": "Check Dams", "value": "check_dams"},
-                                                {"label": "Percolation Ponds", "value": "percolation_ponds"},
-                                                {"label": "Recharge Wells", "value": "recharge_wells"},
-                                                {"label": "Spreading Basins", "value": "spreading_basins"},
-                                                {"label": "Injection Wells", "value": "injection_wells"},
-                                            ],
-                                            value=None,
-                                            inline=False,
-                                            className="mb-3"
-                                        ),
+                                        html.Div(id="feasible-technologies-container"),
                                         html.Small("Select one feasible technology for your project", className="text-muted")
-                                    ]
+                                    ],
+                                    id="feasible-technologies-card-body"
                                 )
                             ],
                             className="h-100"
                         ),
-                        width=6,
+                        width=4,
+                        className="mb-4"
+                    ),
+                    
+                    # Conditionally Feasible Options Section
+                    dbc.Col(
+                        dbc.Card(
+                            [
+                                dbc.CardHeader(
+                                    html.H5("⚠️ Conditionally Feasible MAR Technologies", className="mb-0 text-warning")
+                                ),
+                                dbc.CardBody(
+                                    [
+                                        html.Div(id="conditionally-feasible-technologies-container"),
+                                        html.Small("These technologies may be feasible with certain conditions or modifications", className="text-muted")
+                                    ],
+                                    id="conditionally-feasible-technologies-card-body"
+                                )
+                            ],
+                            className="h-100"
+                        ),
+                        width=4,
                         className="mb-4"
                     ),
                     
@@ -89,26 +96,15 @@ def create_dashboard_content():
                                 ),
                                 dbc.CardBody(
                                     [
-                                        html.Ul(
-                                            [
-                                                html.Li("Deep Well Injection", className="mb-2"),
-                                                html.Li("Urban Stormwater Recharge", className="mb-2"),
-                                                html.Li("Riverbank Filtration", className="mb-2"),
-                                                html.Li("Dune Infiltration", className="mb-2"),
-                                                html.Li("Artificial Recharge Wells", className="mb-2"),
-                                                html.Li("Coastal Aquifer Recharge", className="mb-2"),
-                                                html.Li("Mountain Recharge Systems", className="mb-2"),
-                                                html.Li("Industrial Wastewater Recharge", className="mb-2"),
-                                            ],
-                                            className="mb-3"
-                                        ),
+                                        html.Div(id="infeasible-technologies-container"),
                                         html.Small("These technologies are considered infeasible for this project", className="text-muted")
-                                    ]
+                                    ],
+                                    id="infeasible-technologies-card-body"
                                 )
                             ],
                             className="h-100"
                         ),
-                        width=6,
+                        width=4,
                         className="mb-4"
                     )
                 ]

@@ -72,6 +72,7 @@ def get_graph_inputs():
     if max_infiltration_area_ft2 <= 0:
         max_infiltration_area_ft2 = 1e7
     inputs["max_available_area"] = max_infiltration_area_ft2
+    inputs["ground_surface_slope"] = float(dash_storage.get_data("ground_surface_slope")) or 0.0
     start_table = dash_storage.get_data("stratigraphy_data")
     start_df = pd.DataFrame(start_table)
     start_stable = start_df[['thickness', 'conductivity', 'yield']].values.tolist()
@@ -141,6 +142,121 @@ def setup_analysis_callbacks(app):
                 title = "Feasible MAR Technologies"
             return title, dash.no_update
         return dash.no_update, dash.no_update
+    
+    # Callback to populate feasible, conditionally feasible, and infeasible technology cards based on analysis results
+    @app.callback(
+        [Output("feasible-technologies-container", "children"),
+         Output("conditionally-feasible-technologies-container", "children"),
+         Output("infeasible-technologies-container", "children")],
+        [Input("top-tabs", "active_tab"),
+         Input("analysis-tabs", "active_tab"),
+         Input("knowledge-graph-store", "data")],
+        prevent_initial_call=False
+    )
+    def populate_technology_cards(top_tab, analysis_tab, graph_store):
+        """Populate feasible, conditionally feasible, and infeasible technology cards based on decision graph results."""
+        import dash_bootstrap_components as dbc
+        
+        # Default technology list with labels
+        all_technologies = {
+            #"asr": "Aquifer Storage and Recovery (ASR)",
+            #"infiltration_basins": "Infiltration Basins",
+            #"sand_dams": "Sand Dams",
+            #"check_dams": "Check Dams",
+            #"percolation_ponds": "Percolation Ponds",
+            #"recharge_wells": "Recharge Wells",
+            "spreading_basins": "Spreading Basins",
+            "injection_wells": "Injection Wells",
+            "dry_wells": "Dry Wells",
+            # "urban_stormwater_recharge": "Urban Stormwater Recharge",
+            # "riverbank_filtration": "Riverbank Filtration",
+            # "dune_infiltration": "Dune Infiltration",
+            # "artificial_recharge_wells": "Artificial Recharge Wells",
+            # "coastal_aquifer_recharge": "Coastal Aquifer Recharge",
+            # "mountain_recharge_systems": "Mountain Recharge Systems",
+            # "industrial_wastewater_recharge": "Industrial Wastewater Recharge"
+        }
+        
+        # Default: assume all basic technologies are feasible, advanced ones are infeasible
+        default_feasible = ["spreading_basins", "injection_wells", "dry_wells"]        
+        default_conditionally_feasible = []
+        default_infeasible = []
+        
+        feasible_list = default_feasible.copy()
+        conditionally_feasible_list = default_conditionally_feasible.copy()
+        infeasible_list = default_infeasible.copy()
+        
+        # Try to extract feasible technologies from decision graph
+        try:
+            graph = dash_storage.get_data("decision_graph")
+            if graph is not None:
+                # Get all node values
+                if graph['aq_type'] == "Unconfined":
+                    if not graph['surface_recharge_suitability']:                       
+                        feasible_list.remove("spreading_basins")
+                        default_conditionally_feasible.append("spreading_basins")
+                    
+                else: # confined aquifer
+                    feasible_list.remove("spreading_basins")
+                    infeasible_list.append("spreading_basins")
+                    feasible_list.remove("dry_wells")
+                    infeasible_list.append("dry_wells")
+
+                    if graph['confined_rechargability']< 50:
+                        feasible_list.remove("injection_wells")
+                        default_conditionally_feasible.append("injection_wells")
+                    
+                    if not (graph['leakage_significance'] == "low"):
+                        feasible_list.remove("injection_wells")
+                        default_conditionally_feasible.append("injection_wells")
+                    
+                    # if not graph['dry_wells_suitability']:
+                    #     feasible_list.remove("dry_wells")
+                    #     default_conditionally_feasible.append("dry_wells")
+                
+                
+            
+        except Exception as e:
+            print(f"Error extracting feasible technologies from graph: {e}")
+            # Use default lists on error
+        
+        # Create feasible technologies RadioItems
+        feasible_options = [
+            {"label": all_technologies.get(tech, tech.replace("_", " ").title()), "value": tech}
+            for tech in feasible_list if tech in all_technologies
+        ]
+        
+        feasible_content = dbc.RadioItems(
+            id="feasible-technologies",
+            options=feasible_options,
+            value=None,
+            inline=False,
+            className="mb-3"
+        )
+        
+        # Create conditionally feasible technologies list
+        conditionally_feasible_items = [
+            html.Li(all_technologies.get(tech, tech.replace("_", " ").title()), className="mb-2")
+            for tech in conditionally_feasible_list if tech in all_technologies
+        ]
+        
+        conditionally_feasible_content = html.Ul(
+            conditionally_feasible_items,
+            className="mb-3"
+        ) if conditionally_feasible_items else html.P("No conditionally feasible technologies identified.", className="text-muted")
+        
+        # Create infeasible technologies list
+        infeasible_items = [
+            html.Li(all_technologies.get(tech, tech.replace("_", " ").title()), className="mb-2")
+            for tech in infeasible_list if tech in all_technologies
+        ]
+        
+        infeasible_content = html.Ul(
+            infeasible_items,
+            className="mb-3"
+        ) if infeasible_items else html.P("No infeasible technologies identified.", className="text-muted")
+        
+        return feasible_content, conditionally_feasible_content, infeasible_content
     
     # Callback for MAR technology selection - only feasible technologies are selectable
     @app.callback(

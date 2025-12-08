@@ -216,12 +216,12 @@ rules:
 
   
   - id: "rechargability"
-    name: "Vadose Storage Adequacy"
+    name: "Rechargeable Percentage"
     #symbol: "StorageOK"
     description: "% of source water that can be recharged"
     type: numeric
     module: "geohydro_rules"
-    function_name: "compute_rechargability"
+    function_name: "compute_rechargable_percentage"
     dependencies: [annual_recharge_volume, source_water_volume ]
     certainty: 0.8
     group: "Aquifer Properties"
@@ -284,7 +284,7 @@ rules:
     type: categorical
     module: "geohydro_rules"
     function_name: "compute_gs_slope_significance"
-    dependencies: [unconfined, max_available_area]
+    dependencies: [unconfined, ground_surface_slope]
     certainty: 0.8
     group: "Site Characteristics"
     leaf: true

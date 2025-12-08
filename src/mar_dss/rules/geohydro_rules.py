@@ -293,7 +293,8 @@ def check_vadose_residence_time_reasonable(vadose_residence_time):
 
     return unreasonble    
 
-def compute_rechargability(annual_recharge_volume, source_water_volume):
+def compute_rechargable_percentage(annual_recharge_volume, source_water_volume):
+    # 
     if annual_recharge_volume is None:
         return None # irrelevant for confined aquifer
     return 100.0*annual_recharge_volume / np.sum(source_water_volume)
@@ -394,7 +395,7 @@ def compute_surface_recharge_suitability(gs_slope_significance, inflitration_sig
         surface_recharge_suitability = False
         return surface_recharge_suitability
     
-    if not (remediate):
+    if not (remediate): # this is vadose zone remediation
         surface_recharge_suitability = False
 
     return surface_recharge_suitability
