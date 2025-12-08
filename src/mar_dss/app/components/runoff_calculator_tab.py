@@ -223,6 +223,8 @@ def create_curve_number_tab():
     """Create the content for the Runoff Calculator tab."""
     return [
         html.H3("Runoff Calculator", className="mb-4"),
+        html.P("The runoff calculations was developed based on STORME-PFAS tool that was developed as part of SERDP Project ER23-3741 (PFAS in Stormwater) (Vines et al., in review)", 
+               className="mb-3 text-danger fst-italic fw-bold"),
         html.P("Calculate curve numbers and runoff patterns for your MAR project location.", className="mb-4"),
         dbc.Card([
             dbc.CardBody([
@@ -376,6 +378,20 @@ def create_curve_number_tab():
                                 dbc.CardBody([
                                     html.H5("Step 3: Estimate Annual Runoff", 
                                             className="fw-bold mb-3"),
+                                    dbc.Row([
+                                        dbc.Col([
+                                            html.Label("Average number of rain events per month:", 
+                                                       className="form-label mb-2"),
+                                            dbc.Input(
+                                                id="rain-events-per-month",
+                                                type="number",
+                                                value=3.0,
+                                                min=0.1,
+                                                step=0.1,
+                                                className="mb-3"
+                                            )
+                                        ], width="auto"),
+                                    ]),
                                     dbc.Row([
                                         dbc.Col([
                                             dbc.Button(

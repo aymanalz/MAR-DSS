@@ -48,19 +48,19 @@ def create_analysis_tab_content():
                     },
                 ),
                 dbc.Tab(
-                    label="Cost",
+                    label="Cost Analysis",
                     tab_id="analysis-cost",
                     children=create_cost_content(),
                     label_style={
                         "color": "#ffffff", 
                         "fontWeight": "bold",
-                        "backgroundColor": "#85c1e9",
-                        "border": "1px solid #85c1e9"
+                        "backgroundColor": "#20c997",
+                        "border": "1px solid #20c997"
                     },
                     active_label_style={
                         "color": "#ffffff", 
-                        "backgroundColor": "#73b3e0",
-                        "border": "1px solid #73b3e0"
+                        "backgroundColor": "#1aa179",
+                        "border": "1px solid #1aa179"
                     },
                 ),
                 dbc.Tab(

@@ -667,8 +667,11 @@ def setup_cost_callbacks(app):
         
         capital_cost_num = cost_calculator.capital_costs_calculations.loc['Capital Total Cost',
          'Total Cost ($)']
+        dash_storage.set_data("capital_cost_num",capital_cost_num)
         maintenance_cost_num = cost_calculator.maintenance_costs_calculations.loc['Annual Grand Maintenance Cost']['Total Cost ($)']
+        dash_storage.set_data("maintenance_cost_num",maintenance_cost_num)
         net_val = cost_calculator.net_present_value_calculations['Total Net Present Value'].values[-1]
+        dash_storage.set_data("net_val",net_val)
         capital_cost = f"${capital_cost_num:,.0f}"
         annual_maintenance_cost = f"${maintenance_cost_num:,.0f}"
         npv_20_years = f"${net_val:,.0f}"

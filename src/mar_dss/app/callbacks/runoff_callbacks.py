@@ -1238,6 +1238,53 @@ def setup_runoff_callbacks(app):
                 pass
         
         return current_value
+    
+    # Callback to save rain events per month to data storage
+    @app.callback(
+        Output('rain-events-per-month', 'value'),
+        [
+            Input('rain-events-per-month', 'value'),
+            Input('rain-events-per-month', 'n_blur'),
+            Input('rain-events-per-month', 'n_submit'),
+            Input('rain-events-per-month', 'id')
+        ],
+        prevent_initial_call=False
+    )
+    def handle_rain_events_per_month(value, n_blur, n_submit, component_id):
+        """Handle rain events per month input and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved value or use default, and save it
+            rain_events = dash_storage.get_data("rain_events_per_month")
+            if rain_events is None:
+                rain_events = 3.0  # Default value
+            else:
+                try:
+                    rain_events = float(rain_events)
+                except (ValueError, TypeError):
+                    rain_events = 3.0
+            dash_storage.set_data("rain_events_per_month", rain_events)
+            return rain_events
+        
+        # Get the current value from the input
+        current_value = value if value is not None else 3.0
+        
+        # Determine which trigger caused the callback
+        trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1]
+        
+        # Save rain events for all triggers except initial load
+        if trigger_prop != "id":
+            try:
+                current_value = float(current_value)
+                if current_value <= 0:
+                    current_value = 3.0  # Ensure positive value
+                dash_storage.set_data("rain_events_per_month", current_value)
+            except (ValueError, TypeError):
+                pass
+        
+        return current_value
 
     # Helper function to create rain statistics table display
     def _create_rain_statistics_display(df_rain):
@@ -1363,7 +1410,7 @@ def setup_runoff_callbacks(app):
         column_colors = {
             'Month': {'header': '#2c5aa0', 'data': '#e8f4f8'},
             'Rain (inches)': {'header': '#28a745', 'data': '#d4edda'},
-            'Runoff depth (in/day)': {'header': '#ff6b35', 'data': '#ffe5d9'},
+            'Runoff depth (inches)': {'header': '#ff6b35', 'data': '#ffe5d9'},
             'Runoff Volume (ft3)': {'header': '#6f42c1', 'data': '#e9d5ff'}
         }
         
@@ -1422,11 +1469,11 @@ def setup_runoff_callbacks(app):
                 textposition='outside'
             ),
             go.Bar(
-                name='Runoff depth (in/day)',
+                name='Runoff depth (inches)',
                 x=monthly_rain['Month'],
-                y=monthly_rain['Runoff depth (in/day)'],
+                y=monthly_rain['Runoff depth (inches)'],
                 marker_color='orange',
-                text=monthly_rain['Runoff depth (in/day)'].round(2),
+                text=monthly_rain['Runoff depth (inches)'].round(2),
                 textposition='outside'
             )
         ])
@@ -1493,10 +1540,11 @@ def setup_runoff_callbacks(app):
         Input('get-monthly-rain-btn', 'n_clicks'),
         [State('runoff-single-storm-latitude', 'value'),
          State('runoff-single-storm-longitude', 'value'),
-         State('runoff-calculations-table', 'data')],
+         State('runoff-calculations-table', 'data'),
+         State('rain-events-per-month', 'value')],
         prevent_initial_call=True
     )
-    def get_monthly_rain_for_runoff(n_clicks, lat, lon, runoff_table_data):
+    def get_monthly_rain_for_runoff(n_clicks, lat, lon, runoff_table_data, rain_events_per_month):
         """Get monthly rain data and display as table and chart side by side."""
         if n_clicks and n_clicks > 0 and lat is not None and lon is not None:
             try:
@@ -1523,8 +1571,20 @@ def setup_runoff_callbacks(app):
                 
                 runoff_volume = []
                 runoff_depth = []
-                for p in monthly_rain['Rain (inches)']:
-                    if p > 0:
+                # Get rain events per month from input, default to 3.0 if not provided
+                if rain_events_per_month is None:
+                    rain_events_per_month = 3.0
+                else:
+                    try:
+                        rain_events_per_month = float(rain_events_per_month)
+                        if rain_events_per_month <= 0:
+                            rain_events_per_month = 3.0  # Ensure positive value
+                    except (ValueError, TypeError):
+                        rain_events_per_month = 3.0
+                
+                for p_monthly in monthly_rain['Rain (inches)']:
+                    p = p_monthly/rain_events_per_month
+                    if p > 0:                        
                         s = (1000.0 / cn) - 10
                         alpha_s = p - s
                         lambda005 = 0.05
@@ -1535,8 +1595,10 @@ def setup_runoff_callbacks(app):
                         tm2 = np.exp(((1-lambda005)*s)/p)
                         tm3 = exp1(s/p)
                         term2 = tm1 * tm2 * tm3
-                        vol = 30.25*area * 43560 / 12 * (term1 + term2)
-                        runoff_depth.append(term1 + term2)
+                        vol = area * (43560 / 12) * (term1 + term2)*rain_events_per_month
+                        vol = round(vol, 1)
+                        depth = round((term1 + term2)*rain_events_per_month, 3)
+                        runoff_depth.append(depth)                       
                         runoff_volume.append(vol)
                        
                     else:
@@ -1545,11 +1607,11 @@ def setup_runoff_callbacks(app):
                     
 
                 ###
-                
+                monthly_rain['Rain (inches)'] = monthly_rain['Rain (inches)'].round(3)
                 if monthly_rain is None or monthly_rain.empty:
                     return html.P("No monthly rain data available.", className="text-warning")
                 if len(runoff_volume)>0:
-                    monthly_rain['Runoff depth (in/day)'] = runoff_depth
+                    monthly_rain['Runoff depth (inches)'] = runoff_depth
                     monthly_rain['Runoff Volume (ft3)'] = runoff_volume
                 
                 # Save to data storage
