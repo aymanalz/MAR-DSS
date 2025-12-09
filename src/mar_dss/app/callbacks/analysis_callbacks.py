@@ -208,12 +208,8 @@ def setup_analysis_callbacks(app):
                     
                     if not (graph.get_node_value('leakage_significance') == "low"):
                         feasible_list.remove("injection_wells")
-                        conditionally_feasible_list.append("injection_wells")
-                    
-                    # if not graph['dry_wells_suitability']:
-                    #     feasible_list.remove("dry_wells")
-                    #     default_conditionally_feasible.append("dry_wells")
-                
+                        conditionally_feasible_list.append("injection_wells")                   
+               
                 
             
         except Exception as e:
@@ -261,32 +257,83 @@ def setup_analysis_callbacks(app):
         
         return feasible_content, conditionally_feasible_content, infeasible_content
     
-    # Callback for MAR technology selection - only feasible technologies are selectable
+    # Callback for MAR technology selection - activated when RadioItem is selected in Feasible MAR Technologies
     @app.callback(
-        [Output("selected-feasible", "children"),
-         Output("selected-infeasible", "children"),
-         Output("selection-validation", "children"),
-         Output("selection-validation", "color"),
-         Output("generate-report-btn", "disabled")],
+        [Output("technology-selection-feedback", "children"),
+         Output("conditionally-feasible-technologies", "value", allow_duplicate=True)],
         [Input("feasible-technologies", "value")],
         prevent_initial_call=True
     )
-    def handle_technology_selection(feasible_selection):
-        # Update display texts
-        if feasible_selection:
-            feasible_text = f"✅ {feasible_selection.replace('_', ' ').title()}"
-            infeasible_text = "❌ All infeasible technologies listed below"
-            validation_text = "✅ Feasible technology selected. Ready to proceed!"
-            validation_color = "success"
-            button_disabled = False
-        else:
-            feasible_text = "None selected"
-            infeasible_text = "❌ All infeasible technologies listed below"
-            validation_text = "Please select a feasible technology to proceed."
-            validation_color = "warning"
-            button_disabled = True
+    def handle_technology_selection(selected_technology):
+        """Handle technology selection from Feasible MAR Technologies RadioItems."""
+        import dash_bootstrap_components as dbc
         
-        return (feasible_text, infeasible_text, validation_text, validation_color, button_disabled)
+        if selected_technology:
+            # Save selected technology to data storage
+            dash_storage.set_data("selected_mar_technology", selected_technology)
+            dash_storage.set_data("is_conditionally_feasible", False)
+            
+            # Format the technology name for display
+            tech_name = selected_technology.replace('_', ' ').title()
+            
+            # Create success alert
+            feedback = dbc.Alert(
+                [
+                    html.Strong(f"✅ {tech_name} selected"),
+                    html.Br(),
+                    html.Small("This technology has been saved for your analysis.", className="text-muted")
+                ],
+                color="success",
+                className="mb-0"
+            )
+            
+            print(f"Selected MAR Technology: {selected_technology}")
+            # Clear conditionally feasible selection when feasible is selected
+            return feedback, None
+        else:
+            # No selection
+            dash_storage.set_data("selected_mar_technology", None)
+            dash_storage.set_data("is_conditionally_feasible", False)
+            return html.Div(), dash.no_update
+    
+    # Callback for MAR technology selection - activated when RadioItem is selected in Conditionally Feasible MAR Technologies
+    @app.callback(
+        [Output("technology-selection-feedback", "children", allow_duplicate=True),
+         Output("feasible-technologies", "value", allow_duplicate=True)],
+        [Input("conditionally-feasible-technologies", "value")],
+        prevent_initial_call=True
+    )
+    def handle_conditionally_feasible_selection(selected_technology):
+        """Handle technology selection from Conditionally Feasible MAR Technologies RadioItems."""
+        import dash_bootstrap_components as dbc
+        
+        if selected_technology:
+            # Save selected technology to data storage
+            dash_storage.set_data("selected_mar_technology", selected_technology)
+            dash_storage.set_data("is_conditionally_feasible", True)
+            
+            # Format the technology name for display
+            tech_name = selected_technology.replace('_', ' ').title()
+            
+            # Create warning alert for conditionally feasible
+            feedback = dbc.Alert(
+                [
+                    html.Strong(f"⚠️ {tech_name} selected (Conditionally Feasible)"),
+                    html.Br(),
+                    html.Small("This technology may be feasible with certain conditions or modifications.", className="text-muted")
+                ],
+                color="warning",
+                className="mb-0"
+            )
+            
+            print(f"Selected MAR Technology: {selected_technology} (Conditionally Feasible)")
+            # Clear feasible selection when conditionally feasible is selected
+            return feedback, None
+        else:
+            # No selection
+            dash_storage.set_data("selected_mar_technology", None)
+            dash_storage.set_data("is_conditionally_feasible", False)
+            return html.Div(), dash.no_update
     
     @app.callback(
         Output("analysis-dss-algorithm-content", "children"),

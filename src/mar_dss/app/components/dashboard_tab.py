@@ -55,7 +55,8 @@ def create_dashboard_content():
                     dbc.CardBody(
                         [
                                         html.Div(id="feasible-technologies-container"),
-                                        html.Small("Select one feasible technology for your project", className="text-muted")
+                                        html.Small("Select one feasible technology for your project", className="text-muted"),
+                                        html.Div(id="technology-selection-feedback", className="mt-3")
                                     ],
                                     id="feasible-technologies-card-body"
                                 )
