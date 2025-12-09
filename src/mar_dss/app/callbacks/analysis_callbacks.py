@@ -191,10 +191,10 @@ def setup_analysis_callbacks(app):
             graph = dash_storage.get_data("decision_graph")
             if graph is not None:
                 # Get all node values
-                if graph['aq_type'] == "Unconfined":
-                    if not graph['surface_recharge_suitability']:                       
+                if (graph.get_node_value('aq_type')).lower()== "unconfined":
+                    if not graph.get_node_value('surface_recharge_suitability'):                       
                         feasible_list.remove("spreading_basins")
-                        default_conditionally_feasible.append("spreading_basins")
+                        conditionally_feasible_list.append("spreading_basins")
                     
                 else: # confined aquifer
                     feasible_list.remove("spreading_basins")
@@ -202,13 +202,13 @@ def setup_analysis_callbacks(app):
                     feasible_list.remove("dry_wells")
                     infeasible_list.append("dry_wells")
 
-                    if graph['confined_rechargability']< 50:
+                    if graph.get_node_value('confined_rechargability')< 50:
                         feasible_list.remove("injection_wells")
-                        default_conditionally_feasible.append("injection_wells")
+                        conditionally_feasible_list.append("injection_wells")
                     
-                    if not (graph['leakage_significance'] == "low"):
+                    if not (graph.get_node_value('leakage_significance') == "low"):
                         feasible_list.remove("injection_wells")
-                        default_conditionally_feasible.append("injection_wells")
+                        conditionally_feasible_list.append("injection_wells")
                     
                     # if not graph['dry_wells_suitability']:
                     #     feasible_list.remove("dry_wells")
@@ -234,16 +234,19 @@ def setup_analysis_callbacks(app):
             className="mb-3"
         )
         
-        # Create conditionally feasible technologies list
-        conditionally_feasible_items = [
-            html.Li(all_technologies.get(tech, tech.replace("_", " ").title()), className="mb-2")
+        # Create conditionally feasible technologies RadioItems
+        conditionally_feasible_options = [
+            {"label": all_technologies.get(tech, tech.replace("_", " ").title()), "value": tech}
             for tech in conditionally_feasible_list if tech in all_technologies
         ]
         
-        conditionally_feasible_content = html.Ul(
-            conditionally_feasible_items,
+        conditionally_feasible_content = dbc.RadioItems(
+            id="conditionally-feasible-technologies",
+            options=conditionally_feasible_options,
+            value=None,
+            inline=False,
             className="mb-3"
-        ) if conditionally_feasible_items else html.P("No conditionally feasible technologies identified.", className="text-muted")
+        ) if conditionally_feasible_options else html.P("No conditionally feasible technologies identified.", className="text-muted")
         
         # Create infeasible technologies list
         infeasible_items = [
