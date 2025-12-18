@@ -444,117 +444,89 @@ def setup_analysis_callbacks(app):
         
         return feasible_content, conditionally_feasible_content, infeasible_content
     
-    # Callback for MAR technology selection - activated when RadioItem is selected in Feasible MAR Technologies
+    # Combined callback to handle BOTH feasible and conditionally feasible technology selections
     @app.callback(
         [Output("technology-selection-feedback", "children"),
+         Output("feasible-technologies", "value", allow_duplicate=True),
          Output("conditionally-feasible-technologies", "value", allow_duplicate=True),
          Output("overall-feasibility-score", "children", allow_duplicate=True),
          Output("total-project-cost", "children", allow_duplicate=True)],
-        [Input("feasible-technologies", "value")],
+        [Input("feasible-technologies", "value"),
+         Input("conditionally-feasible-technologies", "value")],
         prevent_initial_call=True
     )
-    def handle_technology_selection(selected_technology):
-        """Handle technology selection from Feasible MAR Technologies RadioItems."""
+    def handle_technology_selection(feasible_tech, conditionally_feasible_tech):
+        """Handle technology selection from both Feasible and Conditionally Feasible lists."""
         import dash_bootstrap_components as dbc
         
-        if selected_technology:
-            # Save selected technology to data storage
-            dash_storage.set_data("selected_mar_technology", selected_technology)
-            dash_storage.set_data("is_conditionally_feasible", False)
-            
-            # Format the technology name for display
-            tech_name = selected_technology.replace('_', ' ').title()
-            
-            # Create success alert
-            feedback = dbc.Alert(
-                [
-                    html.Strong(f"✅ {tech_name} selected"),
-                    html.Br(),
-                    html.Small("This technology has been saved for your analysis.", className="text-muted")
-                ],
-                color="success",
-                className="mb-0"
-            )
-            
-            print(f"Selected MAR Technology: {selected_technology}")
-            # Clear conditionally feasible selection when feasible is selected
-            run_feasibility_analysis()
-            
-            # Calculate and update feasibility score and cost
-            graph = dash_storage.get_data("decision_graph")
-            feasibility_score = calculate_feasibility_score(selected_technology, graph)
-            cost_range = calculate_project_cost_range(selected_technology)
-            
-            print(f"DEBUG - Calculated feasibility score: {feasibility_score}%")
-            print(f"DEBUG - Calculated cost range: {cost_range}")
-            print(f"DEBUG - Graph available: {graph is not None}")
-            
-            feasibility_score_text = f"Overall Feasibility Score: {feasibility_score}%"
-            cost_text = f"Total Project Cost: {cost_range}"
-            
-            print(f"DEBUG - Returning score text: {feasibility_score_text}")
-            print(f"DEBUG - Returning cost text: {cost_text}")
-            
-            return feedback, None, feasibility_score_text, cost_text
-        else:
-            # No selection
-            dash_storage.set_data("selected_mar_technology", None)
-            dash_storage.set_data("is_conditionally_feasible", False)
-            return html.Div(), dash.no_update, "Overall Feasibility Score: 0%", "Total Project Cost: $0 - $0"
-    
-    # Callback for MAR technology selection - activated when RadioItem is selected in Conditionally Feasible MAR Technologies
-    @app.callback(
-        [Output("technology-selection-feedback", "children", allow_duplicate=True),
-         Output("feasible-technologies", "value", allow_duplicate=True),
-         Output("overall-feasibility-score", "children", allow_duplicate=True),
-         Output("total-project-cost", "children", allow_duplicate=True)],
-        [Input("conditionally-feasible-technologies", "value")],
-        prevent_initial_call=True
-    )
-    def handle_conditionally_feasible_selection(selected_technology):
-        """Handle technology selection from Conditionally Feasible MAR Technologies RadioItems."""
-        import dash_bootstrap_components as dbc
+        # Determine which input triggered the callback
+        ctx = dash.callback_context
+        if not ctx.triggered:
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
         
-        if selected_technology:
-            # Save selected technology to data storage
-            dash_storage.set_data("selected_mar_technology", selected_technology)
-            dash_storage.set_data("is_conditionally_feasible", True)
-            
-            # Format the technology name for display
-            tech_name = selected_technology.replace('_', ' ').title()
-            
-            # Create warning alert for conditionally feasible
-            feedback = dbc.Alert(
-                [
-                    html.Strong(f"⚠️ {tech_name} selected (Conditionally Feasible)"),
-                    html.Br(),
-                    html.Small("This technology may be feasible with certain conditions or modifications.", className="text-muted")
-                ],
-                color="warning",
-                className="mb-0"
-            )
-            
-            print(f"Selected MAR Technology: {selected_technology} (Conditionally Feasible)")
-            # Clear feasible selection when conditionally feasible is selected
-            run_feasibility_analysis()
-            
-            # Calculate and update feasibility score and cost
-            graph = dash_storage.get_data("decision_graph")
-            feasibility_score = calculate_feasibility_score(selected_technology, graph)
-            cost_range = calculate_project_cost_range(selected_technology)
-            
-            print(f"Calculated feasibility score: {feasibility_score}%")
-            print(f"Calculated cost range: {cost_range}")
-            
-            feasibility_score_text = f"Overall Feasibility Score: {feasibility_score}%"
-            cost_text = f"Total Project Cost: {cost_range}"
-            
-            return feedback, None, feasibility_score_text, cost_text
+        trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        
+        # Determine selected technology and whether it's conditionally feasible
+        if trigger_id == "feasible-technologies" and feasible_tech:
+            selected_technology = feasible_tech
+            is_conditionally_feasible = False
+            clear_feasible = dash.no_update
+            clear_conditionally = None  # Clear the other list
+            alert_color = "success"
+            alert_icon = "✅"
+            alert_note = "This technology has been saved for your analysis."
+        elif trigger_id == "conditionally-feasible-technologies" and conditionally_feasible_tech:
+            selected_technology = conditionally_feasible_tech
+            is_conditionally_feasible = True
+            clear_feasible = None  # Clear the other list
+            clear_conditionally = dash.no_update
+            alert_color = "warning"
+            alert_icon = "⚠️"
+            alert_note = "This technology may be feasible with certain conditions or modifications."
         else:
-            # No selection
+            # Deselection case
             dash_storage.set_data("selected_mar_technology", None)
             dash_storage.set_data("is_conditionally_feasible", False)
-            return html.Div(), dash.no_update, "Overall Feasibility Score: 0%", "Total Project Cost: $0 - $0"
+            return (html.Div(), dash.no_update, dash.no_update, 
+                    "Overall Feasibility Score: 0%", "Total Project Cost: $0 - $0")
+        
+        # Save selected technology
+        dash_storage.set_data("selected_mar_technology", selected_technology)
+        dash_storage.set_data("is_conditionally_feasible", is_conditionally_feasible)
+        
+        # Format the technology name for display
+        tech_name = selected_technology.replace('_', ' ').title()
+        
+        # Create alert
+        feedback = dbc.Alert(
+            [
+                html.Strong(f"{alert_icon} {tech_name} selected" + 
+                           (" (Conditionally Feasible)" if is_conditionally_feasible else "")),
+                html.Br(),
+                html.Small(alert_note, className="text-muted")
+            ],
+            color=alert_color,
+            className="mb-0"
+        )
+        
+        print(f"Selected MAR Technology: {selected_technology}" + 
+              (" (Conditionally Feasible)" if is_conditionally_feasible else ""))
+        
+        # Run feasibility analysis
+        run_feasibility_analysis()
+        
+        # Calculate and update feasibility score and cost
+        graph = dash_storage.get_data("decision_graph")
+        feasibility_score = calculate_feasibility_score(selected_technology, graph)
+        cost_range = calculate_project_cost_range(selected_technology)
+        
+        print(f"DEBUG - Calculated feasibility score: {feasibility_score}%")
+        print(f"DEBUG - Calculated cost range: {cost_range}")
+        
+        feasibility_score_text = f"Overall Feasibility Score: {feasibility_score}%"
+        cost_text = f"Total Project Cost: {cost_range}"
+        
+        return feedback, clear_feasible, clear_conditionally, feasibility_score_text, cost_text
     
     # Callback to update feasibility score and cost when analysis runs or dashboard loads
     @app.callback(
@@ -567,9 +539,22 @@ def setup_analysis_callbacks(app):
     )
     def update_feasibility_metrics(top_tab, analysis_tab, graph_store):
         """Update feasibility score and cost when analysis runs or dashboard is accessed."""
+        # Check what triggered this callback
+        ctx = dash.callback_context
+        if ctx.triggered:
+            trigger_id = ctx.triggered[0]["prop_id"]
+            # CRITICAL: If triggered by knowledge-graph-store, do NOT update
+            # The selection callbacks handle all updates during technology selection
+            # This callback should ONLY update on tab navigation
+            if "knowledge-graph-store" in trigger_id:
+                print(f"DEBUG update_feasibility_metrics - Ignoring knowledge-graph-store trigger")
+                return dash.no_update, dash.no_update
+        
         # Only update if we're on the analysis tab
         if top_tab != "analysis":
             return dash.no_update, dash.no_update
+        
+        print(f"DEBUG update_feasibility_metrics - Tab change detected, updating metrics")
         
         # Get selected technology
         selected_technology = dash_storage.get_data("selected_mar_technology")
@@ -583,9 +568,11 @@ def setup_analysis_callbacks(app):
             feasibility_score_text = f"Overall Feasibility Score: {feasibility_score}%"
             cost_text = f"Total Project Cost: {cost_range}"
             
+            print(f"DEBUG update_feasibility_metrics - Updated to: {feasibility_score_text}, {cost_text}")
             return feasibility_score_text, cost_text
         else:
-            # No technology selected
+            # No technology selected and we are loading the tab
+            print(f"DEBUG update_feasibility_metrics - No technology, setting defaults")
             return "Overall Feasibility Score: 0%", "Total Project Cost: $0 - $0"
     
     @app.callback(
