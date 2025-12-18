@@ -451,7 +451,7 @@ def setup_analysis_callbacks(app):
          Output("overall-feasibility-score", "children", allow_duplicate=True),
          Output("total-project-cost", "children", allow_duplicate=True)],
         [Input("feasible-technologies", "value")],
-        prevent_initial_call='False'
+        prevent_initial_call=True
     )
     def handle_technology_selection(selected_technology):
         """Handle technology selection from Feasible MAR Technologies RadioItems."""
