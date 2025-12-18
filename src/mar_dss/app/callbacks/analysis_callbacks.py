@@ -9,6 +9,9 @@ import mar_dss.app.utils.data_storage as dash_storage
 from mar_dss.base import DecisionGraph
 import pandas as pd
 import os
+import hashlib
+import json
+import numpy as np
 # Import all the analysis components
 try:
     from mar_dss.app.components.dss_algorithm_tab import create_dss_algorithm_content
@@ -86,16 +89,200 @@ def get_graph_inputs():
     inputs["d_gw_min"] = 5.0
     return inputs
 
+def create_inputs_hash(inputs):
+    """Create a hash from the graph inputs for caching purposes."""
+    # Convert inputs to a hashable format
+    hashable_data = {}
+    
+    for key, value in inputs.items():
+        if isinstance(value, (np.ndarray, np.generic)):
+            # Convert numpy arrays to lists
+            hashable_data[key] = value.tolist() if hasattr(value, 'tolist') else float(value)
+        elif isinstance(value, (list, tuple)):
+            # Ensure lists are hashable (convert nested arrays)
+            hashable_data[key] = [
+                [float(x) if isinstance(x, (np.generic, np.ndarray)) else x for x in row] 
+                if isinstance(row, (list, tuple, np.ndarray)) 
+                else (float(row) if isinstance(row, (np.generic, np.ndarray)) else row)
+                for row in value
+            ]
+        elif isinstance(value, (int, float, str, bool, type(None))):
+            hashable_data[key] = value
+        else:
+            # For other types, convert to string representation
+            hashable_data[key] = str(value)
+    
+    # Create a JSON string from the hashable data (sorted for consistency)
+    json_str = json.dumps(hashable_data, sort_keys=True, default=str)
+    
+    # Generate MD5 hash
+    hash_obj = hashlib.md5(json_str.encode('utf-8'))
+    return hash_obj.hexdigest()
+
+def calculate_feasibility_score(selected_technology, graph=None):
+    """Calculate overall feasibility score based on selected technology and site conditions."""
+    if selected_technology is None:
+        return 0
+    
+    if graph is None:
+        graph = dash_storage.get_data("decision_graph")
+    
+    if graph is None:
+        # If no graph, return a default score based on technology
+        default_scores = {
+            "spreading_basins": 60,
+            "injection_wells": 65,
+            "dry_wells": 55,
+        }
+        return default_scores.get(selected_technology, 50)
+    
+    try:
+        # Base score starts at 50%
+        base_score = 50.0
+        
+        # Get aquifer type from storage (it's an input, not a computed node)
+        aq_type = dash_storage.get_data("aquifer_type")
+        if aq_type is None:
+            # Try to get from graph node values as fallback
+            node_values = graph.get_node_values()
+            aq_type = node_values.get('aq_type', '')
+        
+        # Normalize aquifer type
+        if aq_type:
+            aq_type = str(aq_type).lower()
+        else:
+            aq_type = ''
+            # Default to unconfined if not specified
+            base_score = 60  # Default score when aquifer type unknown
+        
+        # Get node values from decision graph for other parameters
+        # Ensure graph is evaluated first
+        try:
+            inputs = get_graph_inputs()
+            graph.evaluate(inputs)  # Ensure graph is evaluated
+        except Exception as eval_error:
+            print(f"Warning: Could not evaluate graph in calculate_feasibility_score: {eval_error}")
+        
+        node_values = graph.get_node_values()
+        
+        print(f"Debug - aq_type: {aq_type}, selected_tech: {selected_technology}")
+        print(f"Debug - node_values keys: {list(node_values.keys())[:10]}")  # Print first 10 keys
+        
+        # Technology-specific scoring adjustments
+        if selected_technology == "spreading_basins":
+            if aq_type == "unconfined":
+                surface_recharge = node_values.get('surface_recharge_suitability')
+                if surface_recharge:
+                    base_score += 25
+                else:
+                    base_score += 10  # Conditionally feasible
+            else:
+                base_score = 0  # Infeasible for confined
+        
+        elif selected_technology == "injection_wells":
+            if aq_type == "confined":
+                confined_rechargability = node_values.get('confined_rechargability', 100)
+                leakage = node_values.get('leakage_significance', '')
+                
+                if confined_rechargability >= 50 and leakage == "low":
+                    base_score += 30
+                elif confined_rechargability >= 50 or leakage == "low":
+                    base_score += 15  # Conditionally feasible
+                else:
+                    base_score += 5
+            else:
+                base_score += 20  # Works for unconfined but less ideal
+        
+        elif selected_technology == "dry_wells":
+            if aq_type == "unconfined":
+                base_score += 25
+            else:
+                base_score = 0  # Infeasible for confined
+        
+        # Cap score between 0 and 100
+        score = max(0, min(100, base_score))
+        
+        return round(score)
+    except Exception as e:
+        print(f"Error calculating feasibility score: {e}")
+        return 0
+
+def calculate_project_cost_range(selected_technology):
+    """Calculate project cost range based on selected technology."""
+    if selected_technology is None:
+        return "$0 - $0"
+    
+    try:
+        # Get stored cost data if available
+        capital_cost = dash_storage.get_data("capital_cost_num")
+        
+        if capital_cost is not None:
+            # Use actual calculated cost with ±20% range
+            low_cost = capital_cost * 0.8
+            high_cost = capital_cost * 1.2
+            
+            # Format in millions
+            if low_cost >= 1000000:
+                low_str = f"${low_cost/1000000:.1f}M"
+            else:
+                low_str = f"${low_cost/1000:.0f}K"
+            
+            if high_cost >= 1000000:
+                high_str = f"${high_cost/1000000:.1f}M"
+            else:
+                high_str = f"${high_cost/1000:.0f}K"
+            
+            return f"{low_str} - {high_str}"
+        
+        # Default cost ranges by technology type (if no calculation available)
+        default_costs = {
+            "spreading_basins": (1.5, 3.0),
+            "injection_wells": (2.5, 4.5),
+            "dry_wells": (1.0, 2.5),
+        }
+        
+        cost_range = default_costs.get(selected_technology, (2.0, 4.0))
+        return f"${cost_range[0]:.1f}M - ${cost_range[1]:.1f}M"
+        
+    except Exception as e:
+        print(f"Error calculating project cost: {e}")
+        return "$0 - $0"
+
 def run_feasibility_analysis():
-    """Run the feasibility analysis."""
-    graph = get_session_graph()
+    """Run the feasibility analysis only if inputs have changed (hash-based caching)."""
+    # Get current inputs
     inputs = get_graph_inputs()
+    
+    # Create hash of current inputs
+    current_hash = create_inputs_hash(inputs)
+    
+    # Get the last stored hash
+    last_hash = dash_storage.get_data("feasibility_analysis_hash")
+    
+    # Check if inputs have changed
+    if current_hash == last_hash and last_hash is not None:
+        # Inputs haven't changed, skip analysis
+        print("Feasibility analysis skipped - inputs unchanged (hash match)")
+        # Still return the existing graph if available
+        graph = dash_storage.get_data("decision_graph")
+        if graph is None:
+            # If no graph exists, we need to create one
+            graph = get_session_graph()
+            dash_storage.set_data("decision_graph", graph)
+        return 1
+    
+    # Inputs have changed, run the analysis
+    print(f"Feasibility analysis running - inputs changed (hash: {current_hash[:8]}...)")
+    
+    graph = get_session_graph()
     results = graph.evaluate(inputs)
     dash_storage.set_data("decision_graph", graph)
-
+    
+    # Store the new hash for next time
+    dash_storage.set_data("feasibility_analysis_hash", current_hash)
     
     print("\nAll results:")
-    graph.plotly()
+    #graph.plotly()
 
     
     return 1
@@ -260,9 +447,11 @@ def setup_analysis_callbacks(app):
     # Callback for MAR technology selection - activated when RadioItem is selected in Feasible MAR Technologies
     @app.callback(
         [Output("technology-selection-feedback", "children"),
-         Output("conditionally-feasible-technologies", "value", allow_duplicate=True)],
+         Output("conditionally-feasible-technologies", "value", allow_duplicate=True),
+         Output("overall-feasibility-score", "children", allow_duplicate=True),
+         Output("total-project-cost", "children", allow_duplicate=True)],
         [Input("feasible-technologies", "value")],
-        prevent_initial_call=True
+        prevent_initial_call='False'
     )
     def handle_technology_selection(selected_technology):
         """Handle technology selection from Feasible MAR Technologies RadioItems."""
@@ -289,17 +478,36 @@ def setup_analysis_callbacks(app):
             
             print(f"Selected MAR Technology: {selected_technology}")
             # Clear conditionally feasible selection when feasible is selected
-            return feedback, None
+            run_feasibility_analysis()
+            
+            # Calculate and update feasibility score and cost
+            graph = dash_storage.get_data("decision_graph")
+            feasibility_score = calculate_feasibility_score(selected_technology, graph)
+            cost_range = calculate_project_cost_range(selected_technology)
+            
+            print(f"DEBUG - Calculated feasibility score: {feasibility_score}%")
+            print(f"DEBUG - Calculated cost range: {cost_range}")
+            print(f"DEBUG - Graph available: {graph is not None}")
+            
+            feasibility_score_text = f"Overall Feasibility Score: {feasibility_score}%"
+            cost_text = f"Total Project Cost: {cost_range}"
+            
+            print(f"DEBUG - Returning score text: {feasibility_score_text}")
+            print(f"DEBUG - Returning cost text: {cost_text}")
+            
+            return feedback, None, feasibility_score_text, cost_text
         else:
             # No selection
             dash_storage.set_data("selected_mar_technology", None)
             dash_storage.set_data("is_conditionally_feasible", False)
-            return html.Div(), dash.no_update
+            return html.Div(), dash.no_update, "Overall Feasibility Score: 0%", "Total Project Cost: $0 - $0"
     
     # Callback for MAR technology selection - activated when RadioItem is selected in Conditionally Feasible MAR Technologies
     @app.callback(
         [Output("technology-selection-feedback", "children", allow_duplicate=True),
-         Output("feasible-technologies", "value", allow_duplicate=True)],
+         Output("feasible-technologies", "value", allow_duplicate=True),
+         Output("overall-feasibility-score", "children", allow_duplicate=True),
+         Output("total-project-cost", "children", allow_duplicate=True)],
         [Input("conditionally-feasible-technologies", "value")],
         prevent_initial_call=True
     )
@@ -328,12 +536,57 @@ def setup_analysis_callbacks(app):
             
             print(f"Selected MAR Technology: {selected_technology} (Conditionally Feasible)")
             # Clear feasible selection when conditionally feasible is selected
-            return feedback, None
+            run_feasibility_analysis()
+            
+            # Calculate and update feasibility score and cost
+            graph = dash_storage.get_data("decision_graph")
+            feasibility_score = calculate_feasibility_score(selected_technology, graph)
+            cost_range = calculate_project_cost_range(selected_technology)
+            
+            print(f"Calculated feasibility score: {feasibility_score}%")
+            print(f"Calculated cost range: {cost_range}")
+            
+            feasibility_score_text = f"Overall Feasibility Score: {feasibility_score}%"
+            cost_text = f"Total Project Cost: {cost_range}"
+            
+            return feedback, None, feasibility_score_text, cost_text
         else:
             # No selection
             dash_storage.set_data("selected_mar_technology", None)
             dash_storage.set_data("is_conditionally_feasible", False)
-            return html.Div(), dash.no_update
+            return html.Div(), dash.no_update, "Overall Feasibility Score: 0%", "Total Project Cost: $0 - $0"
+    
+    # Callback to update feasibility score and cost when analysis runs or dashboard loads
+    @app.callback(
+        [Output("overall-feasibility-score", "children", allow_duplicate=True),
+         Output("total-project-cost", "children", allow_duplicate=True)],
+        [Input("top-tabs", "active_tab"),
+         Input("analysis-tabs", "active_tab"),
+         Input("knowledge-graph-store", "data")],
+        prevent_initial_call='initial_duplicate'
+    )
+    def update_feasibility_metrics(top_tab, analysis_tab, graph_store):
+        """Update feasibility score and cost when analysis runs or dashboard is accessed."""
+        # Only update if we're on the analysis tab
+        if top_tab != "analysis":
+            return dash.no_update, dash.no_update
+        
+        # Get selected technology
+        selected_technology = dash_storage.get_data("selected_mar_technology")
+        
+        if selected_technology:
+            # Calculate and update feasibility score and cost
+            graph = dash_storage.get_data("decision_graph")
+            feasibility_score = calculate_feasibility_score(selected_technology, graph)
+            cost_range = calculate_project_cost_range(selected_technology)
+            
+            feasibility_score_text = f"Overall Feasibility Score: {feasibility_score}%"
+            cost_text = f"Total Project Cost: {cost_range}"
+            
+            return feasibility_score_text, cost_text
+        else:
+            # No technology selected
+            return "Overall Feasibility Score: 0%", "Total Project Cost: $0 - $0"
     
     @app.callback(
         Output("analysis-dss-algorithm-content", "children"),

@@ -164,5 +164,7 @@ def create_analysis_tab_content():
             active_tab="analysis-dashboard",
         ),
         # Hidden store to trigger knowledge graph initialization
-        dcc.Store(id="knowledge-graph-store", data={"initialized": False})
+        dcc.Store(id="knowledge-graph-store", data={"initialized": False}),
+        # Store for feasibility metrics
+        dcc.Store(id="feasibility-metrics-store", data={"score": "0%", "cost": "$0 - $0"})
     ]

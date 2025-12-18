@@ -18,7 +18,7 @@ def create_dashboard_content():
                     dbc.Col(
                         dbc.Alert(
                             [
-                                html.H6("Overall Feasibility Score: 69%", className="alert-heading mb-0"),
+                                html.H6(id="overall-feasibility-score", children="Overall Feasibility Score: 0%", className="alert-heading mb-0"),
                                 html.Small("Based on selected technologies and site conditions", className="text-muted")
                             ],
                             color="info",
@@ -30,7 +30,7 @@ def create_dashboard_content():
                     dbc.Col(
                         dbc.Alert(
                             [
-                                html.H6("Total Project Cost: $2.5M - $4.2M", className="alert-heading mb-0"),
+                                html.H6(id="total-project-cost", children="Total Project Cost: $0 - $0", className="alert-heading mb-0"),
                                 html.Small("Estimated capital investment range", className="text-muted")
                             ],
                             color="warning",
