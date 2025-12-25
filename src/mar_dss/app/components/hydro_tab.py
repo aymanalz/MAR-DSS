@@ -62,15 +62,17 @@ def create_hydrogeologic_settings_content():
 def create_hydrogeologic_feasibility_content():
     """Create the content for the Hydrogeologic Feasibility sub-tab (3.2)."""
     return [
-        html.H3("Hydrogeologic Feasibility"),
-        html.P(
-            "Assess the feasibility of MAR implementation based on hydrogeologic conditions.",
-            className="mb-4"
-        ),
-        dbc.Alert(
-            "This section will contain feasibility assessment tools and analysis.",
-            color="info"
-        ),
+        html.Div(id="hydrogeologic-feasibility-content", children=[
+            html.H3("Hydrogeologic Feasibility"),
+            html.P(
+                "Assess the feasibility of MAR implementation based on hydrogeologic conditions.",
+                className="mb-4"
+            ),
+            dbc.Alert(
+                "Loading feasibility assessment...",
+                color="info"
+            ),
+        ])
     ]
 
 

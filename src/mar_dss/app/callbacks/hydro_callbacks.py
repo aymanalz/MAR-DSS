@@ -1117,3 +1117,38 @@ def setup_hydro_callbacks(app):
         # No grid lines for cleaner appearance
         
         return fig
+    
+    # Callback to update Hydrogeologic Feasibility content
+    @app.callback(
+        Output("hydrogeologic-feasibility-content", "children"),
+        [
+            Input("stratigraphy-data-store", "data"),
+            Input("groundwater-data-store", "data"),
+            Input("aquifer-type-radio", "value"),
+            Input("hydrogeology-subtabs", "active_tab"),
+        ],
+        prevent_initial_call=False
+    )
+    def update_hydrogeologic_feasibility_content(strat_data, gw_data, aquifer_type, active_tab):
+        """Update the Hydrogeologic Feasibility tab content when data changes."""
+        from mar_dss.app.components.hydrogeologic_feasibility_content import (
+            create_hydrogeologic_feasibility_content_dynamic,
+            create_loading_content
+        )
+        
+        # Only update if we're on the feasibility tab
+        if active_tab != "hydrogeologic-feasibility-tab":
+            return dash.no_update
+        
+        try:
+            # Store aquifer type
+            if aquifer_type:
+                dash_storage.set_data("aquifer_type", aquifer_type)
+            
+            # Generate dynamic content
+            content = create_hydrogeologic_feasibility_content_dynamic()
+            return content
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return create_loading_content(f"Error: {str(e)}")

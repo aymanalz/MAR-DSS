@@ -245,14 +245,14 @@ def create_dashboard_content():
                         }
                     ),
                     dbc.Tab(
-                        label="Cost Analysis",
-                        tab_id="cost-analysis",
+                        label="Hydrogeological Feasibility",
+                        tab_id="hydrogeological-feasibility",
                         children=[
-                            # Cost Analysis Section
+                            # Hydrogeological Feasibility Section
                             dbc.Card(
                                 [
                                     dbc.CardHeader(
-                                        html.H5("💰 Cost Analysis", className="mb-0 text-warning")
+                                        html.H5("🌊 Hydrogeological Feasibility", className="mb-0 text-warning")
                                     ),
                                     dbc.CardBody(
                                         [

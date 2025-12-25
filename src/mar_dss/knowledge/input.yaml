@@ -88,7 +88,7 @@ inputs:
 
   - id: "vadose_pollution_flag"
     name: "Vadose Zone Pollution Flag"
-    description: "Indicates presence of pollution or contamination in the vadose zone. Can be boolean (True/False), list of contaminants, or concentration data."
+    description: "Indicates presence of pollution or contamination in the vadose zone."
     type: boolean
     value: false
     default: false

@@ -4,8 +4,10 @@ Callbacks for the Analysis tab lazy loading.
 from pathlib import Path
 import dash
 from dash import Input, Output, html
+import dash_bootstrap_components as dbc
 import mar_dss
 import mar_dss.app.utils.data_storage as dash_storage
+from mar_dss.mar import forward_run
 from mar_dss.base import DecisionGraph
 import pandas as pd
 import os
@@ -269,6 +271,7 @@ def run_feasibility_analysis():
             # If no graph exists, we need to create one
             graph = get_session_graph()
             dash_storage.set_data("decision_graph", graph)
+        
         return 1
     
     # Inputs have changed, run the analysis
@@ -280,9 +283,13 @@ def run_feasibility_analysis():
     
     # Store the new hash for next time
     dash_storage.set_data("feasibility_analysis_hash", current_hash)
-    
     print("\nAll results:")
-    #graph.plotly()
+    graph.plotly()
+    
+    dss_results = forward_run.forward_run()
+    dash_storage.set_data("dss_results", dss_results)
+    
+
 
     
     return 1
@@ -597,13 +604,67 @@ def setup_analysis_callbacks(app):
     
     @app.callback(
         Output("analysis-decision-interpretation-content", "children"),
-        [Input("analysis-tabs", "active_tab")],
+        [
+            Input("analysis-tabs", "active_tab"),
+            Input("knowledge-graph-store", "data"),
+        ],
         prevent_initial_call=True
     )
-    def load_decision_interpretation_content(active_tab):
+    def load_decision_interpretation_content(active_tab, graph_store):
+        """Load decision interpretation content when tab is accessed or analysis runs."""
         if active_tab == "analysis-decision-interpretation":
             return create_decision_interpretation_content()
         return "Loading..."
+    
+    @app.callback(
+        Output("decision-interpretation-details", "children"),
+        [
+            Input("decision-interpretation-option-selector", "value"),
+            Input("analysis-tabs", "active_tab"),
+            Input("knowledge-graph-store", "data"),
+        ],
+        prevent_initial_call=False
+    )
+    def update_option_interpretation(selected_option, active_tab, graph_store):
+        """Update detailed interpretation when an option is selected."""
+        from mar_dss.app.components.decision_interpretation_tab import _create_option_interpretation
+        
+        # Only update if we're on the decision interpretation tab
+        if active_tab != "analysis-decision-interpretation":
+            return dash.no_update
+        
+        if selected_option is None:
+            return html.Div(
+                dbc.Alert(
+                    "Please select an option from the dropdown above to view detailed interpretation.",
+                    color="info",
+                )
+            )
+        
+        # Get DSS results from storage
+        dss_results = dash_storage.get_data("dss_results")
+        
+        if dss_results is None or not hasattr(dss_results, 'results') or not dss_results.results:
+            return html.Div(
+                dbc.Alert(
+                    "No evaluation results available. Please run the feasibility analysis first.",
+                    color="warning",
+                )
+            )
+        
+        results = dss_results.results
+        filters = getattr(dss_results, 'filters', {})
+        
+        if selected_option not in results:
+            return html.Div(
+                dbc.Alert(
+                    f"Option '{selected_option}' not found in results.",
+                    color="danger",
+                )
+            )
+        
+        result = results[selected_option]
+        return _create_option_interpretation(selected_option, result, filters)
     
     @app.callback(
         Output("analysis-scenarios-comparison-content", "children"),

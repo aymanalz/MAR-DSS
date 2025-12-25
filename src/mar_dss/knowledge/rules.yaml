@@ -129,7 +129,6 @@ rules:
     leaf: false
 
     
-
   - id: "top_soil_limiting"
     name: "Topsoil Limiting Layer"
     #symbol: "TopRem"
@@ -212,7 +211,7 @@ rules:
     dependencies: [vadose_residence_time]
     certainty: 0.8
     group: "Environmental Quality"
-    leaf: false
+    leaf: true
 
   
   - id: "rechargability"
