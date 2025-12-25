@@ -148,6 +148,52 @@ def _create_option_interpretation(option_name, result, filters=None):
         )
         content.append(mitigation_items)
     
+    # Hard constraints details
+    if hard_constraints:
+        content.append(html.H5("Hard Constraints Evaluation", className="mt-4"))
+        hard_constraint_rows = []
+        for hc in hard_constraints:
+            constraint_name = hc.get("name", "Unknown")
+            passed = hc.get("pass", False)
+            explanation = hc.get("why", "No explanation available")
+            
+            status_badge = dbc.Badge(
+                "Pass" if passed else "Fail",
+                color="success" if passed else "danger",
+                className="me-2",
+            )
+            
+            hard_constraint_rows.append(
+                html.Tr(
+                    [
+                        html.Td(constraint_name),
+                        html.Td(status_badge),
+                        html.Td(explanation),
+                    ]
+                )
+            )
+        
+        content.append(
+            dbc.Table(
+                [
+                    html.Thead(
+                        html.Tr(
+                            [
+                                html.Th("Constraint"),
+                                html.Th("Status"),
+                                html.Th("Explanation"),
+                            ]
+                        )
+                    ),
+                    html.Tbody(hard_constraint_rows),
+                ],
+                bordered=True,
+                hover=True,
+                responsive=True,
+                className="mb-3",
+            )
+        )
+    
     # Soft constraints details
     if soft_constraints:
         content.append(html.H5("Soft Constraints Evaluation", className="mt-4"))

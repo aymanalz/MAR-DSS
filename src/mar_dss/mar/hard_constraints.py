@@ -17,13 +17,18 @@ def hard_constraints(option: MAROption) -> List[Dict[str, bool]]:
     # ==================================================================   
     if aquifer_type.lower() == "Unconfined".lower():
         check = True
+        why = "Unconfined aquifer is suitable for surface recharge"
     else:
         if option.name == "Spreading Basins":
             check = False
-        check = True
+            why = f"Spreading basins are not suitable for recharging {aquifer_type} aquifer"
+        else:
+            check = True
+            why = "Spreading basins are suitable for recharging {aquifer_type} aquifer"
     initial_surface_rechargeability = {
         "name": "Surface rechargeability intial feasibility",
-        "pass": True
+        "pass": True,
+        "why": why
     }
     constraints.append(initial_surface_rechargeability)
 
@@ -35,17 +40,22 @@ def hard_constraints(option: MAROption) -> List[Dict[str, bool]]:
     if aquifer_type.lower() == "Unconfined".lower():
         if rechargable_percentage < defaults['maximum_rechargability']:
             check = False
+            why = f"Rechargeable percentage {round(rechargable_percentage, 2)}% is less than the maximum rechargeable percentage {defaults['maximum_rechargability']}"
         else:
             check = True
+            why = f"Rechargeable percentage {round(rechargable_percentage, 2)}% is greater than the maximum rechargeable percentage {defaults['maximum_rechargability']}"
     else:
         if confined_rechargability < defaults['maximum_rechargability']:
             check = False
+            why = f"Confined rechargeable percentage {round(confined_rechargability, 2)}% is less than the maximum rechargeable percentage {defaults['maximum_rechargability']}"
         else:
             check = True
+            why = f"Confined rechargeable percentage {round(confined_rechargability, 2)}% is greater than the maximum rechargeable percentage {defaults['maximum_rechargability']}"
     
     recharge_efficiency_metric = {
         "name": "Recharge Efficiency",
-        "pass": check
+        "pass": check,
+        "why": why
        
     }
     constraints.append(recharge_efficiency_metric)
