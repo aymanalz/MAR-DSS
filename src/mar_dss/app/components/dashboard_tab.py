@@ -132,7 +132,8 @@ def create_dashboard_content():
                                                         [
                                                             html.H6("Physical Feasibility", className="text-muted"),
                                                             dbc.Progress(
-                                                                value=75,
+                                                                id="feasibility-metric-physical",
+                                                                value=0,
                                                                 color="success",
                                                                 className="mb-2"
                                                             ),
@@ -145,7 +146,8 @@ def create_dashboard_content():
                                                         [
                                                             html.H6("Environmental Impact", className="text-muted"),
                                                             dbc.Progress(
-                                                                value=60,
+                                                                id="feasibility-metric-environmental",
+                                                                value=0,
                                                                 color="warning",
                                                                 className="mb-2"
                                                             ),
@@ -162,7 +164,8 @@ def create_dashboard_content():
                                                         [
                                                             html.H6("Legal Considerations", className="text-muted"),
                                                             dbc.Progress(
-                                                                value=85,
+                                                                id="feasibility-metric-legal",
+                                                                value=0,
                                                                 color="info",
                                                                 className="mb-2"
                                                             ),
@@ -175,7 +178,8 @@ def create_dashboard_content():
                                                         [
                                                             html.H6("Cost Analysis", className="text-muted"),
                                                             dbc.Progress(
-                                                                value=45,
+                                                                id="feasibility-metric-cost",
+                                                                value=0,
                                                                 color="danger",
                                                                 className="mb-2"
                                                             ),
@@ -192,7 +196,8 @@ def create_dashboard_content():
                                                         [
                                                             html.H6("Technical Complexity", className="text-muted"),
                                                             dbc.Progress(
-                                                                value=70,
+                                                                id="feasibility-metric-technical",
+                                                                value=0,
                                                                 color="secondary",
                                                                 className="mb-2"
                                                             ),
@@ -205,7 +210,8 @@ def create_dashboard_content():
                                                         [
                                                             html.H6("Social Acceptance", className="text-muted"),
                                                             dbc.Progress(
-                                                                value=80,
+                                                                id="feasibility-metric-social",
+                                                                value=0,
                                                                 color="primary",
                                                                 className="mb-2"
                                                             ),
@@ -220,8 +226,8 @@ def create_dashboard_content():
                                             # Summary Section
                                             dbc.Alert(
                                                 [
-                                                    html.H6("Overall Feasibility Score: 69%", className="alert-heading"),
-                                                    html.P("Based on the selected technologies and site conditions, the overall feasibility is moderate. Consider focusing on high-scoring metrics to improve project viability.", className="mb-0")
+                                                    html.H6(id="feasibility-metrics-overall-score", children="Overall Feasibility Score: 0%", className="alert-heading"),
+                                                    html.P(id="feasibility-metrics-summary-text", children="Select a technology to view feasibility metrics.", className="mb-0")
                                                 ],
                                                 color="info",
                                                 className="mt-3"

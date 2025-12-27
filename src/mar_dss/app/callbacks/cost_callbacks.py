@@ -603,9 +603,7 @@ def setup_cost_callbacks(app):
         top_tab,
         analysis_tab,
     ):
-        """Update cost calculations based on engineering inputs."""
-        
-        # Debug: Print to see if callback is triggered
+        """Update cost calculations based on engineering inputs."""        
         
         # Only calculate if we're on the Analysis tab and Cost sub-tab is selected
         if not top_tab or not analysis_tab or top_tab != "analysis" or analysis_tab != "analysis-cost":

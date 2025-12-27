@@ -121,93 +121,222 @@ def create_inputs_hash(inputs):
     hash_obj = hashlib.md5(json_str.encode('utf-8'))
     return hash_obj.hexdigest()
 
-def calculate_feasibility_score(selected_technology, graph=None):
-    """Calculate overall feasibility score based on selected technology and site conditions."""
+def calculate_individual_feasibility_metrics(selected_technology, graph=None):
+    """Calculate individual feasibility metrics (Physical, Environmental, Legal, Cost, Technical, Social).
+    
+    Returns a dictionary with scores (0-100) for each metric.
+    """
+    metrics = {
+        "physical": 0,
+        "environmental": 0,
+        "legal": 0,
+        "cost": 0,
+        "technical": 0,
+        "social": 0
+    }
+    
     if selected_technology is None:
-        return 0
+        return metrics
     
     if graph is None:
         graph = dash_storage.get_data("decision_graph")
     
-    if graph is None:
-        # If no graph, return a default score based on technology
-        default_scores = {
-            "spreading_basins": 60,
-            "injection_wells": 65,
-            "dry_wells": 55,
-        }
-        return default_scores.get(selected_technology, 50)
-    
     try:
-        # Base score starts at 50%
-        base_score = 50.0
+        # Ensure graph is evaluated
+        if graph is not None:
+            try:
+                inputs = get_graph_inputs()
+                graph.evaluate(inputs)
+            except Exception as eval_error:
+                print(f"Warning: Could not evaluate graph in calculate_individual_feasibility_metrics: {eval_error}")
         
-        # Get aquifer type from storage (it's an input, not a computed node)
-        aq_type = dash_storage.get_data("aquifer_type")
-        if aq_type is None:
-            # Try to get from graph node values as fallback
+        # 1. Physical Feasibility (based on hydrogeological conditions)
+        if graph is not None:
             node_values = graph.get_node_values()
-            aq_type = node_values.get('aq_type', '')
-        
-        # Normalize aquifer type
-        if aq_type:
-            aq_type = str(aq_type).lower()
+            aq_type = dash_storage.get_data("aquifer_type")
+            if aq_type is None:
+                aq_type = node_values.get('aq_type', '')
+            aq_type = str(aq_type).lower() if aq_type else ''
+            
+            if selected_technology == "spreading_basins":
+                if aq_type == "unconfined":
+                    surface_recharge = node_values.get('surface_recharge_suitability', False)
+                    metrics["physical"] = 100 if surface_recharge else 60
+                else:
+                    metrics["physical"] = 0  # Infeasible for confined
+            elif selected_technology == "injection_wells":
+                if aq_type == "confined":
+                    confined_rechargability = node_values.get('confined_rechargability', 0)
+                    leakage = node_values.get('leakage_significance', 'high')
+                    if confined_rechargability >= 50 and leakage == "low":
+                        metrics["physical"] = 90
+                    elif confined_rechargability >= 50 or leakage == "low":
+                        metrics["physical"] = 70
+                    else:
+                        metrics["physical"] = 50
+                else:
+                    metrics["physical"] = 75  # Works for unconfined
+            elif selected_technology == "dry_wells":
+                if aq_type == "unconfined":
+                    metrics["physical"] = 85
+                else:
+                    metrics["physical"] = 0  # Infeasible for confined
         else:
-            aq_type = ''
-            # Default to unconfined if not specified
-            base_score = 60  # Default score when aquifer type unknown
+            # Default physical scores
+            default_physical = {
+                "spreading_basins": 75,
+                "injection_wells": 80,
+                "dry_wells": 70
+            }
+            metrics["physical"] = default_physical.get(selected_technology, 50)
         
-        # Get node values from decision graph for other parameters
-        # Ensure graph is evaluated first
+        # 2. Environmental Impact (based on environmental impact assessment)
+        # Get environmental risk score (0-8+ scale, convert to 0-100)
+        # Lower risk score = higher feasibility score
+        env_inputs = [
+            dash_storage.get_data("tss_turbidity_risk") or "LOW RISK",
+            dash_storage.get_data("doc_toc_risk") or "LOW RISK",
+            dash_storage.get_data("ph_alkalinity_risk") or "LOW RISK",
+            dash_storage.get_data("tds_salinity_risk") or "LOW RISK",
+            dash_storage.get_data("inorganic_contaminants_risk") or "LOW RISK",
+            dash_storage.get_data("emerging_contaminants_risk") or "LOW RISK",
+            dash_storage.get_data("redox_compatibility_risk") or "LOW RISK",
+            dash_storage.get_data("pathogen_risk") or "LOW RISK",
+        ]
+        
+        # Calculate environmental risk score (similar to environmental_impact_callbacks)
         try:
-            inputs = get_graph_inputs()
-            graph.evaluate(inputs)  # Ensure graph is evaluated
-        except Exception as eval_error:
-            print(f"Warning: Could not evaluate graph in calculate_feasibility_score: {eval_error}")
+            from mar_dss.app.components.environmental_impact_tab import DECISION_LOGIC
+            env_score = 0
+            input_keys = ["step1_tss", "step2a_doc", "step2b_ph", "step3_tds", 
+                          "step4_inorganic", "step5a_ec", "step5b_redox", "step6_pathogens"]
+            for key, value in zip(input_keys, env_inputs):
+                if key in DECISION_LOGIC and value in DECISION_LOGIC[key]:
+                    score = DECISION_LOGIC[key][value].get("score", 0)
+                    env_score += score
+            
+            # Convert risk score (0-8+) to feasibility score (0-100)
+            # Lower risk = higher feasibility
+            if env_score >= 8:
+                metrics["environmental"] = 20  # Very high risk
+            elif env_score >= 5:
+                metrics["environmental"] = 40  # High risk
+            elif env_score >= 3:
+                metrics["environmental"] = 60  # Moderate risk
+            elif env_score >= 1:
+                metrics["environmental"] = 80  # Low risk
+            else:
+                metrics["environmental"] = 100  # No risk
+        except Exception as e:
+            print(f"Warning: Could not calculate environmental score: {e}")
+            metrics["environmental"] = 60  # Default moderate
         
-        node_values = graph.get_node_values()
+        # 3. Legal Considerations (based on legal constraints assessment)
+        # Get legal risk indicators
+        legal_fatal = dash_storage.get_data("legal_fatal_issues") or False
+        legal_conditional = dash_storage.get_data("legal_conditional_issues") or 0
         
-        print(f"Debug - aq_type: {aq_type}, selected_tech: {selected_technology}")
-        print(f"Debug - node_values keys: {list(node_values.keys())[:10]}")  # Print first 10 keys
+        if legal_fatal:
+            metrics["legal"] = 0  # Not feasible
+        elif legal_conditional > 2:
+            metrics["legal"] = 50  # Conditionally feasible
+        elif legal_conditional > 0:
+            metrics["legal"] = 75  # Some conditions
+        else:
+            metrics["legal"] = 100  # Fully feasible
         
-        # Technology-specific scoring adjustments
+        # 4. Cost Analysis (based on cost calculations)
+        capital_cost = dash_storage.get_data("capital_cost_num")
+        if capital_cost is not None:
+            try:
+                import pandas as pd
+                if isinstance(capital_cost, pd.Series):
+                    cost_column = _get_cost_column_name(selected_technology)
+                    if cost_column and cost_column in capital_cost.index:
+                        cost_value = float(capital_cost[cost_column])
+                        # Lower cost = higher feasibility (inverse relationship)
+                        # Scale: $0-1M = 100, $1-2M = 80, $2-3M = 60, $3-4M = 40, $4M+ = 20
+                        if cost_value < 1e6:
+                            metrics["cost"] = 100
+                        elif cost_value < 2e6:
+                            metrics["cost"] = 80
+                        elif cost_value < 3e6:
+                            metrics["cost"] = 60
+                        elif cost_value < 4e6:
+                            metrics["cost"] = 40
+                        else:
+                            metrics["cost"] = 20
+                    else:
+                        metrics["cost"] = 50  # Default
+                else:
+                    cost_value = float(capital_cost)
+                    if cost_value < 1e6:
+                        metrics["cost"] = 100
+                    elif cost_value < 2e6:
+                        metrics["cost"] = 80
+                    elif cost_value < 3e6:
+                        metrics["cost"] = 60
+                    elif cost_value < 4e6:
+                        metrics["cost"] = 40
+                    else:
+                        metrics["cost"] = 20
+            except Exception as e:
+                print(f"Warning: Could not calculate cost score: {e}")
+                metrics["cost"] = 50  # Default
+        else:
+            # Default cost scores by technology
+            default_costs = {
+                "spreading_basins": 70,  # Generally lower cost
+                "injection_wells": 50,  # Moderate cost
+                "dry_wells": 80  # Lower cost
+            }
+            metrics["cost"] = default_costs.get(selected_technology, 50)
+        
+        # 5. Technical Complexity (based on technology type and site conditions)
         if selected_technology == "spreading_basins":
-            if aq_type == "unconfined":
-                surface_recharge = node_values.get('surface_recharge_suitability')
-                if surface_recharge:
-                    base_score += 25
-                else:
-                    base_score += 10  # Conditionally feasible
-            else:
-                base_score = 0  # Infeasible for confined
-        
+            metrics["technical"] = 80  # Relatively simple
         elif selected_technology == "injection_wells":
-            if aq_type == "confined":
-                confined_rechargability = node_values.get('confined_rechargability', 100)
-                leakage = node_values.get('leakage_significance', '')
-                
-                if confined_rechargability >= 50 and leakage == "low":
-                    base_score += 30
-                elif confined_rechargability >= 50 or leakage == "low":
-                    base_score += 15  # Conditionally feasible
-                else:
-                    base_score += 5
-            else:
-                base_score += 20  # Works for unconfined but less ideal
-        
+            metrics["technical"] = 60  # More complex
         elif selected_technology == "dry_wells":
-            if aq_type == "unconfined":
-                base_score += 25
-            else:
-                base_score = 0  # Infeasible for confined
+            metrics["technical"] = 75  # Moderate complexity
         
-        # Cap score between 0 and 100
-        score = max(0, min(100, base_score))
+        # 6. Social Acceptance (default, can be enhanced with actual data)
+        # This could be based on stakeholder input if available
+        metrics["social"] = 80  # Default moderate-high acceptance
         
-        return round(score)
+        # Ensure all scores are between 0 and 100
+        for key in metrics:
+            metrics[key] = max(0, min(100, metrics[key]))
+        
+        return metrics
     except Exception as e:
-        print(f"Error calculating feasibility score: {e}")
+        print(f"Error calculating individual feasibility metrics: {e}")
+        import traceback
+        traceback.print_exc()
+        return metrics
+
+def calculate_feasibility_score(selected_technology, graph=None):
+    """Calculate overall feasibility score based on selected technology and site conditions.
+    Now uses weighted average of individual metrics.
+    """
+    if selected_technology is None:
         return 0
+    
+    # Get individual metrics
+    metrics = calculate_individual_feasibility_metrics(selected_technology, graph)
+    
+    # Weighted average (can be adjusted)
+    weights = {
+        "physical": 0.25,
+        "environmental": 0.20,
+        "legal": 0.20,
+        "cost": 0.15,
+        "technical": 0.10,
+        "social": 0.10
+    }
+    
+    overall_score = sum(metrics[key] * weights[key] for key in weights)
+    return round(overall_score)
 
 def _get_cost_column_name(selected_technology):
     """Map selected technology to cost column name."""
@@ -637,6 +766,94 @@ def setup_analysis_callbacks(app):
             # No technology selected and we are loading the tab
             print(f"DEBUG update_feasibility_metrics - No technology, setting defaults")
             return "Overall Feasibility Score: 0%", "Total Project Cost: $0 - $0"
+    
+    # Callback to update individual feasibility metrics in the Feasibility Metrics tab
+    @app.callback(
+        [
+            Output("feasibility-metric-physical", "value"),
+            Output("feasibility-metric-physical", "color"),
+            Output("feasibility-metric-environmental", "value"),
+            Output("feasibility-metric-environmental", "color"),
+            Output("feasibility-metric-legal", "value"),
+            Output("feasibility-metric-legal", "color"),
+            Output("feasibility-metric-cost", "value"),
+            Output("feasibility-metric-cost", "color"),
+            Output("feasibility-metric-technical", "value"),
+            Output("feasibility-metric-technical", "color"),
+            Output("feasibility-metric-social", "value"),
+            Output("feasibility-metric-social", "color"),
+            Output("feasibility-metrics-overall-score", "children"),
+            Output("feasibility-metrics-summary-text", "children"),
+        ],
+        [
+            Input("top-tabs", "active_tab"),
+            Input("analysis-tabs", "active_tab"),
+            Input("technology-analysis-tabs", "active_tab"),
+            Input("feasible-technologies-container", "children"),  # Trigger when technologies are populated
+            Input("conditionally-feasible-technologies-container", "children"),  # Trigger when technologies are populated
+            Input("knowledge-graph-store", "data"),
+        ],
+        prevent_initial_call=False
+    )
+    def update_individual_feasibility_metrics(top_tab, analysis_tab, tech_analysis_tab, feasible_container, conditionally_feasible_container, graph_store):
+        """Update individual feasibility metrics when technology is selected or tab is accessed."""
+        # Only update if we're on the analysis tab and feasibility metrics sub-tab
+        if top_tab != "analysis" or tech_analysis_tab != "feasibility-metrics":
+            return [dash.no_update] * 14
+        
+        # Get selected technology from data storage (set by handle_technology_selection callback)
+        selected_technology = dash_storage.get_data("selected_mar_technology")
+        
+        if selected_technology is None:
+            # No technology selected - return zeros
+            return (
+                0, "secondary",  # Physical
+                0, "secondary",  # Environmental
+                0, "secondary",  # Legal
+                0, "secondary",  # Cost
+                0, "secondary",  # Technical
+                0, "secondary",  # Social
+                "Overall Feasibility Score: 0%",
+                "Select a technology to view detailed feasibility metrics."
+            )
+        
+        # Calculate individual metrics
+        graph = dash_storage.get_data("decision_graph")
+        metrics = calculate_individual_feasibility_metrics(selected_technology, graph)
+        overall_score = calculate_feasibility_score(selected_technology, graph)
+        
+        # Determine color for each metric based on score
+        def get_color(score):
+            if score >= 80:
+                return "success"
+            elif score >= 60:
+                return "info"
+            elif score >= 40:
+                return "warning"
+            else:
+                return "danger"
+        
+        # Generate summary text
+        tech_name = selected_technology.replace('_', ' ').title()
+        if overall_score >= 80:
+            summary_text = f"Based on the selected technology ({tech_name}) and site conditions, the overall feasibility is high. The project shows strong potential across most evaluation criteria."
+        elif overall_score >= 60:
+            summary_text = f"Based on the selected technology ({tech_name}) and site conditions, the overall feasibility is moderate. Consider focusing on lower-scoring metrics to improve project viability."
+        elif overall_score >= 40:
+            summary_text = f"Based on the selected technology ({tech_name}) and site conditions, the overall feasibility is low. Significant improvements or alternative approaches may be needed."
+        else:
+            summary_text = f"Based on the selected technology ({tech_name}) and site conditions, the overall feasibility is very low. This technology may not be suitable for this project."
+        
+        return (
+            round(metrics["physical"]), get_color(metrics["physical"]),  # Physical
+            round(metrics["environmental"]), get_color(metrics["environmental"]),  # Environmental
+            round(metrics["legal"]), get_color(metrics["legal"]),  # Legal
+            round(metrics["cost"]), get_color(metrics["cost"]),  # Cost
+            round(metrics["technical"]), get_color(metrics["technical"]),  # Technical
+            round(metrics["social"]), get_color(metrics["social"]),  # Social
+            f"Overall Feasibility Score: {overall_score}%",
+            summary_text
+        )
     
     @app.callback(
         Output("analysis-dss-algorithm-content", "children"),
