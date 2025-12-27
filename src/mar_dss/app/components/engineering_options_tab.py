@@ -451,7 +451,7 @@ def create_cost_content():
                                             className="text-center",
                                             id="capital-cost-display",
                                             style={
-                                                "font-size": "2.5rem",
+                                                "font-size": "1.75rem",
                                                 "font-weight": "bold",
                                                 "color": "#2c3e50"
                                             }
@@ -479,7 +479,7 @@ def create_cost_content():
                                             className="text-center",
                                             id="annual-maintenance-cost-display",
                                             style={
-                                                "font-size": "2.5rem",
+                                                "font-size": "1.75rem",
                                                 "font-weight": "bold",
                                                 "color": "#2c3e50"
                                             }
@@ -507,7 +507,7 @@ def create_cost_content():
                                             className="text-center",
                                             id="npv-20-years-display",
                                             style={
-                                                "font-size": "2.5rem",
+                                                "font-size": "1.75rem",
                                                 "font-weight": "bold",
                                                 "color": "#2c3e50"
                                             }

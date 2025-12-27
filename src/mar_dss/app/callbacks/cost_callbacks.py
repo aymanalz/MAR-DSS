@@ -780,15 +780,27 @@ def setup_cost_callbacks(app):
                     return ''
             capital_df['Number of Units'] = capital_df['Number of Units'].apply(format_units)
         
-        if 'Total Cost ($)' in capital_df.columns:
-            def format_cost(x):
+        # Format technology-specific cost columns
+        # Check what columns actually exist
+        available_cost_columns = [col for col in capital_df.columns if 'Cost ($)' in col]
+        cost_columns = ['Spreading Pond Cost ($)', 'Injection Wells Cost ($)', 'Dry Wells Cost ($)']
+        
+        def format_cost(x):
+            try:
+                if pd.notna(x) and x != '' and str(x).strip() != '':
+                    return f"{float(x):,.1f}"
+                return ''
+            except (ValueError, TypeError):
+                return ''
+        
+        # Format each cost column if it exists
+        for col in cost_columns:
+            if col in capital_df.columns:
                 try:
-                    if pd.notna(x) and x != '' and str(x).strip() != '':
-                        return f"{float(x):,.0f}"
-                    return ''
-                except (ValueError, TypeError):
-                    return ''
-            capital_df['Total Cost ($)'] = capital_df['Total Cost ($)'].apply(format_cost)
+                    capital_df[col] = capital_df[col].apply(format_cost)
+                except Exception as e:
+                    print(f"Warning: Could not format column {col}: {e}")
+                    continue
         
         # Fill NaN values with empty strings for better display
         capital_df = capital_df.fillna('')
@@ -873,15 +885,24 @@ def setup_cost_callbacks(app):
                     return ''
             maintenance_df['Number of Units'] = maintenance_df['Number of Units'].apply(format_units)
         
-        if 'Total Cost ($)' in maintenance_df.columns:
-            def format_cost(x):
+        # Format technology-specific maintenance cost columns
+        maintenance_cost_columns = ['Spreading Pond Maintenance Cost ($)', 'Injection Wells Maintenance Cost ($)', 'Dry Wells Maintenance Cost ($)']
+        def format_cost(x):
+            try:
+                if pd.notna(x) and x != '' and str(x).strip() != '':
+                    return f"{float(x):,.1f}"
+                return ''
+            except (ValueError, TypeError):
+                return ''
+        
+        # Format each maintenance cost column if it exists
+        for col in maintenance_cost_columns:
+            if col in maintenance_df.columns:
                 try:
-                    if pd.notna(x) and x != '' and str(x).strip() != '':
-                        return f"{float(x):,.0f}"
-                    return ''
-                except (ValueError, TypeError):
-                    return ''
-            maintenance_df['Total Cost ($)'] = maintenance_df['Total Cost ($)'].apply(format_cost)
+                    maintenance_df[col] = maintenance_df[col].apply(format_cost)
+                except Exception as e:
+                    print(f"Warning: Could not format column {col}: {e}")
+                    continue
         
         # Fill NaN values with empty strings for better display
         maintenance_df = maintenance_df.fillna('')
@@ -965,7 +986,7 @@ def setup_cost_callbacks(app):
         def format_npv(x):
             try:
                 if pd.notna(x) and x != '' and str(x).strip() != '':
-                    return f"${float(x):,.0f}"
+                    return f"${float(x):,.1f}"
                 return ''
             except (ValueError, TypeError):
                 return ''
