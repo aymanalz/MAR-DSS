@@ -99,6 +99,15 @@ class DashboardApp:
             from .callbacks.analysis_callbacks import setup_analysis_callbacks
         setup_analysis_callbacks(self.app)
         
+        # Set up feasibilities tab callbacks
+        try:
+            from mar_dss.app.callbacks.feasibilities_callbacks import (
+                setup_feasibilities_callbacks,
+            )
+        except ImportError:
+            from .callbacks.feasibilities_callbacks import setup_feasibilities_callbacks
+        setup_feasibilities_callbacks(self.app)
+        
         # Set up environmental impact callbacks
         try:
             from mar_dss.app.callbacks.environmental_impact_callbacks import (

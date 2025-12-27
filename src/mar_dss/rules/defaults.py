@@ -5,7 +5,7 @@ defaults['leakage_radius'] = 1000
 defaults['excessive_deep_aquifer'] = [1500.0, 3000.0]
 
 # maximum perecenatge of source water that can be recharged
-defaults["maximum_rechargability"] = 50.0
+defaults["maximum_rechargability"] = 0
 
 # default effective porosity for vadose zone (if not available from stratigraphy)
 defaults["vadose_effective_porosity"] = 0.2 # porosity times moisture content

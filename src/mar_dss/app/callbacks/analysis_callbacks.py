@@ -76,6 +76,16 @@ TECHNOLOGY_NAMES = {
     "injection_wells": "Injection Wells",
     "dry_wells": "Dry Wells",
 }
+
+# Mapping from DSS option names to UI technology identifiers
+DSS_TO_UI_MAPPING = {
+    "Surface Recharge": "spreading_basins",
+    "Dry Well": "dry_wells",
+    "Injection Well": "injection_wells",
+}
+
+# Reverse mapping from UI technology identifiers to DSS option names
+UI_TO_DSS_MAPPING = {v: k for k, v in DSS_TO_UI_MAPPING.items()}
 # Import all the analysis components
 try:
     from mar_dss.app.components.dss_algorithm_tab import create_dss_algorithm_content
@@ -122,6 +132,32 @@ def get_session_graph():
         graph = read_knowledge()
         
     return graph
+
+def get_dss_status_for_technology(ui_tech_id):
+    """Get DSS status for a technology given its UI identifier.
+    
+    Args:
+        ui_tech_id: UI technology identifier (e.g., "spreading_basins")
+    
+    Returns:
+        str: DSS status ("Rejected", "Conditionally Recommended", "Recommended", "Recommended with Warnings")
+             or None if not found
+    """
+    dss_results = dash_storage.get_data("dss_results")
+    if dss_results is None or not hasattr(dss_results, 'results') or not dss_results.results:
+        return None
+    
+    # Map UI identifier to DSS option name
+    dss_option_name = UI_TO_DSS_MAPPING.get(ui_tech_id)
+    if dss_option_name is None:
+        return None
+    
+    # Get result from DSS
+    result = dss_results.results.get(dss_option_name)
+    if result is None:
+        return None
+    
+    return result.get("status")
 
 def get_graph_inputs():
     """Get the inputs for the graph with validation."""
@@ -836,7 +872,8 @@ def setup_analysis_callbacks(app):
             return title, dash.no_update
         return dash.no_update, dash.no_update
     
-    # Callback to populate feasible, conditionally feasible, and infeasible technology cards based on analysis results
+    # Callback to populate feasible, conditionally feasible, and infeasible technology cards based on DSS results
+    # This callback reads results from forward_run() -> DSS.evaluate() which are stored in dash_storage["dss_results"]
     @app.callback(
         [Output("feasible-technologies-container", "children"),
          Output("conditionally-feasible-technologies-container", "children"),
@@ -844,69 +881,91 @@ def setup_analysis_callbacks(app):
         [Input("top-tabs", "active_tab"),
          Input("analysis-tabs", "active_tab"),
          Input("knowledge-graph-store", "data")],
+        # Note: DSS results are stored in dash_storage by run_integrated_analysis() -> forward_run()
+        # We trigger on knowledge-graph-store which gets updated when analysis runs (which includes DSS)
+        # The callback reads dss_results from dash_storage directly
         prevent_initial_call=False
     )
     def populate_technology_cards(top_tab, analysis_tab, graph_store):
-        """Populate feasible, conditionally feasible, and infeasible technology cards based on decision graph results."""
+        """Populate feasible, conditionally feasible, and infeasible technology cards based on DSS results.
+        
+        This function EXCLUSIVELY uses DSS evaluation results from forward_run() to categorize technologies.
+        The categorization is based on the DSS status field:
+        
+        - "Rejected" -> Infeasible MAR Technologies
+          (Technology fails hard constraints or has soft constraints with level 4 (Reject))
+          or has hard soft constraints with level >= 2 (Warning/Mitigation/Reject))
+        
+        - "Conditionally Recommended" -> Conditionally Feasible MAR Technologies
+          (Technology passes all constraints but requires mitigations)
+        
+        - "Recommended" -> Feasible MAR Technologies
+          (Technology passes all constraints with no warnings or mitigations)
+        
+        - "Recommended with Warnings" -> Feasible MAR Technologies
+          (Technology passes all constraints but has warnings)
+        
+        If DSS results are not available, all technologies are shown as empty lists.
+        """
         import dash_bootstrap_components as dbc
         
         # Technology list with labels
         all_technologies = TECHNOLOGY_NAMES.copy()
         
-        # Default: assume all basic technologies are feasible, advanced ones are infeasible
-        default_feasible = ["spreading_basins", "injection_wells", "dry_wells"]        
-        default_conditionally_feasible = []
-        default_infeasible = []
+        # Initialize lists - start empty, only populate from DSS results
+        feasible_list = []
+        conditionally_feasible_list = []
+        infeasible_list = []
         
-        feasible_list = default_feasible.copy()
-        conditionally_feasible_list = default_conditionally_feasible.copy()
-        infeasible_list = default_infeasible.copy()
-        
-        # Try to extract feasible technologies from decision graph
+        # Get DSS results from forward_run() - this is the ONLY source of truth
         try:
-            graph = dash_storage.get_data("decision_graph")
-            if graph is not None:
-                # Get all node values
-                aq_type = graph.get_node_value('aq_type')
-                if aq_type and str(aq_type).lower() == "unconfined":
-                    if not graph.get_node_value('surface_recharge_suitability'):
-                        if "spreading_basins" in feasible_list:
-                            feasible_list.remove("spreading_basins")
-                            conditionally_feasible_list.append("spreading_basins")
-                else:  # confined aquifer
-                    # Spreading basins are infeasible for confined aquifers
-                    if "spreading_basins" in feasible_list:
-                        feasible_list.remove("spreading_basins")
-                        infeasible_list.append("spreading_basins")
-                    
-                    # Dry wells are infeasible for confined aquifers
-                    if "dry_wells" in feasible_list:
-                        feasible_list.remove("dry_wells")
-                        infeasible_list.append("dry_wells")
-
-                    # Check injection wells feasibility for confined
-                    if "injection_wells" in feasible_list:
-                        confined_rechargability = graph.get_node_value('confined_rechargability')
-                        leakage = graph.get_node_value('leakage_significance')
-                        
-                        # Move to conditionally feasible if rechargability is low
-                        if confined_rechargability is not None and confined_rechargability < 50:
-                            feasible_list.remove("injection_wells")
-                            if "injection_wells" not in conditionally_feasible_list:
-                                conditionally_feasible_list.append("injection_wells")
-                        
-                        # Move to conditionally feasible if leakage is not low
-                        if leakage != "low":
-                            if "injection_wells" in feasible_list:
-                                feasible_list.remove("injection_wells")
-                            if "injection_wells" not in conditionally_feasible_list:
-                                conditionally_feasible_list.append("injection_wells")                   
-               
+            dss_results = dash_storage.get_data("dss_results")
+            
+            if dss_results is None:
+                logger.warning("DSS results not found in storage. Run analysis first to populate technology cards.")
+                # Return empty lists - don't show any technologies until DSS has run
+            elif not hasattr(dss_results, 'results'):
+                logger.warning("DSS results object missing 'results' attribute.")
+            elif not dss_results.results:
+                logger.warning("DSS results dictionary is empty.")
+            else:
+                # Process each technology from DSS results
+                logger.debug(f"Processing {len(dss_results.results)} technologies from DSS results")
                 
+                for dss_option_name, result in dss_results.results.items():
+                    # Map DSS option name to UI technology identifier
+                    ui_tech_id = DSS_TO_UI_MAPPING.get(dss_option_name)
+                    
+                    if ui_tech_id is None:
+                        # Skip options that don't have a UI mapping (e.g., "Surface Recharge with Treatment")
+                        logger.debug(f"Skipping {dss_option_name} - no UI mapping")
+                        continue
+                    
+                    # Get status from DSS result
+                    status = result.get("status", "Rejected")
+                    
+                    # Categorize based on DSS status (from forward_run -> DSS.evaluate())
+                    if status == "Rejected":
+                        infeasible_list.append(ui_tech_id)
+                        logger.debug(f"{dss_option_name} ({ui_tech_id}) -> Infeasible (status: {status})")
+                    elif status == "Conditionally Recommended":
+                        conditionally_feasible_list.append(ui_tech_id)
+                        logger.debug(f"{dss_option_name} ({ui_tech_id}) -> Conditionally Feasible (status: {status})")
+                    elif status in ["Recommended", "Recommended with Warnings"]:
+                        feasible_list.append(ui_tech_id)
+                        logger.debug(f"{dss_option_name} ({ui_tech_id}) -> Feasible (status: {status})")
+                    else:
+                        # Unknown status - log warning and treat as conditionally feasible for safety
+                        logger.warning(f"Unknown DSS status '{status}' for {dss_option_name}, treating as conditionally feasible")
+                        conditionally_feasible_list.append(ui_tech_id)
+                
+                logger.info(f"DSS-based categorization complete: {len(feasible_list)} feasible, "
+                          f"{len(conditionally_feasible_list)} conditionally feasible, "
+                          f"{len(infeasible_list)} infeasible")
             
         except Exception as e:
-            logger.warning(f"Error extracting feasible technologies from graph: {e}")
-            # Use default lists on error
+            logger.error(f"Error extracting feasible technologies from DSS results: {e}", exc_info=True)
+            # On error, return empty lists - don't show incorrect information
         
         # Create feasible technologies RadioItems
         feasible_options = [
@@ -923,18 +982,34 @@ def setup_analysis_callbacks(app):
         )
         
         # Create conditionally feasible technologies RadioItems
+        # Always create the RadioItems component (even if empty) so callbacks can reference it
         conditionally_feasible_options = [
             {"label": all_technologies.get(tech, tech.replace("_", " ").title()), "value": tech}
             for tech in conditionally_feasible_list if tech in all_technologies
         ]
         
-        conditionally_feasible_content = dbc.RadioItems(
-            id="conditionally-feasible-technologies",
-            options=conditionally_feasible_options,
-            value=None,
-            inline=False,
-            className="mb-3"
-        ) if conditionally_feasible_options else html.P("No conditionally feasible technologies identified.", className="text-muted")
+        if conditionally_feasible_options:
+            conditionally_feasible_content = dbc.RadioItems(
+                id="conditionally-feasible-technologies",
+                options=conditionally_feasible_options,
+                value=None,
+                inline=False,
+                className="mb-3"
+            )
+        else:
+            # Create empty RadioItems to ensure the component exists for callbacks
+            # Wrap it in a div with a message
+            conditionally_feasible_content = html.Div([
+                dbc.RadioItems(
+                    id="conditionally-feasible-technologies",
+                    options=[],
+                    value=None,
+                    inline=False,
+                    className="mb-3",
+                    style={"display": "none"}  # Hide when empty
+                ),
+                html.P("No conditionally feasible technologies identified.", className="text-muted")
+            ])
         
         # Create infeasible technologies list
         infeasible_items = [
@@ -972,9 +1047,12 @@ def setup_analysis_callbacks(app):
         trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
         
         # Determine selected technology and whether it's conditionally feasible
+        # Also check DSS status to ensure consistency
         if trigger_id == "feasible-technologies" and feasible_tech:
             selected_technology = feasible_tech
-            is_conditionally_feasible = False
+            # Check DSS status to confirm it's not conditionally feasible
+            dss_status = get_dss_status_for_technology(selected_technology)
+            is_conditionally_feasible = (dss_status == "Conditionally Recommended")
             clear_feasible = dash.no_update
             clear_conditionally = None  # Clear the other list
             alert_color = "success"
@@ -982,7 +1060,9 @@ def setup_analysis_callbacks(app):
             alert_note = "This technology has been saved for your analysis."
         elif trigger_id == "conditionally-feasible-technologies" and conditionally_feasible_tech:
             selected_technology = conditionally_feasible_tech
-            is_conditionally_feasible = True
+            # Check DSS status to confirm it's conditionally feasible
+            dss_status = get_dss_status_for_technology(selected_technology)
+            is_conditionally_feasible = (dss_status == "Conditionally Recommended" or dss_status is None)
             clear_feasible = None  # Clear the other list
             clear_conditionally = dash.no_update
             alert_color = "warning"

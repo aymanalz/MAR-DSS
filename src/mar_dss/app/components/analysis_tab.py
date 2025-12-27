@@ -8,6 +8,7 @@ from dash import html, dcc
 # Import all the analysis components
 try:
     from mar_dss.app.components.dashboard_tab import create_dashboard_content
+    from mar_dss.app.components.feasibilities_tab import create_feasibilities_content
     from mar_dss.app.components.dss_algorithm_tab import create_dss_algorithm_content
     from mar_dss.app.components.decision_sensitivity_tab import create_decision_sensitivity_content
     from mar_dss.app.components.decision_interpretation_tab import create_decision_interpretation_content
@@ -17,6 +18,7 @@ try:
     from mar_dss.app.components.engineering_options_tab import create_cost_content
 except ImportError:
     from .dashboard_tab import create_dashboard_content
+    from .feasibilities_tab import create_feasibilities_content
     from .dss_algorithm_tab import create_dss_algorithm_content
     from .decision_sensitivity_tab import create_decision_sensitivity_content
     from .decision_interpretation_tab import create_decision_interpretation_content
@@ -31,6 +33,22 @@ def create_analysis_tab_content():
     return [
         dbc.Tabs(
             [
+                dbc.Tab(
+                    label="Feasibilities",
+                    tab_id="analysis-feasibilities",
+                    children=[html.Div(id="analysis-feasibilities-content", children="Loading...")],  # Lazy load
+                    label_style={
+                        "color": "#ffffff", 
+                        "fontWeight": "bold",
+                        "backgroundColor": "#dc3545",
+                        "border": "1px solid #dc3545"
+                    },
+                    active_label_style={
+                        "color": "#ffffff", 
+                        "backgroundColor": "#c82333",
+                        "border": "1px solid #c82333"
+                    },
+                ),
                 dbc.Tab(
                     label="Feasibility Summary",
                     tab_id="analysis-dashboard",
@@ -161,7 +179,7 @@ def create_analysis_tab_content():
                 ),
             ],
             id="analysis-tabs",
-            active_tab="analysis-dashboard",
+            active_tab="analysis-feasibilities",
         ),
         # Hidden store to trigger knowledge graph initialization
         dcc.Store(id="knowledge-graph-store", data={"initialized": False}),
