@@ -36,7 +36,7 @@ def create_analysis_tab_content():
                 dbc.Tab(
                     label="Feasibilities",
                     tab_id="analysis-feasibilities",
-                    children=[html.Div(id="analysis-feasibilities-content", children="Loading...")],  # Lazy load
+                    children=create_feasibilities_content(),  # Load immediately
                     label_style={
                         "color": "#ffffff", 
                         "fontWeight": "bold",

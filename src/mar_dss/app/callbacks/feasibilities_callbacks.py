@@ -8,25 +8,13 @@ import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import pandas as pd
 import mar_dss.app.utils.data_storage as dash_storage
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def setup_feasibilities_callbacks(app):
     """Set up all callbacks for the Feasibilities tab."""
-    
-    @app.callback(
-        Output("analysis-feasibilities-content", "children"),
-        [Input("analysis-tabs", "active_tab")],
-        prevent_initial_call=True
-    )
-    def load_feasibilities_content(active_tab):
-        """Load feasibilities content when the tab is accessed."""
-        if active_tab == "analysis-feasibilities":
-            try:
-                from mar_dss.app.components.feasibilities_tab import create_feasibilities_content
-            except ImportError:
-                from ..components.feasibilities_tab import create_feasibilities_content
-            return create_feasibilities_content()
-        return "Loading..."
     
     @app.callback(
         [Output("executive-summary-content", "children"),
@@ -37,19 +25,34 @@ def setup_feasibilities_callbacks(app):
          Output("capital-cost-chart", "figure"),
          Output("maintenance-cost-chart", "figure"),
          Output("npv-cost-chart", "figure")],
-        [Input("analysis-tabs", "active_tab"),
+        [Input("top-tabs", "active_tab"),
+         Input("analysis-tabs", "active_tab"),
          Input("knowledge-graph-store", "data")],
         prevent_initial_call=False
     )
-    def update_feasibilities_dashboard(active_tab, graph_store):
+    def update_feasibilities_dashboard(top_tab, active_tab, graph_store):
         """Update Executive Summary and Decision Funnel based on DSS results."""
-        # Only update if we're on the feasibilities tab
-        if active_tab != "analysis-feasibilities":
+        # Update when Analysis tab is accessed OR when Feasibilities sub-tab is selected
+        # This ensures data loads immediately when Analysis tab opens
+        if top_tab != "analysis" and active_tab != "analysis-feasibilities":
             return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
         
         # Get DSS results from storage
         dss_results = dash_storage.get_data("dss_results")
         
+        # If no DSS results exist, trigger the integrated analysis
+        if dss_results is None or not hasattr(dss_results, 'results') or not dss_results.results:
+            logger.info("No DSS results found. Running integrated analysis...")
+            try:
+                # Import here to avoid circular imports
+                from mar_dss.app.callbacks.analysis_callbacks import run_integrated_analysis
+                dss_results, _ = run_integrated_analysis()
+                logger.info("Integrated analysis completed successfully")
+            except Exception as e:
+                logger.error(f"Error running integrated analysis: {e}", exc_info=True)
+                # Continue with empty results - will show "No data" message
+        
+        # Check again after potentially running analysis
         if dss_results is None or not hasattr(dss_results, 'results') or not dss_results.results:
             # No results available
             no_data_msg = html.Div(
