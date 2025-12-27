@@ -37,12 +37,24 @@ def setup_feasibilities_callbacks(app):
         if top_tab != "analysis" and active_tab != "analysis-feasibilities":
             return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
         
+        # CRITICAL: Always ensure analysis has run before checking for results
+        # This prevents race conditions where this callback runs before analysis completes
+        if top_tab == "analysis":
+            logger.debug("Analysis tab accessed - ensuring feasibility analysis has run")
+            try:
+                # Import here to avoid circular imports
+                from mar_dss.app.callbacks.analysis_callbacks import run_feasibility_analysis
+                run_feasibility_analysis()
+                logger.debug("Feasibility analysis completed")
+            except Exception as e:
+                logger.error(f"Error running feasibility analysis: {e}", exc_info=True)
+        
         # Get DSS results from storage
         dss_results = dash_storage.get_data("dss_results")
         
-        # If no DSS results exist, trigger the integrated analysis
+        # If no DSS results exist after running analysis, try running integrated analysis directly
         if dss_results is None or not hasattr(dss_results, 'results') or not dss_results.results:
-            logger.info("No DSS results found. Running integrated analysis...")
+            logger.info("No DSS results found after feasibility analysis. Running integrated analysis directly...")
             try:
                 # Import here to avoid circular imports
                 from mar_dss.app.callbacks.analysis_callbacks import run_integrated_analysis

@@ -786,7 +786,11 @@ def run_integrated_analysis():
 
 
 def run_feasibility_analysis():
-    """Run the feasibility analysis only if inputs have changed (hash-based caching)."""
+    """Run the feasibility analysis only if inputs have changed (hash-based caching).
+    
+    However, always ensures DSS results exist - if they don't, runs integrated analysis
+    even if inputs haven't changed.
+    """
     # Get current inputs
     inputs = get_graph_inputs()
     
@@ -796,16 +800,29 @@ def run_feasibility_analysis():
     # Get the last stored hash
     last_hash = dash_storage.get_data("feasibility_analysis_hash")
     
+    # Check if DSS results exist
+    dss_results = dash_storage.get_data("dss_results")
+    has_dss_results = (dss_results is not None and 
+                      hasattr(dss_results, 'results') and 
+                      dss_results.results)
+    
     # Check if inputs have changed
     if current_hash == last_hash and last_hash is not None:
-        # Inputs haven't changed, skip analysis
+        # Inputs haven't changed
         logger.debug("Feasibility analysis skipped - inputs unchanged (hash match)")
-        # Still return the existing graph if available
+        
+        # Still ensure graph exists
         graph = dash_storage.get_data("decision_graph")
         if graph is None:
             # If no graph exists, we need to create one
             graph = get_session_graph()
             dash_storage.set_data("decision_graph", graph)
+        
+        # CRITICAL: If DSS results don't exist, run integrated analysis anyway
+        # This handles cases where results were cleared or this is the first run
+        if not has_dss_results:
+            logger.info("Inputs unchanged but DSS results missing - running integrated analysis")
+            dss_results, cost_calculator = run_integrated_analysis()
         
         return 1
     
@@ -844,409 +861,99 @@ def setup_analysis_callbacks(app):
             return {"initialized": True}
         return dash.no_update
     
-    # Callback to update title and print when Analysis tab or Feasibility Summary tab is selected
+    # Callback to trigger analysis when Analysis tab is accessed
     @app.callback(
-        [Output("feasibility-summary-title", "children"),
-         Output("knowledge-graph-store", "data", allow_duplicate=True)],
-        [Input("top-tabs", "active_tab"),
-         Input("analysis-tabs", "active_tab")],
+        Output("knowledge-graph-store", "data", allow_duplicate=True),
+        [Input("top-tabs", "active_tab")],
         prevent_initial_call='initial_duplicate'
     )
-    def handle_feasibility_summary_tab(top_tab, analysis_tab):
-        """Handle when Analysis tab or Feasibility Summary tab is selected."""
-
-
-        # Trigger when Analysis tab is selected OR when Feasibility Summary sub-tab is selected
-        if top_tab == "analysis" or analysis_tab == "analysis-dashboard":
+    def handle_analysis_tab_access(active_tab):
+        """Handle when Analysis tab is selected - trigger feasibility analysis."""
+        # Trigger when Analysis tab is selected
+        if active_tab == "analysis":
             # Run feasibility analysis (which includes integrated analysis if inputs changed)
             # run_feasibility_analysis() already calls run_integrated_analysis() when needed
             run_feasibility_analysis()
-            
-            # Get project name from data_storage
-            project_name = dash_storage.get_data("project_name") or ""
-            # Update title with project name
-            if project_name:
-                title = f"Feasible MAR Technologies - {project_name}"
-            else:
-                title = "Feasible MAR Technologies"
-            return title, dash.no_update
-        return dash.no_update, dash.no_update
+        return dash.no_update
     
-    # Callback to populate feasible, conditionally feasible, and infeasible technology cards based on DSS results
-    # This callback reads results from forward_run() -> DSS.evaluate() which are stored in dash_storage["dss_results"]
-    @app.callback(
-        [Output("feasible-technologies-container", "children"),
-         Output("conditionally-feasible-technologies-container", "children"),
-         Output("infeasible-technologies-container", "children")],
-        [Input("top-tabs", "active_tab"),
-         Input("analysis-tabs", "active_tab"),
-         Input("knowledge-graph-store", "data")],
-        # Note: DSS results are stored in dash_storage by run_integrated_analysis() -> forward_run()
-        # We trigger on knowledge-graph-store which gets updated when analysis runs (which includes DSS)
-        # The callback reads dss_results from dash_storage directly
-        prevent_initial_call=False
-    )
-    def populate_technology_cards(top_tab, analysis_tab, graph_store):
-        """Populate feasible, conditionally feasible, and infeasible technology cards based on DSS results.
-        
-        This function EXCLUSIVELY uses DSS evaluation results from forward_run() to categorize technologies.
-        The categorization is based on the DSS status field:
-        
-        - "Rejected" -> Infeasible MAR Technologies
-          (Technology fails hard constraints or has soft constraints with level 4 (Reject))
-          or has hard soft constraints with level >= 2 (Warning/Mitigation/Reject))
-        
-        - "Conditionally Recommended" -> Conditionally Feasible MAR Technologies
-          (Technology passes all constraints but requires mitigations)
-        
-        - "Recommended" -> Feasible MAR Technologies
-          (Technology passes all constraints with no warnings or mitigations)
-        
-        - "Recommended with Warnings" -> Feasible MAR Technologies
-          (Technology passes all constraints but has warnings)
-        
-        If DSS results are not available, all technologies are shown as empty lists.
-        """
-        import dash_bootstrap_components as dbc
-        
-        # Technology list with labels
-        all_technologies = TECHNOLOGY_NAMES.copy()
-        
-        # Initialize lists - start empty, only populate from DSS results
-        feasible_list = []
-        conditionally_feasible_list = []
-        infeasible_list = []
-        
-        # Get DSS results from forward_run() - this is the ONLY source of truth
-        try:
-            dss_results = dash_storage.get_data("dss_results")
-            
-            if dss_results is None:
-                logger.warning("DSS results not found in storage. Run analysis first to populate technology cards.")
-                # Return empty lists - don't show any technologies until DSS has run
-            elif not hasattr(dss_results, 'results'):
-                logger.warning("DSS results object missing 'results' attribute.")
-            elif not dss_results.results:
-                logger.warning("DSS results dictionary is empty.")
-            else:
-                # Process each technology from DSS results
-                logger.debug(f"Processing {len(dss_results.results)} technologies from DSS results")
-                
-                for dss_option_name, result in dss_results.results.items():
-                    # Map DSS option name to UI technology identifier
-                    ui_tech_id = DSS_TO_UI_MAPPING.get(dss_option_name)
-                    
-                    if ui_tech_id is None:
-                        # Skip options that don't have a UI mapping (e.g., "Surface Recharge with Treatment")
-                        logger.debug(f"Skipping {dss_option_name} - no UI mapping")
-                        continue
-                    
-                    # Get status from DSS result
-                    status = result.get("status", "Rejected")
-                    
-                    # Categorize based on DSS status (from forward_run -> DSS.evaluate())
-                    if status == "Rejected":
-                        infeasible_list.append(ui_tech_id)
-                        logger.debug(f"{dss_option_name} ({ui_tech_id}) -> Infeasible (status: {status})")
-                    elif status == "Conditionally Recommended":
-                        conditionally_feasible_list.append(ui_tech_id)
-                        logger.debug(f"{dss_option_name} ({ui_tech_id}) -> Conditionally Feasible (status: {status})")
-                    elif status in ["Recommended", "Recommended with Warnings"]:
-                        feasible_list.append(ui_tech_id)
-                        logger.debug(f"{dss_option_name} ({ui_tech_id}) -> Feasible (status: {status})")
-                    else:
-                        # Unknown status - log warning and treat as conditionally feasible for safety
-                        logger.warning(f"Unknown DSS status '{status}' for {dss_option_name}, treating as conditionally feasible")
-                        conditionally_feasible_list.append(ui_tech_id)
-                
-                logger.info(f"DSS-based categorization complete: {len(feasible_list)} feasible, "
-                          f"{len(conditionally_feasible_list)} conditionally feasible, "
-                          f"{len(infeasible_list)} infeasible")
-            
-        except Exception as e:
-            logger.error(f"Error extracting feasible technologies from DSS results: {e}", exc_info=True)
-            # On error, return empty lists - don't show incorrect information
-        
-        # Create feasible technologies RadioItems
-        feasible_options = [
-            {"label": all_technologies.get(tech, tech.replace("_", " ").title()), "value": tech}
-            for tech in feasible_list if tech in all_technologies
-        ]
-        
-        feasible_content = dbc.RadioItems(
-            id="feasible-technologies",
-            options=feasible_options,
-            value=None,
-            inline=False,
-            className="mb-3"
-        )
-        
-        # Create conditionally feasible technologies RadioItems
-        # Always create the RadioItems component (even if empty) so callbacks can reference it
-        conditionally_feasible_options = [
-            {"label": all_technologies.get(tech, tech.replace("_", " ").title()), "value": tech}
-            for tech in conditionally_feasible_list if tech in all_technologies
-        ]
-        
-        if conditionally_feasible_options:
-            conditionally_feasible_content = dbc.RadioItems(
-                id="conditionally-feasible-technologies",
-                options=conditionally_feasible_options,
-                value=None,
-                inline=False,
-                className="mb-3"
-            )
-        else:
-            # Create empty RadioItems to ensure the component exists for callbacks
-            # Wrap it in a div with a message
-            conditionally_feasible_content = html.Div([
-                dbc.RadioItems(
-                    id="conditionally-feasible-technologies",
-                    options=[],
-                    value=None,
-                    inline=False,
-                    className="mb-3",
-                    style={"display": "none"}  # Hide when empty
-                ),
-                html.P("No conditionally feasible technologies identified.", className="text-muted")
-            ])
-        
-        # Create infeasible technologies list
-        infeasible_items = [
-            html.Li(all_technologies.get(tech, tech.replace("_", " ").title()), className="mb-2")
-            for tech in infeasible_list if tech in all_technologies
-        ]
-        
-        infeasible_content = html.Ul(
-            infeasible_items,
-            className="mb-3"
-        ) if infeasible_items else html.P("No infeasible technologies identified.", className="text-muted")
-        
-        return feasible_content, conditionally_feasible_content, infeasible_content
+    # DISABLED: Callback removed because Feasibility Summary tab was removed
+    # This callback populated technology cards in the removed tab
+    # @app.callback(
+    #     [Output("feasible-technologies-container", "children"),
+    #      Output("conditionally-feasible-technologies-container", "children"),
+    #      Output("infeasible-technologies-container", "children")],
+    #     [Input("top-tabs", "active_tab"),
+    #      Input("analysis-tabs", "active_tab"),
+    #      Input("knowledge-graph-store", "data")],
+    #     prevent_initial_call=False
+    # )
+    # def populate_technology_cards(top_tab, analysis_tab, graph_store):
+    #     """Populate feasible, conditionally feasible, and infeasible technology cards based on DSS results."""
+    #     # Function body commented out - tab was removed
+    #     pass
     
-    # Combined callback to handle BOTH feasible and conditionally feasible technology selections
-    @app.callback(
-        [Output("technology-selection-feedback", "children"),
-         Output("feasible-technologies", "value", allow_duplicate=True),
-         Output("conditionally-feasible-technologies", "value", allow_duplicate=True),
-         Output("overall-feasibility-score", "children", allow_duplicate=True),
-         Output("total-project-cost", "children", allow_duplicate=True)],
-        [Input("feasible-technologies", "value"),
-         Input("conditionally-feasible-technologies", "value")],
-        prevent_initial_call=True
-    )
-    def handle_technology_selection(feasible_tech, conditionally_feasible_tech):
-        """Handle technology selection from both Feasible and Conditionally Feasible lists."""
-        import dash_bootstrap_components as dbc
-        
-        # Determine which input triggered the callback
-        ctx = dash.callback_context
-        if not ctx.triggered:
-            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
-        
-        trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
-        
-        # Determine selected technology and whether it's conditionally feasible
-        # Also check DSS status to ensure consistency
-        if trigger_id == "feasible-technologies" and feasible_tech:
-            selected_technology = feasible_tech
-            # Check DSS status to confirm it's not conditionally feasible
-            dss_status = get_dss_status_for_technology(selected_technology)
-            is_conditionally_feasible = (dss_status == "Conditionally Recommended")
-            clear_feasible = dash.no_update
-            clear_conditionally = None  # Clear the other list
-            alert_color = "success"
-            alert_icon = "✅"
-            alert_note = "This technology has been saved for your analysis."
-        elif trigger_id == "conditionally-feasible-technologies" and conditionally_feasible_tech:
-            selected_technology = conditionally_feasible_tech
-            # Check DSS status to confirm it's conditionally feasible
-            dss_status = get_dss_status_for_technology(selected_technology)
-            is_conditionally_feasible = (dss_status == "Conditionally Recommended" or dss_status is None)
-            clear_feasible = None  # Clear the other list
-            clear_conditionally = dash.no_update
-            alert_color = "warning"
-            alert_icon = "⚠️"
-            alert_note = "This technology may be feasible with certain conditions or modifications."
-        else:
-            # Deselection case
-            dash_storage.set_data("selected_mar_technology", None)
-            dash_storage.set_data("is_conditionally_feasible", False)
-            return (html.Div(), dash.no_update, dash.no_update, 
-                    "Overall Feasibility Score: 0%", "Total Project Cost: $0 - $0")
-        
-        # Save selected technology
-        dash_storage.set_data("selected_mar_technology", selected_technology)
-        dash_storage.set_data("is_conditionally_feasible", is_conditionally_feasible)
-        
-        # Format the technology name for display
-        tech_name = selected_technology.replace('_', ' ').title()
-        
-        # Create alert
-        feedback = dbc.Alert(
-            [
-                html.Strong(f"{alert_icon} {tech_name} selected" + 
-                           (" (Conditionally Feasible)" if is_conditionally_feasible else "")),
-                html.Br(),
-                html.Small(alert_note, className="text-muted")
-            ],
-            color=alert_color,
-            className="mb-0"
-        )
-        
-        logger.debug(f"Selected MAR Technology: {selected_technology}" + 
-              (" (Conditionally Feasible)" if is_conditionally_feasible else ""))
-        
-        # Run feasibility analysis
-        run_feasibility_analysis()
-        
-        # Calculate and update feasibility score and cost
-        graph = dash_storage.get_data("decision_graph")
-        feasibility_score = calculate_feasibility_score(selected_technology, graph)
-        cost_range = calculate_project_cost_range(selected_technology)
-        
-        logger.debug(f"Calculated feasibility score: {feasibility_score}%")
-        logger.debug(f"Calculated cost range: {cost_range}")
-        
-        feasibility_score_text = f"Overall Feasibility Score: {feasibility_score}%"
-        cost_text = f"Total Project Cost: {cost_range}"
-        
-        return feedback, clear_feasible, clear_conditionally, feasibility_score_text, cost_text
+    # DISABLED: Callback removed because Feasibility Summary tab was removed
+    # @app.callback(
+    #     [Output("technology-selection-feedback", "children"),
+    #      Output("feasible-technologies", "value", allow_duplicate=True),
+    #      Output("conditionally-feasible-technologies", "value", allow_duplicate=True),
+    #      Output("overall-feasibility-score", "children", allow_duplicate=True),
+    #      Output("total-project-cost", "children", allow_duplicate=True)],
+    #     [Input("feasible-technologies", "value"),
+    #      Input("conditionally-feasible-technologies", "value")],
+    #      prevent_initial_call=True
+    # )
+    # def handle_technology_selection(feasible_tech, conditionally_feasible_tech):
+    #     """Handle technology selection from both Feasible and Conditionally Feasible lists."""
+    #     # Function body commented out - tab was removed
+    #     pass
     
-    # Callback to update feasibility score and cost when analysis runs or dashboard loads
-    @app.callback(
-        [Output("overall-feasibility-score", "children", allow_duplicate=True),
-         Output("total-project-cost", "children", allow_duplicate=True)],
-        [Input("top-tabs", "active_tab"),
-         Input("analysis-tabs", "active_tab"),
-         Input("knowledge-graph-store", "data")],
-        prevent_initial_call='initial_duplicate'
-    )
-    def update_feasibility_metrics(top_tab, analysis_tab, graph_store):
-        """Update feasibility score and cost when analysis runs or dashboard is accessed."""
-        # Check what triggered this callback
-        ctx = dash.callback_context
-        if ctx.triggered:
-            trigger_id = ctx.triggered[0]["prop_id"]
-            # CRITICAL: If triggered by knowledge-graph-store, do NOT update
-            # The selection callbacks handle all updates during technology selection
-            # This callback should ONLY update on tab navigation
-            if "knowledge-graph-store" in trigger_id:
-                logger.debug("Ignoring knowledge-graph-store trigger in update_feasibility_metrics")
-                return dash.no_update, dash.no_update
-        
-        # Only update if we're on the analysis tab
-        if top_tab != "analysis":
-            return dash.no_update, dash.no_update
-        
-        logger.debug("Tab change detected, updating metrics")
-        
-        # Get selected technology
-        selected_technology = dash_storage.get_data("selected_mar_technology")
-        
-        if selected_technology:
-            # Calculate and update feasibility score and cost
-            graph = dash_storage.get_data("decision_graph")
-            feasibility_score = calculate_feasibility_score(selected_technology, graph)
-            cost_range = calculate_project_cost_range(selected_technology)
-            
-            feasibility_score_text = f"Overall Feasibility Score: {feasibility_score}%"
-            cost_text = f"Total Project Cost: {cost_range}"
-            
-            logger.debug(f"Updated to: {feasibility_score_text}, {cost_text}")
-            return feasibility_score_text, cost_text
-        else:
-            # No technology selected and we are loading the tab
-            logger.debug("No technology selected, setting defaults")
-            return "Overall Feasibility Score: 0%", "Total Project Cost: $0 - $0"
+    # DISABLED: Callback removed because Feasibility Summary tab was removed
+    # @app.callback(
+    #     [Output("overall-feasibility-score", "children", allow_duplicate=True),
+    #      Output("total-project-cost", "children", allow_duplicate=True)],
+    #     [Input("top-tabs", "active_tab"),
+    #      Input("analysis-tabs", "active_tab"),
+    #      Input("knowledge-graph-store", "data")],
+    #     prevent_initial_call='initial_duplicate'
+    # )
+    # def update_feasibility_metrics(top_tab, analysis_tab, graph_store):
+    #     """Update feasibility score and cost when analysis runs or dashboard is accessed."""
+    #     # Function body commented out - tab was removed
+    #     pass
     
-    # Callback to update individual feasibility metrics in the Feasibility Metrics tab
-    @app.callback(
-        [
-            Output("feasibility-metric-physical", "value"),
-            Output("feasibility-metric-physical", "color"),
-            Output("feasibility-metric-environmental", "value"),
-            Output("feasibility-metric-environmental", "color"),
-            Output("feasibility-metric-legal", "value"),
-            Output("feasibility-metric-legal", "color"),
-            Output("feasibility-metric-cost", "value"),
-            Output("feasibility-metric-cost", "color"),
-            Output("feasibility-metric-technical", "value"),
-            Output("feasibility-metric-technical", "color"),
-            Output("feasibility-metric-social", "value"),
-            Output("feasibility-metric-social", "color"),
-            Output("feasibility-metrics-overall-score", "children"),
-            Output("feasibility-metrics-summary-text", "children"),
-        ],
-        [
-            Input("top-tabs", "active_tab"),
-            Input("analysis-tabs", "active_tab"),
-            Input("technology-analysis-tabs", "active_tab"),
-            Input("feasible-technologies-container", "children"),  # Trigger when technologies are populated
-            Input("conditionally-feasible-technologies-container", "children"),  # Trigger when technologies are populated
-            Input("knowledge-graph-store", "data"),
-        ],
-        prevent_initial_call=False
-    )
-    def update_individual_feasibility_metrics(top_tab, analysis_tab, tech_analysis_tab, feasible_container, conditionally_feasible_container, graph_store):
-        """Update individual feasibility metrics when technology is selected or tab is accessed."""
-        # Only update if we're on the analysis tab and feasibility metrics sub-tab
-        if top_tab != "analysis" or tech_analysis_tab != "feasibility-metrics":
-            return [dash.no_update] * 14
-        
-        # Get selected technology from data storage (set by handle_technology_selection callback)
-        selected_technology = dash_storage.get_data("selected_mar_technology")
-        
-        if selected_technology is None:
-            # No technology selected - return zeros
-            return (
-                0, "secondary",  # Physical
-                0, "secondary",  # Environmental
-                0, "secondary",  # Legal
-                0, "secondary",  # Cost
-                0, "secondary",  # Technical
-                0, "secondary",  # Social
-                "Overall Feasibility Score: 0%",
-                "Select a technology to view detailed feasibility metrics."
-            )
-        
-        # Calculate individual metrics
-        graph = dash_storage.get_data("decision_graph")
-        metrics = calculate_individual_feasibility_metrics(selected_technology, graph)
-        overall_score = calculate_feasibility_score(selected_technology, graph)
-        
-        # Determine color for each metric based on score
-        def get_color(score):
-            if score >= 80:
-                return "success"
-            elif score >= 60:
-                return "info"
-            elif score >= 40:
-                return "warning"
-            else:
-                return "danger"
-        
-        # Generate summary text
-        tech_name = selected_technology.replace('_', ' ').title()
-        if overall_score >= 80:
-            summary_text = f"Based on the selected technology ({tech_name}) and site conditions, the overall feasibility is high. The project shows strong potential across most evaluation criteria."
-        elif overall_score >= 60:
-            summary_text = f"Based on the selected technology ({tech_name}) and site conditions, the overall feasibility is moderate. Consider focusing on lower-scoring metrics to improve project viability."
-        elif overall_score >= 40:
-            summary_text = f"Based on the selected technology ({tech_name}) and site conditions, the overall feasibility is low. Significant improvements or alternative approaches may be needed."
-        else:
-            summary_text = f"Based on the selected technology ({tech_name}) and site conditions, the overall feasibility is very low. This technology may not be suitable for this project."
-        
-        return (
-            round(metrics["physical"]), get_color(metrics["physical"]),  # Physical
-            round(metrics["environmental"]), get_color(metrics["environmental"]),  # Environmental
-            round(metrics["legal"]), get_color(metrics["legal"]),  # Legal
-            round(metrics["cost"]), get_color(metrics["cost"]),  # Cost
-            round(metrics["technical"]), get_color(metrics["technical"]),  # Technical
-            round(metrics["social"]), get_color(metrics["social"]),  # Social
-            f"Overall Feasibility Score: {overall_score}%",
-            summary_text
-        )
+    # DISABLED: Callback removed because Feasibility Summary tab was removed
+    # @app.callback(
+    #     [
+    #         Output("feasibility-metric-physical", "value"),
+    #         Output("feasibility-metric-physical", "color"),
+    #         Output("feasibility-metric-environmental", "value"),
+    #         Output("feasibility-metric-environmental", "color"),
+    #         Output("feasibility-metric-legal", "value"),
+    #         Output("feasibility-metric-legal", "color"),
+    #         Output("feasibility-metric-cost", "value"),
+    #         Output("feasibility-metric-cost", "color"),
+    #         Output("feasibility-metric-technical", "value"),
+    #         Output("feasibility-metric-technical", "color"),
+    #         Output("feasibility-metric-social", "value"),
+    #         Output("feasibility-metric-social", "color"),
+    #         Output("feasibility-metrics-overall-score", "children"),
+    #         Output("feasibility-metrics-summary-text", "children"),
+    #     ],
+    #     [
+    #         Input("top-tabs", "active_tab"),
+    #         Input("analysis-tabs", "active_tab"),
+    #         Input("technology-analysis-tabs", "active_tab"),
+    #         Input("feasible-technologies-container", "children"),
+    #         Input("conditionally-feasible-technologies-container", "children"),
+    #         Input("knowledge-graph-store", "data"),
+    #     ],
+    #     prevent_initial_call=False
+    # )
+    # def update_individual_feasibility_metrics(top_tab, analysis_tab, tech_analysis_tab, feasible_container, conditionally_feasible_container, graph_store):
+    #     """Update individual feasibility metrics when technology is selected or tab is accessed."""
+    #     # Function body commented out - tab was removed
+    #     pass
     
     @app.callback(
         Output("analysis-dss-algorithm-content", "children"),

@@ -7,7 +7,6 @@ from dash import html, dcc
 
 # Import all the analysis components
 try:
-    from mar_dss.app.components.dashboard_tab import create_dashboard_content
     from mar_dss.app.components.feasibilities_tab import create_feasibilities_content
     from mar_dss.app.components.dss_algorithm_tab import create_dss_algorithm_content
     from mar_dss.app.components.decision_sensitivity_tab import create_decision_sensitivity_content
@@ -17,7 +16,6 @@ try:
     from mar_dss.app.components.data_export_tab import create_data_export_content
     from mar_dss.app.components.engineering_options_tab import create_cost_content
 except ImportError:
-    from .dashboard_tab import create_dashboard_content
     from .feasibilities_tab import create_feasibilities_content
     from .dss_algorithm_tab import create_dss_algorithm_content
     from .decision_sensitivity_tab import create_decision_sensitivity_content
@@ -47,22 +45,6 @@ def create_analysis_tab_content():
                         "color": "#ffffff", 
                         "backgroundColor": "#c82333",
                         "border": "1px solid #c82333"
-                    },
-                ),
-                dbc.Tab(
-                    label="Feasibility Summary",
-                    tab_id="analysis-dashboard",
-                    children=create_dashboard_content(),  # Load immediately
-                    label_style={
-                        "color": "#ffffff", 
-                        "fontWeight": "bold",
-                        "backgroundColor": "#007bff",
-                        "border": "1px solid #007bff"
-                    },
-                    active_label_style={
-                        "color": "#ffffff", 
-                        "backgroundColor": "#0056b3",
-                        "border": "1px solid #0056b3"
                     },
                 ),
                 dbc.Tab(
