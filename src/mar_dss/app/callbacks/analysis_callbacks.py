@@ -873,7 +873,8 @@ def setup_analysis_callbacks(app):
         if active_tab == "analysis":
             # Run feasibility analysis (which includes integrated analysis if inputs changed)
             # run_feasibility_analysis() already calls run_integrated_analysis() when needed
-            run_feasibility_analysis()
+            #run_feasibility_analysis()
+            pass
         return dash.no_update
     
     # DISABLED: Callback removed because Feasibility Summary tab was removed
