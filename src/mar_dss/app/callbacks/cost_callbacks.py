@@ -616,54 +616,75 @@ def setup_cost_callbacks(app):
                 dash.no_update,
                 dash.no_update,
             )
-        
        
+        # Check if cost data already exists (from integrated analysis)
+        existing_capital_costs = dash_storage.get_data("capital_cost_num")
+        existing_capital_df = dash_storage.get_data("capital_costs_calculations_df")
+        existing_maintenance_df = dash_storage.get_data("maintenance_costs_calculations_df")
+        existing_npv_df = dash_storage.get_data("npv_calculations_df")
         
-        total_runoff_ft3 = dash_storage.get_data("total_runoff_ft3") or 0.0
-        fraction_flow_capture = dash_storage.get_data("fraction_flow_capture") or 0.0
-        runoff_volume_ft3 = float(total_runoff_ft3) * float(fraction_flow_capture)
-        distance_to_sediment_miles = dash_storage.get_data("distance_to_sediment") or 1.0
-        distance_to_sediment_ft = float(distance_to_sediment_miles) * 5280.0
-        distance_to_storage_pond_ft = float(dash_storage.get_data("distance_to_storage_pond_ft")) or 1.0
-        sediment_target = dash_storage.get_data("sediment_target") 
-        sediment_target_display = "Medium Silt" if sediment_target == "medium_silt" else "Fine Silt"
-        
-        storm_design_depth = 1.8
-        cost_calculator = CostCalculator(
-        water_source="stormwater", storm_design_depth=storm_design_depth,
-        drainage_basin_area_acres=35, # todo: this should be renamed to MAR site area.
-        total_storm_volume_af=6.52, # todo: not used, remove if not needed
-        basin_soil_type_infiltration_rate_in_per_hr=0.2,
-        total_runoff_volume_ft3=runoff_volume_ft3,
-        fine_sediment_removal_goal= sediment_target_display,
-        distance_collection_to_sediment_pond_ft=distance_to_sediment_ft,
-        distance_sediment_to_storage_pond_ft=distance_to_storage_pond_ft,
-        dry_well_infiltration_rate_in_per_hr=5,
-        dry_well_transfer_rate_gpm=50,
-        injection_well_transfer_rate_gpm=50,
-        number_of_injection_wells=5,
-        collection_to_sediment_removal__conveyance_method="trapezoidal",
-        dry_well_diameter_ft=6,
-        recharge_method="dry_well"
-    )
-        cost_calculator.calculate_cost()
-        cols = ['Spreading Pond Cost ($)', 'Injection Wells Cost ($)', 'Dry Wells Cost ($)']
-        capital_cost_num = cost_calculator.capital_costs_calculations.loc['Capital Total Cost',
-         cols]
-        dash_storage.set_data("capital_cost_num",capital_cost_num)
+        if existing_capital_costs is not None and existing_capital_df is not None:
+            # Cost data already exists from integrated analysis - use it without recalculating
+            print("Using existing cost data from integrated analysis (skipping recalculation)")
+            capital_cost_num = existing_capital_costs
+            cost_calculator = None  # We'll use stored DataFrames instead
+            
+            # Get maintenance costs and NPV from storage
+            maintenance_cost_num = dash_storage.get_data("maintenance_cost_num")
+            net_val_dict = dash_storage.get_data("net_val") or {}
+        else:
+            # Cost data doesn't exist - run calculation
+            print("Cost data not found - running cost calculation...")
+            total_runoff_ft3 = dash_storage.get_data("total_runoff_ft3") or 0.0
+            fraction_flow_capture = dash_storage.get_data("fraction_flow_capture") or 0.0
+            runoff_volume_ft3 = float(total_runoff_ft3) * float(fraction_flow_capture)
+            distance_to_sediment_miles = dash_storage.get_data("distance_to_sediment") or 1.0
+            distance_to_sediment_ft = float(distance_to_sediment_miles) * 5280.0
+            distance_to_storage_pond_ft = float(dash_storage.get_data("distance_to_storage_pond_ft")) or 1.0
+            sediment_target = dash_storage.get_data("sediment_target") 
+            sediment_target_display = "Medium Silt" if sediment_target == "medium_silt" else "Fine Silt"
+            
+            storm_design_depth = 1.8
+            cost_calculator = CostCalculator(
+            water_source="stormwater", storm_design_depth=storm_design_depth,
+            drainage_basin_area_acres=35, # todo: this should be renamed to MAR site area.
+            total_storm_volume_af=6.52, # todo: not used, remove if not needed
+            basin_soil_type_infiltration_rate_in_per_hr=0.2,
+            total_runoff_volume_ft3=runoff_volume_ft3,
+            fine_sediment_removal_goal= sediment_target_display,
+            distance_collection_to_sediment_pond_ft=distance_to_sediment_ft,
+            distance_sediment_to_storage_pond_ft=distance_to_storage_pond_ft,
+            dry_well_infiltration_rate_in_per_hr=5,
+            dry_well_transfer_rate_gpm=50,
+            injection_well_transfer_rate_gpm=50,
+            number_of_injection_wells=5,
+            collection_to_sediment_removal__conveyance_method="trapezoidal",
+            dry_well_diameter_ft=6,
+            recharge_method="dry_well"
+        )
+            cost_calculator.calculate_cost()
+            cols = ['Spreading Pond Cost ($)', 'Injection Wells Cost ($)', 'Dry Wells Cost ($)']
+            capital_cost_num = cost_calculator.capital_costs_calculations.loc['Capital Total Cost',
+             cols]
+            dash_storage.set_data("capital_cost_num",capital_cost_num)
 
-        cols = [ 'Spreading Pond Maintenance Cost ($)', 'Injection Wells Maintenance Cost ($)', 'Dry Wells Maintenance Cost ($)']
-        maintenance_cost_num = cost_calculator.maintenance_costs_calculations.loc['Annual Grand Maintenance Cost', cols]
-        dash_storage.set_data("maintenance_cost_num",maintenance_cost_num)
-        cols =['Spreading Pond Net Present Value ($)',
-       'Injection Wells Net Present Value ($)',
-       'Dry Wells Net Present Value ($)']
-        net_val = cost_calculator.net_present_value_calculations[cols].values[-1]
-        net_val_dict = {}
-        for i, col in enumerate(cols):
-            net_val_dict[col] =net_val[i]
-        net_val = net_val_dict
-        dash_storage.set_data("net_val",net_val_dict)
+            cols = [ 'Spreading Pond Maintenance Cost ($)', 'Injection Wells Maintenance Cost ($)', 'Dry Wells Maintenance Cost ($)']
+            maintenance_cost_num = cost_calculator.maintenance_costs_calculations.loc['Annual Grand Maintenance Cost', cols]
+            dash_storage.set_data("maintenance_cost_num",maintenance_cost_num)
+            cols =['Spreading Pond Net Present Value ($)',
+           'Injection Wells Net Present Value ($)',
+           'Dry Wells Net Present Value ($)']
+            net_val = cost_calculator.net_present_value_calculations[cols].values[-1]
+            net_val_dict = {}
+            for i, col in enumerate(cols):
+                net_val_dict[col] =net_val[i]
+            net_val = net_val_dict
+            dash_storage.set_data("net_val",net_val_dict)
+            
+            # Store DataFrames for future use
+            dash_storage.set_data("capital_costs_calculations_df", cost_calculator.capital_costs_calculations)
+            dash_storage.set_data("maintenance_costs_calculations_df", cost_calculator.maintenance_costs_calculations)
+            dash_storage.set_data("npv_calculations_df", cost_calculator.net_present_value_calculations)
         
         # Get selected technology to determine which cost to display
         selected_technology = dash_storage.get_data("selected_mar_technology")
@@ -760,7 +781,11 @@ def setup_cost_callbacks(app):
             npv_20_years = "$0"
         
         # Create Capital Cost Table
-        capital_df = cost_calculator.capital_costs_calculations.copy()
+        # Use stored DataFrame if available, otherwise use cost_calculator
+        if existing_capital_df is not None:
+            capital_df = existing_capital_df.copy()
+        else:
+            capital_df = cost_calculator.capital_costs_calculations.copy()
         # Reset index to make it a column
         capital_df = capital_df.reset_index()
         # Rename the index column if it exists
@@ -865,7 +890,11 @@ def setup_cost_callbacks(app):
         )
         
         # Create Maintenance Cost Table
-        maintenance_df = cost_calculator.maintenance_costs_calculations.copy()
+        # Use stored DataFrame if available, otherwise use cost_calculator
+        if existing_maintenance_df is not None:
+            maintenance_df = existing_maintenance_df.copy()
+        else:
+            maintenance_df = cost_calculator.maintenance_costs_calculations.copy()
         # Reset index to make it a column
         maintenance_df = maintenance_df.reset_index()
         # Rename the index column if it exists
@@ -956,7 +985,11 @@ def setup_cost_callbacks(app):
         )
         
         # Create Net Present Value Table and Plot
-        npv_df = cost_calculator.net_present_value_calculations.copy()
+        # Use stored DataFrame if available, otherwise use cost_calculator
+        if existing_npv_df is not None:
+            npv_df = existing_npv_df.copy()
+        else:
+            npv_df = cost_calculator.net_present_value_calculations.copy()
         # Reset index to make Year a column
         npv_df = npv_df.reset_index()
         # Rename the index column if it exists

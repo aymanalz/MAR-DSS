@@ -435,6 +435,222 @@ def calculate_project_cost_range(selected_technology):
         traceback.print_exc()
         return "$0 - $0"
 
+def create_and_run_cost_calculator():
+    """
+    Create and run cost calculator with inputs from data storage.
+    
+    Returns:
+        CostCalculator instance with calculated costs
+    """
+    try:
+        from mar_dss.app.callbacks.cost_calculator import CostCalculator
+    except ImportError:
+        from .cost_calculator import CostCalculator
+    
+    # Get inputs from data storage
+    total_runoff_ft3 = dash_storage.get_data("total_runoff_ft3") or 0.0
+    fraction_flow_capture = dash_storage.get_data("fraction_flow_capture") or 0.0
+    runoff_volume_ft3 = float(total_runoff_ft3) * float(fraction_flow_capture)
+    distance_to_sediment_miles = dash_storage.get_data("distance_to_sediment") or 1.0
+    distance_to_sediment_ft = float(distance_to_sediment_miles) * 5280.0
+    distance_to_storage_pond_ft = float(dash_storage.get_data("distance_to_storage_pond_ft")) or 1.0
+    sediment_target = dash_storage.get_data("sediment_target")
+    sediment_target_display = "Medium Silt" if sediment_target == "medium_silt" else "Fine Silt"
+    
+    storm_design_depth = 1.8
+    cost_calculator = CostCalculator(
+        water_source="stormwater",
+        storm_design_depth=storm_design_depth,
+        drainage_basin_area_acres=35,  # TODO: should be renamed to MAR site area
+        total_storm_volume_af=6.52,  # TODO: not used, remove if not needed
+        basin_soil_type_infiltration_rate_in_per_hr=0.2,
+        total_runoff_volume_ft3=runoff_volume_ft3,
+        fine_sediment_removal_goal=sediment_target_display,
+        distance_collection_to_sediment_pond_ft=distance_to_sediment_ft,
+        distance_sediment_to_storage_pond_ft=distance_to_storage_pond_ft,
+        dry_well_infiltration_rate_in_per_hr=5,
+        dry_well_transfer_rate_gpm=50,
+        injection_well_transfer_rate_gpm=50,
+        number_of_injection_wells=5,
+        collection_to_sediment_removal__conveyance_method="trapezoidal",
+        dry_well_diameter_ft=6,
+        recharge_method="dry_well"
+    )
+    
+    # Run cost calculation
+    cost_calculator.calculate_cost()
+    
+    return cost_calculator
+
+
+def extract_capital_costs(cost_calculator):
+    """
+    Extract capital costs from cost calculator.
+    
+    Args:
+        cost_calculator: CostCalculator instance with calculated costs
+    
+    Returns:
+        pandas Series with capital costs for each technology
+    """
+    cols = ['Spreading Pond Cost ($)', 'Injection Wells Cost ($)', 'Dry Wells Cost ($)']
+    capital_cost_num = cost_calculator.capital_costs_calculations.loc['Capital Total Cost', cols]
+    return capital_cost_num
+
+
+def map_costs_to_options(capital_costs_series, maintenance_costs_series=None):
+    """
+    Map cost calculator column names to MAR option names.
+    
+    Args:
+        capital_costs_series: pandas Series with capital cost calculator column names as index
+        maintenance_costs_series: Optional pandas Series with maintenance cost calculator column names as index
+    
+    Returns:
+        Dictionary mapping option names to cost values (capital and maintenance)
+        Format: {
+            "Surface Recharge": {"capital": 1500000, "maintenance": 50000},
+            "Dry Well": {"capital": 2000000, "maintenance": 60000},
+            "Injection Well": {"capital": 1800000, "maintenance": 55000}
+        }
+        Or if maintenance_costs_series is None:
+        Format: {"Surface Recharge": 1500000, "Dry Well": 2000000, "Injection Well": 1800000}
+    """
+    # Map capital costs
+    capital_mapping = {
+        "Surface Recharge": capital_costs_series.get("Spreading Pond Cost ($)", 1000000),
+        "Dry Well": capital_costs_series.get("Dry Wells Cost ($)", 1000000),
+        "Injection Well": capital_costs_series.get("Injection Wells Cost ($)", 1000000)
+    }
+    
+    # Convert to float and handle NaN values for capital costs
+    for key, value in capital_mapping.items():
+        try:
+            capital_mapping[key] = float(value) if pd.notna(value) else 1000000.0
+        except (ValueError, TypeError):
+            capital_mapping[key] = 1000000.0
+    
+    # If maintenance costs are provided, include them
+    if maintenance_costs_series is not None:
+        maintenance_mapping = {
+            "Surface Recharge": maintenance_costs_series.get("Spreading Pond Maintenance Cost ($)", 0),
+            "Dry Well": maintenance_costs_series.get("Dry Wells Maintenance Cost ($)", 0),
+            "Injection Well": maintenance_costs_series.get("Injection Wells Maintenance Cost ($)", 0)
+        }
+        
+        # Convert to float and handle NaN values for maintenance costs
+        for key, value in maintenance_mapping.items():
+            try:
+                maintenance_mapping[key] = float(value) if pd.notna(value) else 0.0
+            except (ValueError, TypeError):
+                maintenance_mapping[key] = 0.0
+        
+        # Combine into nested dictionary
+        cost_mapping = {
+            option: {
+                "capital": capital_mapping[option],
+                "maintenance": maintenance_mapping[option]
+            }
+            for option in capital_mapping.keys()
+        }
+    else:
+        # Return flat dictionary with just capital costs (backward compatible)
+        cost_mapping = capital_mapping
+    
+    return cost_mapping
+
+
+def run_integrated_analysis():
+    """
+    Main entry point: Run cost calculation and DSS together.
+    
+    This function:
+    1. Runs cost calculation first
+    2. Extracts costs from calculator
+    3. Maps costs to option names
+    4. Runs DSS evaluation with cost override
+    5. Stores all results in data_storage
+    
+    Returns:
+        tuple: (dss_results, cost_calculator)
+    """
+    print("Running integrated analysis (cost + DSS)...")
+    
+    # Step 1: Run cost calculation
+    try:
+        cost_calculator = create_and_run_cost_calculator()
+        print("Cost calculation completed successfully")
+    except Exception as e:
+        print(f"Error in cost calculation: {e}")
+        import traceback
+        traceback.print_exc()
+        # Continue with default costs if cost calculation fails
+        cost_calculator = None
+        cost_mapping = None
+    else:
+        # Step 2: Extract capital costs
+        capital_costs = extract_capital_costs(cost_calculator)
+        
+        # Extract maintenance costs
+        cols = ['Spreading Pond Maintenance Cost ($)', 'Injection Wells Maintenance Cost ($)', 'Dry Wells Maintenance Cost ($)']
+        maintenance_cost_num = cost_calculator.maintenance_costs_calculations.loc['Annual Grand Maintenance Cost', cols]
+        
+        # Step 3: Map costs to option names (including maintenance costs)
+        cost_mapping = map_costs_to_options(capital_costs, maintenance_cost_num)
+        print(f"Cost mapping: {cost_mapping}")
+        
+        # Store cost data in dash_storage for UI display
+        dash_storage.set_data("capital_cost_num", capital_costs)
+        dash_storage.set_data("maintenance_cost_num", maintenance_cost_num)
+        
+        # Store NPV
+        cols = ['Spreading Pond Net Present Value ($)', 'Injection Wells Net Present Value ($)', 'Dry Wells Net Present Value ($)']
+        net_val = cost_calculator.net_present_value_calculations[cols].values[-1]
+        net_val_dict = {}
+        for i, col in enumerate(cols):
+            net_val_dict[col] = net_val[i]
+        dash_storage.set_data("net_val", net_val_dict)
+        
+        # Store cost calculator DataFrames for table display (without recalculating)
+        dash_storage.set_data("capital_costs_calculations_df", cost_calculator.capital_costs_calculations)
+        dash_storage.set_data("maintenance_costs_calculations_df", cost_calculator.maintenance_costs_calculations)
+        dash_storage.set_data("npv_calculations_df", cost_calculator.net_present_value_calculations)
+        
+        # Store full cost mapping (with capital and maintenance costs)
+        dash_storage.set_data("cost_mapping", cost_mapping)
+    
+    # Step 4: Run DSS evaluation with cost override
+    try:
+        # Extract capital costs for forward_run (it expects flat dict with capital costs)
+        if cost_mapping is not None and isinstance(cost_mapping, dict) and len(cost_mapping) > 0:
+            first_value = list(cost_mapping.values())[0]
+            if isinstance(first_value, dict):
+                # Nested structure - extract capital costs
+                capital_cost_override = {
+                    option: costs["capital"] 
+                    for option, costs in cost_mapping.items()
+                }
+            else:
+                # Flat structure (backward compatible)
+                capital_cost_override = cost_mapping
+        else:
+            capital_cost_override = None
+        
+        dss_results = forward_run.forward_run(cost_override=capital_cost_override)
+        print("DSS evaluation completed successfully")
+    except Exception as e:
+        print(f"Error in DSS evaluation: {e}")
+        import traceback
+        traceback.print_exc()
+        # Run without cost override if there's an error
+        dss_results = forward_run.forward_run()
+    
+    # Step 5: Store DSS results
+    dash_storage.set_data("dss_results", dss_results)
+    
+    return dss_results, cost_calculator
+
+
 def run_feasibility_analysis():
     """Run the feasibility analysis only if inputs have changed (hash-based caching)."""
     # Get current inputs
@@ -471,11 +687,8 @@ def run_feasibility_analysis():
     print("\nAll results:")
     graph.plotly()
     
-    dss_results = forward_run.forward_run()
-    dash_storage.set_data("dss_results", dss_results)
-    
-
-
+    # Run integrated analysis (cost + DSS)
+    dss_results, cost_calculator = run_integrated_analysis()
     
     return 1
 
@@ -511,7 +724,23 @@ def setup_analysis_callbacks(app):
 
         # Trigger when Analysis tab is selected OR when Feasibility Summary sub-tab is selected
         if top_tab == "analysis" or analysis_tab == "analysis-dashboard":
-            run_feasibility_analysis()
+            # Run integrated analysis (cost + DSS) when Analysis tab is first selected
+            if top_tab == "analysis":
+                # Check if we need to run analysis (inputs may have changed)
+                run_feasibility_analysis()
+                # Also ensure integrated analysis runs (cost + DSS)
+                # This will be called by run_feasibility_analysis, but we ensure it's called
+                # when the tab is first accessed even if inputs haven't changed
+                existing_dss = dash_storage.get_data("dss_results")
+                existing_costs = dash_storage.get_data("capital_cost_num")
+                if existing_dss is None or existing_costs is None:
+                    # Run integrated analysis if results don't exist
+                    print("Running integrated analysis on Analysis tab selection...")
+                    run_integrated_analysis()
+            else:
+                # Just run feasibility analysis for sub-tab changes
+                run_feasibility_analysis()
+            
             # Get project name from data_storage
             project_name = dash_storage.get_data("project_name") or ""
             # Update title with project name
