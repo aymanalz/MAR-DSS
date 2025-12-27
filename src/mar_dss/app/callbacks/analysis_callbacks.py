@@ -2,6 +2,7 @@
 Callbacks for the Analysis tab lazy loading.
 """
 from pathlib import Path
+import logging
 import dash
 from dash import Input, Output, html
 import dash_bootstrap_components as dbc
@@ -10,10 +11,71 @@ import mar_dss.app.utils.data_storage as dash_storage
 from mar_dss.mar import forward_run
 from mar_dss.base import DecisionGraph
 import pandas as pd
-import os
 import hashlib
 import json
 import numpy as np
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+# Constants
+DEFAULT_BASE_COST = 1_000_000
+COST_THRESHOLDS = {
+    'EXCELLENT': 1_000_000,  # < $1M
+    'GOOD': 2_000_000,       # < $2M
+    'MODERATE': 3_000_000,   # < $3M
+    'POOR': 4_000_000        # < $4M
+}
+COST_SCORE_MAPPING = {
+    'EXCELLENT': 100,
+    'GOOD': 80,
+    'MODERATE': 60,
+    'POOR': 40,
+    'VERY_POOR': 20
+}
+COST_RANGE_MULTIPLIER = {'low': 0.8, 'high': 1.2}
+
+# Conversion factors
+ACRES_TO_FT2 = 43560
+MILES_TO_FEET = 5280
+
+# Feasibility score weights
+FEASIBILITY_WEIGHTS = {
+    "physical": 0.25,
+    "environmental": 0.20,
+    "legal": 0.20,
+    "cost": 0.15,
+    "technical": 0.10,
+    "social": 0.10
+}
+
+# Default feasibility scores by technology
+DEFAULT_PHYSICAL_SCORES = {
+    "spreading_basins": 75,
+    "injection_wells": 80,
+    "dry_wells": 70
+}
+
+DEFAULT_COST_SCORES = {
+    "spreading_basins": 70,
+    "injection_wells": 50,
+    "dry_wells": 80
+}
+
+DEFAULT_TECHNICAL_SCORES = {
+    "spreading_basins": 80,
+    "injection_wells": 60,
+    "dry_wells": 75
+}
+
+DEFAULT_SOCIAL_SCORE = 80
+
+# Technology name mapping
+TECHNOLOGY_NAMES = {
+    "spreading_basins": "Spreading Basins",
+    "injection_wells": "Injection Wells",
+    "dry_wells": "Dry Wells",
+}
 # Import all the analysis components
 try:
     from mar_dss.app.components.dss_algorithm_tab import create_dss_algorithm_content
@@ -62,34 +124,83 @@ def get_session_graph():
     return graph
 
 def get_graph_inputs():
-    """Get the inputs for the graph."""
-    inputs = {}    
-    inputs["aq_type"] = dash_storage.get_data("aquifer_type")
-    max_infiltration_area = dash_storage.get_data("max_infiltration_area")
-    if max_infiltration_area is None:
-        max_infiltration_area = 1e7
-    else:
-        try:
-            max_infiltration_area = float(max_infiltration_area)
-        except (ValueError, TypeError):
+    """Get the inputs for the graph with validation."""
+    inputs = {}
+    
+    try:
+        inputs["aq_type"] = dash_storage.get_data("aquifer_type")
+        
+        # Max infiltration area with validation
+        max_infiltration_area = dash_storage.get_data("max_infiltration_area")
+        if max_infiltration_area is None:
             max_infiltration_area = 1e7
-    max_infiltration_area_ft2 = max_infiltration_area * 43560
-    if max_infiltration_area_ft2 <= 0:
-        max_infiltration_area_ft2 = 1e7
-    inputs["max_available_area"] = max_infiltration_area_ft2
-    inputs["ground_surface_slope"] = float(dash_storage.get_data("ground_surface_slope")) or 0.0
-    start_table = dash_storage.get_data("stratigraphy_data")
-    start_df = pd.DataFrame(start_table)
-    start_stable = start_df[['thickness', 'conductivity', 'yield']].values.tolist()
-    inputs["stratigraphy_table"]= start_stable
-    gw_data = pd.DataFrame(dash_storage.get_data("groundwater_data"))
-    gs_elevation = dash_storage.get_data("ground_surface_elevation")
-    depth_to_gw = float(gs_elevation) - gw_data['elevation'].values
-    inputs["monthly_gw_depth"] = depth_to_gw
-    source_water_volume = dash_storage.get_data("monthly_flow")
-    inputs["source_water_volume"] = source_water_volume
-    inputs["d_gw_min"] = 5.0
-    return inputs
+        else:
+            try:
+                max_infiltration_area = float(max_infiltration_area)
+            except (ValueError, TypeError):
+                logger.warning(f"Invalid max_infiltration_area: {max_infiltration_area}, using default")
+                max_infiltration_area = 1e7
+        
+        max_infiltration_area_ft2 = max_infiltration_area * ACRES_TO_FT2
+        if max_infiltration_area_ft2 <= 0:
+            logger.warning("max_infiltration_area_ft2 <= 0, using default")
+            max_infiltration_area_ft2 = 1e7
+        inputs["max_available_area"] = max_infiltration_area_ft2
+        
+        # Ground surface slope with validation
+        ground_surface_slope = dash_storage.get_data("ground_surface_slope")
+        try:
+            inputs["ground_surface_slope"] = float(ground_surface_slope) if ground_surface_slope is not None else 0.0
+        except (ValueError, TypeError):
+            logger.warning(f"Invalid ground_surface_slope: {ground_surface_slope}, using 0.0")
+            inputs["ground_surface_slope"] = 0.0
+        
+        # Stratigraphy data with validation
+        start_table = dash_storage.get_data("stratigraphy_data")
+        if start_table is None or len(start_table) == 0:
+            raise ValueError("stratigraphy_data is missing or empty")
+        
+        start_df = pd.DataFrame(start_table)
+        required_columns = ['thickness', 'conductivity', 'yield']
+        missing_columns = [col for col in required_columns if col not in start_df.columns]
+        if missing_columns:
+            raise ValueError(f"Missing required columns in stratigraphy_data: {missing_columns}")
+        
+        start_stable = start_df[required_columns].values.tolist()
+        inputs["stratigraphy_table"] = start_stable
+        
+        # Groundwater data with validation
+        gw_data_raw = dash_storage.get_data("groundwater_data")
+        if gw_data_raw is None or len(gw_data_raw) == 0:
+            raise ValueError("groundwater_data is missing or empty")
+        
+        gw_data = pd.DataFrame(gw_data_raw)
+        if 'elevation' not in gw_data.columns:
+            raise ValueError("Missing 'elevation' column in groundwater_data")
+        
+        gs_elevation = dash_storage.get_data("ground_surface_elevation")
+        if gs_elevation is None:
+            raise ValueError("ground_surface_elevation is missing")
+        
+        try:
+            gs_elevation = float(gs_elevation)
+        except (ValueError, TypeError):
+            raise ValueError(f"Invalid ground_surface_elevation: {gs_elevation}")
+        
+        depth_to_gw = gs_elevation - gw_data['elevation'].values
+        inputs["monthly_gw_depth"] = depth_to_gw
+        
+        # Source water volume
+        source_water_volume = dash_storage.get_data("monthly_flow")
+        inputs["source_water_volume"] = source_water_volume
+        
+        inputs["d_gw_min"] = 5.0
+        
+        return inputs
+        
+    except (KeyError, ValueError, TypeError) as e:
+        logger.error(f"Error getting graph inputs: {e}")
+        raise ValueError(f"Invalid graph input data: {e}")
 
 def create_inputs_hash(inputs):
     """Create a hash from the graph inputs for caching purposes."""
@@ -121,6 +232,150 @@ def create_inputs_hash(inputs):
     hash_obj = hashlib.md5(json_str.encode('utf-8'))
     return hash_obj.hexdigest()
 
+def _calculate_cost_score_from_value(cost_value):
+    """Calculate cost feasibility score from a cost value.
+    
+    Args:
+        cost_value: Cost in dollars
+    
+    Returns:
+        Score (0-100) where lower cost = higher score
+    """
+    if cost_value < COST_THRESHOLDS['EXCELLENT']:
+        return COST_SCORE_MAPPING['EXCELLENT']
+    elif cost_value < COST_THRESHOLDS['GOOD']:
+        return COST_SCORE_MAPPING['GOOD']
+    elif cost_value < COST_THRESHOLDS['MODERATE']:
+        return COST_SCORE_MAPPING['MODERATE']
+    elif cost_value < COST_THRESHOLDS['POOR']:
+        return COST_SCORE_MAPPING['POOR']
+    else:
+        return COST_SCORE_MAPPING['VERY_POOR']
+
+
+def calculate_physical_feasibility(selected_technology, graph, node_values, aq_type):
+    """Calculate physical feasibility score based on hydrogeological conditions."""
+    if graph is None:
+        return DEFAULT_PHYSICAL_SCORES.get(selected_technology, 50)
+    
+    aq_type = str(aq_type).lower() if aq_type else ''
+    
+    if selected_technology == "spreading_basins":
+        if aq_type == "unconfined":
+            surface_recharge = node_values.get('surface_recharge_suitability', False)
+            return 100 if surface_recharge else 60
+        else:
+            return 0  # Infeasible for confined
+    elif selected_technology == "injection_wells":
+        if aq_type == "confined":
+            confined_rechargability = node_values.get('confined_rechargability', 0)
+            leakage = node_values.get('leakage_significance', 'high')
+            if confined_rechargability >= 50 and leakage == "low":
+                return 90
+            elif confined_rechargability >= 50 or leakage == "low":
+                return 70
+            else:
+                return 50
+        else:
+            return 75  # Works for unconfined
+    elif selected_technology == "dry_wells":
+        if aq_type == "unconfined":
+            return 85
+        else:
+            return 0  # Infeasible for confined
+    
+    return DEFAULT_PHYSICAL_SCORES.get(selected_technology, 50)
+
+
+def calculate_environmental_feasibility():
+    """Calculate environmental feasibility score based on risk assessment."""
+    env_inputs = [
+        dash_storage.get_data("tss_turbidity_risk") or "LOW RISK",
+        dash_storage.get_data("doc_toc_risk") or "LOW RISK",
+        dash_storage.get_data("ph_alkalinity_risk") or "LOW RISK",
+        dash_storage.get_data("tds_salinity_risk") or "LOW RISK",
+        dash_storage.get_data("inorganic_contaminants_risk") or "LOW RISK",
+        dash_storage.get_data("emerging_contaminants_risk") or "LOW RISK",
+        dash_storage.get_data("redox_compatibility_risk") or "LOW RISK",
+        dash_storage.get_data("pathogen_risk") or "LOW RISK",
+    ]
+    
+    try:
+        from mar_dss.app.components.environmental_impact_tab import DECISION_LOGIC
+        env_score = 0
+        input_keys = ["step1_tss", "step2a_doc", "step2b_ph", "step3_tds", 
+                      "step4_inorganic", "step5a_ec", "step5b_redox", "step6_pathogens"]
+        for key, value in zip(input_keys, env_inputs):
+            if key in DECISION_LOGIC and value in DECISION_LOGIC[key]:
+                score = DECISION_LOGIC[key][value].get("score", 0)
+                env_score += score
+        
+        # Convert risk score (0-8+) to feasibility score (0-100)
+        # Lower risk = higher feasibility
+        if env_score >= 8:
+            return 20  # Very high risk
+        elif env_score >= 5:
+            return 40  # High risk
+        elif env_score >= 3:
+            return 60  # Moderate risk
+        elif env_score >= 1:
+            return 80  # Low risk
+        else:
+            return 100  # No risk
+    except Exception as e:
+        logger.warning(f"Could not calculate environmental score: {e}")
+        return 60  # Default moderate
+
+
+def calculate_legal_feasibility():
+    """Calculate legal feasibility score based on constraints assessment."""
+    legal_fatal = dash_storage.get_data("legal_fatal_issues") or False
+    legal_conditional = dash_storage.get_data("legal_conditional_issues") or 0
+    
+    if legal_fatal:
+        return 0  # Not feasible
+    elif legal_conditional > 2:
+        return 50  # Conditionally feasible
+    elif legal_conditional > 0:
+        return 75  # Some conditions
+    else:
+        return 100  # Fully feasible
+
+
+def calculate_cost_feasibility(selected_technology):
+    """Calculate cost feasibility score based on capital costs."""
+    capital_cost = dash_storage.get_data("capital_cost_num")
+    
+    if capital_cost is None:
+        return DEFAULT_COST_SCORES.get(selected_technology, 50)
+    
+    try:
+        if isinstance(capital_cost, pd.Series):
+            cost_column = _get_cost_column_name(selected_technology)
+            if cost_column and cost_column in capital_cost.index:
+                cost_value = float(capital_cost[cost_column])
+                return _calculate_cost_score_from_value(cost_value)
+            else:
+                return 50  # Default
+        else:
+            cost_value = float(capital_cost)
+            return _calculate_cost_score_from_value(cost_value)
+    except Exception as e:
+        logger.warning(f"Could not calculate cost score: {e}")
+        return 50  # Default
+
+
+def calculate_technical_complexity(selected_technology):
+    """Calculate technical complexity score."""
+    return DEFAULT_TECHNICAL_SCORES.get(selected_technology, 50)
+
+
+def calculate_social_acceptance(selected_technology):
+    """Calculate social acceptance score (placeholder for future enhancement)."""
+    # This could be based on stakeholder input if available
+    return DEFAULT_SOCIAL_SCORE
+
+
 def calculate_individual_feasibility_metrics(selected_technology, graph=None):
     """Calculate individual feasibility metrics (Physical, Environmental, Legal, Cost, Technical, Social).
     
@@ -143,166 +398,26 @@ def calculate_individual_feasibility_metrics(selected_technology, graph=None):
     
     try:
         # Ensure graph is evaluated
+        node_values = {}
+        aq_type = None
         if graph is not None:
             try:
                 inputs = get_graph_inputs()
                 graph.evaluate(inputs)
+                node_values = graph.get_node_values()
+                aq_type = dash_storage.get_data("aquifer_type")
+                if aq_type is None:
+                    aq_type = node_values.get('aq_type', '')
             except Exception as eval_error:
-                print(f"Warning: Could not evaluate graph in calculate_individual_feasibility_metrics: {eval_error}")
+                logger.warning(f"Could not evaluate graph in calculate_individual_feasibility_metrics: {eval_error}")
         
-        # 1. Physical Feasibility (based on hydrogeological conditions)
-        if graph is not None:
-            node_values = graph.get_node_values()
-            aq_type = dash_storage.get_data("aquifer_type")
-            if aq_type is None:
-                aq_type = node_values.get('aq_type', '')
-            aq_type = str(aq_type).lower() if aq_type else ''
-            
-            if selected_technology == "spreading_basins":
-                if aq_type == "unconfined":
-                    surface_recharge = node_values.get('surface_recharge_suitability', False)
-                    metrics["physical"] = 100 if surface_recharge else 60
-                else:
-                    metrics["physical"] = 0  # Infeasible for confined
-            elif selected_technology == "injection_wells":
-                if aq_type == "confined":
-                    confined_rechargability = node_values.get('confined_rechargability', 0)
-                    leakage = node_values.get('leakage_significance', 'high')
-                    if confined_rechargability >= 50 and leakage == "low":
-                        metrics["physical"] = 90
-                    elif confined_rechargability >= 50 or leakage == "low":
-                        metrics["physical"] = 70
-                    else:
-                        metrics["physical"] = 50
-                else:
-                    metrics["physical"] = 75  # Works for unconfined
-            elif selected_technology == "dry_wells":
-                if aq_type == "unconfined":
-                    metrics["physical"] = 85
-                else:
-                    metrics["physical"] = 0  # Infeasible for confined
-        else:
-            # Default physical scores
-            default_physical = {
-                "spreading_basins": 75,
-                "injection_wells": 80,
-                "dry_wells": 70
-            }
-            metrics["physical"] = default_physical.get(selected_technology, 50)
-        
-        # 2. Environmental Impact (based on environmental impact assessment)
-        # Get environmental risk score (0-8+ scale, convert to 0-100)
-        # Lower risk score = higher feasibility score
-        env_inputs = [
-            dash_storage.get_data("tss_turbidity_risk") or "LOW RISK",
-            dash_storage.get_data("doc_toc_risk") or "LOW RISK",
-            dash_storage.get_data("ph_alkalinity_risk") or "LOW RISK",
-            dash_storage.get_data("tds_salinity_risk") or "LOW RISK",
-            dash_storage.get_data("inorganic_contaminants_risk") or "LOW RISK",
-            dash_storage.get_data("emerging_contaminants_risk") or "LOW RISK",
-            dash_storage.get_data("redox_compatibility_risk") or "LOW RISK",
-            dash_storage.get_data("pathogen_risk") or "LOW RISK",
-        ]
-        
-        # Calculate environmental risk score (similar to environmental_impact_callbacks)
-        try:
-            from mar_dss.app.components.environmental_impact_tab import DECISION_LOGIC
-            env_score = 0
-            input_keys = ["step1_tss", "step2a_doc", "step2b_ph", "step3_tds", 
-                          "step4_inorganic", "step5a_ec", "step5b_redox", "step6_pathogens"]
-            for key, value in zip(input_keys, env_inputs):
-                if key in DECISION_LOGIC and value in DECISION_LOGIC[key]:
-                    score = DECISION_LOGIC[key][value].get("score", 0)
-                    env_score += score
-            
-            # Convert risk score (0-8+) to feasibility score (0-100)
-            # Lower risk = higher feasibility
-            if env_score >= 8:
-                metrics["environmental"] = 20  # Very high risk
-            elif env_score >= 5:
-                metrics["environmental"] = 40  # High risk
-            elif env_score >= 3:
-                metrics["environmental"] = 60  # Moderate risk
-            elif env_score >= 1:
-                metrics["environmental"] = 80  # Low risk
-            else:
-                metrics["environmental"] = 100  # No risk
-        except Exception as e:
-            print(f"Warning: Could not calculate environmental score: {e}")
-            metrics["environmental"] = 60  # Default moderate
-        
-        # 3. Legal Considerations (based on legal constraints assessment)
-        # Get legal risk indicators
-        legal_fatal = dash_storage.get_data("legal_fatal_issues") or False
-        legal_conditional = dash_storage.get_data("legal_conditional_issues") or 0
-        
-        if legal_fatal:
-            metrics["legal"] = 0  # Not feasible
-        elif legal_conditional > 2:
-            metrics["legal"] = 50  # Conditionally feasible
-        elif legal_conditional > 0:
-            metrics["legal"] = 75  # Some conditions
-        else:
-            metrics["legal"] = 100  # Fully feasible
-        
-        # 4. Cost Analysis (based on cost calculations)
-        capital_cost = dash_storage.get_data("capital_cost_num")
-        if capital_cost is not None:
-            try:
-                import pandas as pd
-                if isinstance(capital_cost, pd.Series):
-                    cost_column = _get_cost_column_name(selected_technology)
-                    if cost_column and cost_column in capital_cost.index:
-                        cost_value = float(capital_cost[cost_column])
-                        # Lower cost = higher feasibility (inverse relationship)
-                        # Scale: $0-1M = 100, $1-2M = 80, $2-3M = 60, $3-4M = 40, $4M+ = 20
-                        if cost_value < 1e6:
-                            metrics["cost"] = 100
-                        elif cost_value < 2e6:
-                            metrics["cost"] = 80
-                        elif cost_value < 3e6:
-                            metrics["cost"] = 60
-                        elif cost_value < 4e6:
-                            metrics["cost"] = 40
-                        else:
-                            metrics["cost"] = 20
-                    else:
-                        metrics["cost"] = 50  # Default
-                else:
-                    cost_value = float(capital_cost)
-                    if cost_value < 1e6:
-                        metrics["cost"] = 100
-                    elif cost_value < 2e6:
-                        metrics["cost"] = 80
-                    elif cost_value < 3e6:
-                        metrics["cost"] = 60
-                    elif cost_value < 4e6:
-                        metrics["cost"] = 40
-                    else:
-                        metrics["cost"] = 20
-            except Exception as e:
-                print(f"Warning: Could not calculate cost score: {e}")
-                metrics["cost"] = 50  # Default
-        else:
-            # Default cost scores by technology
-            default_costs = {
-                "spreading_basins": 70,  # Generally lower cost
-                "injection_wells": 50,  # Moderate cost
-                "dry_wells": 80  # Lower cost
-            }
-            metrics["cost"] = default_costs.get(selected_technology, 50)
-        
-        # 5. Technical Complexity (based on technology type and site conditions)
-        if selected_technology == "spreading_basins":
-            metrics["technical"] = 80  # Relatively simple
-        elif selected_technology == "injection_wells":
-            metrics["technical"] = 60  # More complex
-        elif selected_technology == "dry_wells":
-            metrics["technical"] = 75  # Moderate complexity
-        
-        # 6. Social Acceptance (default, can be enhanced with actual data)
-        # This could be based on stakeholder input if available
-        metrics["social"] = 80  # Default moderate-high acceptance
+        # Calculate each metric using dedicated functions
+        metrics["physical"] = calculate_physical_feasibility(selected_technology, graph, node_values, aq_type)
+        metrics["environmental"] = calculate_environmental_feasibility()
+        metrics["legal"] = calculate_legal_feasibility()
+        metrics["cost"] = calculate_cost_feasibility(selected_technology)
+        metrics["technical"] = calculate_technical_complexity(selected_technology)
+        metrics["social"] = calculate_social_acceptance(selected_technology)
         
         # Ensure all scores are between 0 and 100
         for key in metrics:
@@ -310,14 +425,12 @@ def calculate_individual_feasibility_metrics(selected_technology, graph=None):
         
         return metrics
     except Exception as e:
-        print(f"Error calculating individual feasibility metrics: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Error calculating individual feasibility metrics: {e}", exc_info=True)
         return metrics
 
 def calculate_feasibility_score(selected_technology, graph=None):
     """Calculate overall feasibility score based on selected technology and site conditions.
-    Now uses weighted average of individual metrics.
+    Uses weighted average of individual metrics.
     """
     if selected_technology is None:
         return 0
@@ -325,17 +438,8 @@ def calculate_feasibility_score(selected_technology, graph=None):
     # Get individual metrics
     metrics = calculate_individual_feasibility_metrics(selected_technology, graph)
     
-    # Weighted average (can be adjusted)
-    weights = {
-        "physical": 0.25,
-        "environmental": 0.20,
-        "legal": 0.20,
-        "cost": 0.15,
-        "technical": 0.10,
-        "social": 0.10
-    }
-    
-    overall_score = sum(metrics[key] * weights[key] for key in weights)
+    # Weighted average using constants
+    overall_score = sum(metrics[key] * FEASIBILITY_WEIGHTS[key] for key in FEASIBILITY_WEIGHTS)
     return round(overall_score)
 
 def _get_cost_column_name(selected_technology):
@@ -397,8 +501,8 @@ def calculate_project_cost_range(selected_technology):
                     cost_column = _get_cost_column_name(selected_technology)
                     if cost_column and cost_column in capital_cost.index:
                         cost_value = capital_cost[cost_column]
-                        low_cost = float(cost_value) * 0.8
-                        high_cost = float(cost_value) * 1.2
+                        low_cost = float(cost_value) * COST_RANGE_MULTIPLIER['low']
+                        high_cost = float(cost_value) * COST_RANGE_MULTIPLIER['high']
                         low_str = _format_cost_value(low_cost)
                         high_str = _format_cost_value(high_cost)
                         return f"{low_str} - {high_str}"
@@ -410,8 +514,8 @@ def calculate_project_cost_range(selected_technology):
                         return f"Spreading: {spreading} | Injection: {injection} | Dry Well: {dry_well}"
             else:
                 # Single value (old format)
-                low_cost = float(capital_cost) * 0.8
-                high_cost = float(capital_cost) * 1.2
+                low_cost = float(capital_cost) * COST_RANGE_MULTIPLIER['low']
+                high_cost = float(capital_cost) * COST_RANGE_MULTIPLIER['high']
                 low_str = _format_cost_value(low_cost)
                 high_str = _format_cost_value(high_cost)
                 return f"{low_str} - {high_str}"
@@ -430,9 +534,7 @@ def calculate_project_cost_range(selected_technology):
         return f"${cost_range[0]:.1f}M - ${cost_range[1]:.1f}M"
         
     except Exception as e:
-        print(f"Error calculating project cost: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Error calculating project cost: {e}", exc_info=True)
         return "$0 - $0"
 
 def create_and_run_cost_calculator():
@@ -452,7 +554,7 @@ def create_and_run_cost_calculator():
     fraction_flow_capture = dash_storage.get_data("fraction_flow_capture") or 0.0
     runoff_volume_ft3 = float(total_runoff_ft3) * float(fraction_flow_capture)
     distance_to_sediment_miles = dash_storage.get_data("distance_to_sediment") or 1.0
-    distance_to_sediment_ft = float(distance_to_sediment_miles) * 5280.0
+    distance_to_sediment_ft = float(distance_to_sediment_miles) * MILES_TO_FEET
     distance_to_storage_pond_ft = float(dash_storage.get_data("distance_to_storage_pond_ft")) or 1.0
     sediment_target = dash_storage.get_data("sediment_target")
     sediment_target_display = "Medium Silt" if sediment_target == "medium_silt" else "Fine Silt"
@@ -574,16 +676,14 @@ def run_integrated_analysis():
     Returns:
         tuple: (dss_results, cost_calculator)
     """
-    print("Running integrated analysis (cost + DSS)...")
+    logger.info("Running integrated analysis (cost + DSS)...")
     
     # Step 1: Run cost calculation
     try:
         cost_calculator = create_and_run_cost_calculator()
-        print("Cost calculation completed successfully")
+        logger.info("Cost calculation completed successfully")
     except Exception as e:
-        print(f"Error in cost calculation: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Error in cost calculation: {e}", exc_info=True)
         # Continue with default costs if cost calculation fails
         cost_calculator = None
         cost_mapping = None
@@ -597,7 +697,7 @@ def run_integrated_analysis():
         
         # Step 3: Map costs to option names (including maintenance costs)
         cost_mapping = map_costs_to_options(capital_costs, maintenance_cost_num)
-        print(f"Cost mapping: {cost_mapping}")
+        logger.debug(f"Cost mapping: {cost_mapping}")
         
         # Store cost data in dash_storage for UI display
         dash_storage.set_data("capital_cost_num", capital_costs)
@@ -637,11 +737,9 @@ def run_integrated_analysis():
             capital_cost_override = None
         
         dss_results = forward_run.forward_run(cost_override=capital_cost_override)
-        print("DSS evaluation completed successfully")
+        logger.info("DSS evaluation completed successfully")
     except Exception as e:
-        print(f"Error in DSS evaluation: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Error in DSS evaluation: {e}", exc_info=True)
         # Run without cost override if there's an error
         dss_results = forward_run.forward_run()
     
@@ -665,7 +763,7 @@ def run_feasibility_analysis():
     # Check if inputs have changed
     if current_hash == last_hash and last_hash is not None:
         # Inputs haven't changed, skip analysis
-        print("Feasibility analysis skipped - inputs unchanged (hash match)")
+        logger.debug("Feasibility analysis skipped - inputs unchanged (hash match)")
         # Still return the existing graph if available
         graph = dash_storage.get_data("decision_graph")
         if graph is None:
@@ -676,7 +774,7 @@ def run_feasibility_analysis():
         return 1
     
     # Inputs have changed, run the analysis
-    print(f"Feasibility analysis running - inputs changed (hash: {current_hash[:8]}...)")
+    logger.info(f"Feasibility analysis running - inputs changed (hash: {current_hash[:8]}...)")
     
     graph = get_session_graph()
     results = graph.evaluate(inputs)
@@ -684,7 +782,7 @@ def run_feasibility_analysis():
     
     # Store the new hash for next time
     dash_storage.set_data("feasibility_analysis_hash", current_hash)
-    print("\nAll results:")
+    logger.debug("Graph evaluation completed, plotting results")
     graph.plotly()
     
     # Run integrated analysis (cost + DSS)
@@ -724,22 +822,9 @@ def setup_analysis_callbacks(app):
 
         # Trigger when Analysis tab is selected OR when Feasibility Summary sub-tab is selected
         if top_tab == "analysis" or analysis_tab == "analysis-dashboard":
-            # Run integrated analysis (cost + DSS) when Analysis tab is first selected
-            if top_tab == "analysis":
-                # Check if we need to run analysis (inputs may have changed)
-                run_feasibility_analysis()
-                # Also ensure integrated analysis runs (cost + DSS)
-                # This will be called by run_feasibility_analysis, but we ensure it's called
-                # when the tab is first accessed even if inputs haven't changed
-                existing_dss = dash_storage.get_data("dss_results")
-                existing_costs = dash_storage.get_data("capital_cost_num")
-                if existing_dss is None or existing_costs is None:
-                    # Run integrated analysis if results don't exist
-                    print("Running integrated analysis on Analysis tab selection...")
-                    run_integrated_analysis()
-            else:
-                # Just run feasibility analysis for sub-tab changes
-                run_feasibility_analysis()
+            # Run feasibility analysis (which includes integrated analysis if inputs changed)
+            # run_feasibility_analysis() already calls run_integrated_analysis() when needed
+            run_feasibility_analysis()
             
             # Get project name from data_storage
             project_name = dash_storage.get_data("project_name") or ""
@@ -765,25 +850,8 @@ def setup_analysis_callbacks(app):
         """Populate feasible, conditionally feasible, and infeasible technology cards based on decision graph results."""
         import dash_bootstrap_components as dbc
         
-        # Default technology list with labels
-        all_technologies = {
-            #"asr": "Aquifer Storage and Recovery (ASR)",
-            #"infiltration_basins": "Infiltration Basins",
-            #"sand_dams": "Sand Dams",
-            #"check_dams": "Check Dams",
-            #"percolation_ponds": "Percolation Ponds",
-            #"recharge_wells": "Recharge Wells",
-            "spreading_basins": "Spreading Basins",
-            "injection_wells": "Injection Wells",
-            "dry_wells": "Dry Wells",
-            # "urban_stormwater_recharge": "Urban Stormwater Recharge",
-            # "riverbank_filtration": "Riverbank Filtration",
-            # "dune_infiltration": "Dune Infiltration",
-            # "artificial_recharge_wells": "Artificial Recharge Wells",
-            # "coastal_aquifer_recharge": "Coastal Aquifer Recharge",
-            # "mountain_recharge_systems": "Mountain Recharge Systems",
-            # "industrial_wastewater_recharge": "Industrial Wastewater Recharge"
-        }
+        # Technology list with labels
+        all_technologies = TECHNOLOGY_NAMES.copy()
         
         # Default: assume all basic technologies are feasible, advanced ones are infeasible
         default_feasible = ["spreading_basins", "injection_wells", "dry_wells"]        
@@ -799,29 +867,45 @@ def setup_analysis_callbacks(app):
             graph = dash_storage.get_data("decision_graph")
             if graph is not None:
                 # Get all node values
-                if (graph.get_node_value('aq_type')).lower()== "unconfined":
-                    if not graph.get_node_value('surface_recharge_suitability'):                       
+                aq_type = graph.get_node_value('aq_type')
+                if aq_type and str(aq_type).lower() == "unconfined":
+                    if not graph.get_node_value('surface_recharge_suitability'):
+                        if "spreading_basins" in feasible_list:
+                            feasible_list.remove("spreading_basins")
+                            conditionally_feasible_list.append("spreading_basins")
+                else:  # confined aquifer
+                    # Spreading basins are infeasible for confined aquifers
+                    if "spreading_basins" in feasible_list:
                         feasible_list.remove("spreading_basins")
-                        conditionally_feasible_list.append("spreading_basins")
+                        infeasible_list.append("spreading_basins")
                     
-                else: # confined aquifer
-                    feasible_list.remove("spreading_basins")
-                    infeasible_list.append("spreading_basins")
-                    feasible_list.remove("dry_wells")
-                    infeasible_list.append("dry_wells")
+                    # Dry wells are infeasible for confined aquifers
+                    if "dry_wells" in feasible_list:
+                        feasible_list.remove("dry_wells")
+                        infeasible_list.append("dry_wells")
 
-                    if graph.get_node_value('confined_rechargability')< 50:
-                        feasible_list.remove("injection_wells")
-                        conditionally_feasible_list.append("injection_wells")
-                    
-                    if not (graph.get_node_value('leakage_significance') == "low"):
-                        feasible_list.remove("injection_wells")
-                        conditionally_feasible_list.append("injection_wells")                   
+                    # Check injection wells feasibility for confined
+                    if "injection_wells" in feasible_list:
+                        confined_rechargability = graph.get_node_value('confined_rechargability')
+                        leakage = graph.get_node_value('leakage_significance')
+                        
+                        # Move to conditionally feasible if rechargability is low
+                        if confined_rechargability is not None and confined_rechargability < 50:
+                            feasible_list.remove("injection_wells")
+                            if "injection_wells" not in conditionally_feasible_list:
+                                conditionally_feasible_list.append("injection_wells")
+                        
+                        # Move to conditionally feasible if leakage is not low
+                        if leakage != "low":
+                            if "injection_wells" in feasible_list:
+                                feasible_list.remove("injection_wells")
+                            if "injection_wells" not in conditionally_feasible_list:
+                                conditionally_feasible_list.append("injection_wells")                   
                
                 
             
         except Exception as e:
-            print(f"Error extracting feasible technologies from graph: {e}")
+            logger.warning(f"Error extracting feasible technologies from graph: {e}")
             # Use default lists on error
         
         # Create feasible technologies RadioItems
@@ -930,7 +1014,7 @@ def setup_analysis_callbacks(app):
             className="mb-0"
         )
         
-        print(f"Selected MAR Technology: {selected_technology}" + 
+        logger.debug(f"Selected MAR Technology: {selected_technology}" + 
               (" (Conditionally Feasible)" if is_conditionally_feasible else ""))
         
         # Run feasibility analysis
@@ -941,8 +1025,8 @@ def setup_analysis_callbacks(app):
         feasibility_score = calculate_feasibility_score(selected_technology, graph)
         cost_range = calculate_project_cost_range(selected_technology)
         
-        print(f"DEBUG - Calculated feasibility score: {feasibility_score}%")
-        print(f"DEBUG - Calculated cost range: {cost_range}")
+        logger.debug(f"Calculated feasibility score: {feasibility_score}%")
+        logger.debug(f"Calculated cost range: {cost_range}")
         
         feasibility_score_text = f"Overall Feasibility Score: {feasibility_score}%"
         cost_text = f"Total Project Cost: {cost_range}"
@@ -968,14 +1052,14 @@ def setup_analysis_callbacks(app):
             # The selection callbacks handle all updates during technology selection
             # This callback should ONLY update on tab navigation
             if "knowledge-graph-store" in trigger_id:
-                print(f"DEBUG update_feasibility_metrics - Ignoring knowledge-graph-store trigger")
+                logger.debug("Ignoring knowledge-graph-store trigger in update_feasibility_metrics")
                 return dash.no_update, dash.no_update
         
         # Only update if we're on the analysis tab
         if top_tab != "analysis":
             return dash.no_update, dash.no_update
         
-        print(f"DEBUG update_feasibility_metrics - Tab change detected, updating metrics")
+        logger.debug("Tab change detected, updating metrics")
         
         # Get selected technology
         selected_technology = dash_storage.get_data("selected_mar_technology")
@@ -989,11 +1073,11 @@ def setup_analysis_callbacks(app):
             feasibility_score_text = f"Overall Feasibility Score: {feasibility_score}%"
             cost_text = f"Total Project Cost: {cost_range}"
             
-            print(f"DEBUG update_feasibility_metrics - Updated to: {feasibility_score_text}, {cost_text}")
+            logger.debug(f"Updated to: {feasibility_score_text}, {cost_text}")
             return feasibility_score_text, cost_text
         else:
             # No technology selected and we are loading the tab
-            print(f"DEBUG update_feasibility_metrics - No technology, setting defaults")
+            logger.debug("No technology selected, setting defaults")
             return "Overall Feasibility Score: 0%", "Total Project Cost: $0 - $0"
     
     # Callback to update individual feasibility metrics in the Feasibility Metrics tab
