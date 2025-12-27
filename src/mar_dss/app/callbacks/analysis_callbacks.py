@@ -209,32 +209,83 @@ def calculate_feasibility_score(selected_technology, graph=None):
         print(f"Error calculating feasibility score: {e}")
         return 0
 
-def calculate_project_cost_range(selected_technology):
-    """Calculate project cost range based on selected technology."""
+def _get_cost_column_name(selected_technology):
+    """Map selected technology to cost column name."""
     if selected_technology is None:
-        return "$0 - $0"
+        return None
     
+    # Map technology identifiers to cost column names
+    tech_mapping = {
+        "spreading_basins": "Spreading Pond Cost ($)",
+        "Surface Recharge": "Spreading Pond Cost ($)",
+        "injection_wells": "Injection Wells Cost ($)",
+        "Injection Well": "Injection Wells Cost ($)",
+        "dry_wells": "Dry Wells Cost ($)",
+        "Dry Well": "Dry Wells Cost ($)",
+    }
+    
+    return tech_mapping.get(selected_technology)
+
+
+def _format_cost_value(cost_value):
+    """Format a single cost value for display."""
+    if cost_value is None or pd.isna(cost_value):
+        return "$0"
+    
+    cost = float(cost_value)
+    if cost >= 1000000:
+        return f"${cost/1000000:.1f}M"
+    elif cost >= 1000:
+        return f"${cost/1000:.0f}K"
+    else:
+        return f"${cost:,.0f}"
+
+
+def calculate_project_cost_range(selected_technology):
+    """Calculate project cost range based on selected technology.
+    
+    Returns:
+        - If technology is selected: Shows cost for that technology with ±20% range
+        - If no technology selected: Shows all three costs (Spreading Pond, Injection Wells, Dry Wells)
+    """
     try:
         # Get stored cost data if available
         capital_cost = dash_storage.get_data("capital_cost_num")
         
         if capital_cost is not None:
-            # Use actual calculated cost with ±20% range
-            low_cost = capital_cost * 0.8
-            high_cost = capital_cost * 1.2
-            
-            # Format in millions
-            if low_cost >= 1000000:
-                low_str = f"${low_cost/1000000:.1f}M"
+            # Check if it's a pandas Series (multiple values) or single value
+            import pandas as pd
+            if isinstance(capital_cost, pd.Series):
+                # We have three cost values
+                if selected_technology is None:
+                    # Show all three values
+                    spreading = _format_cost_value(capital_cost.get("Spreading Pond Cost ($)", 0))
+                    injection = _format_cost_value(capital_cost.get("Injection Wells Cost ($)", 0))
+                    dry_well = _format_cost_value(capital_cost.get("Dry Wells Cost ($)", 0))
+                    return f"Spreading: {spreading} | Injection: {injection} | Dry Well: {dry_well}"
+                else:
+                    # Show selected technology cost with range
+                    cost_column = _get_cost_column_name(selected_technology)
+                    if cost_column and cost_column in capital_cost.index:
+                        cost_value = capital_cost[cost_column]
+                        low_cost = float(cost_value) * 0.8
+                        high_cost = float(cost_value) * 1.2
+                        low_str = _format_cost_value(low_cost)
+                        high_str = _format_cost_value(high_cost)
+                        return f"{low_str} - {high_str}"
+                    else:
+                        # Fallback: show all three
+                        spreading = _format_cost_value(capital_cost.get("Spreading Pond Cost ($)", 0))
+                        injection = _format_cost_value(capital_cost.get("Injection Wells Cost ($)", 0))
+                        dry_well = _format_cost_value(capital_cost.get("Dry Wells Cost ($)", 0))
+                        return f"Spreading: {spreading} | Injection: {injection} | Dry Well: {dry_well}"
             else:
-                low_str = f"${low_cost/1000:.0f}K"
-            
-            if high_cost >= 1000000:
-                high_str = f"${high_cost/1000000:.1f}M"
-            else:
-                high_str = f"${high_cost/1000:.0f}K"
-            
-            return f"{low_str} - {high_str}"
+                # Single value (old format)
+                low_cost = float(capital_cost) * 0.8
+                high_cost = float(capital_cost) * 1.2
+                low_str = _format_cost_value(low_cost)
+                high_str = _format_cost_value(high_cost)
+                return f"{low_str} - {high_str}"
         
         # Default cost ranges by technology type (if no calculation available)
         default_costs = {
@@ -243,11 +294,16 @@ def calculate_project_cost_range(selected_technology):
             "dry_wells": (1.0, 2.5),
         }
         
+        if selected_technology is None:
+            return "Spreading: $1.5M - $3.0M | Injection: $2.5M - $4.5M | Dry Well: $1.0M - $2.5M"
+        
         cost_range = default_costs.get(selected_technology, (2.0, 4.0))
         return f"${cost_range[0]:.1f}M - ${cost_range[1]:.1f}M"
         
     except Exception as e:
         print(f"Error calculating project cost: {e}")
+        import traceback
+        traceback.print_exc()
         return "$0 - $0"
 
 def run_feasibility_analysis():

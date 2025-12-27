@@ -649,17 +649,117 @@ def setup_cost_callbacks(app):
         recharge_method="dry_well"
     )
         cost_calculator.calculate_cost()
-        
+        cols = ['Spreading Pond Cost ($)', 'Injection Wells Cost ($)', 'Dry Wells Cost ($)']
         capital_cost_num = cost_calculator.capital_costs_calculations.loc['Capital Total Cost',
-         'Total Cost ($)']
+         cols]
         dash_storage.set_data("capital_cost_num",capital_cost_num)
-        maintenance_cost_num = cost_calculator.maintenance_costs_calculations.loc['Annual Grand Maintenance Cost']['Total Cost ($)']
+
+        cols = [ 'Spreading Pond Maintenance Cost ($)', 'Injection Wells Maintenance Cost ($)', 'Dry Wells Maintenance Cost ($)']
+        maintenance_cost_num = cost_calculator.maintenance_costs_calculations.loc['Annual Grand Maintenance Cost', cols]
         dash_storage.set_data("maintenance_cost_num",maintenance_cost_num)
-        net_val = cost_calculator.net_present_value_calculations['Total Net Present Value'].values[-1]
-        dash_storage.set_data("net_val",net_val)
-        capital_cost = f"${capital_cost_num:,.0f}"
-        annual_maintenance_cost = f"${maintenance_cost_num:,.0f}"
-        npv_20_years = f"${net_val:,.0f}"
+        cols =['Spreading Pond Net Present Value ($)',
+       'Injection Wells Net Present Value ($)',
+       'Dry Wells Net Present Value ($)']
+        net_val = cost_calculator.net_present_value_calculations[cols].values[-1]
+        net_val_dict = {}
+        for i, col in enumerate(cols):
+            net_val_dict[col] =net_val[i]
+        net_val = net_val_dict
+        dash_storage.set_data("net_val",net_val_dict)
+        
+        # Get selected technology to determine which cost to display
+        selected_technology = dash_storage.get_data("selected_mar_technology")
+        
+        # Format costs - show all three or one based on selection
+        def format_cost_display(cost_data, cost_type="Capital"):
+            """Format cost display to show 3 values or 1 based on selection."""
+            if cost_data is None:
+                return "$0"
+            
+            if isinstance(cost_data, pd.Series):
+                # We have three cost values
+                # Get column names based on cost type
+                if cost_type == "Capital":
+                    spreading_col = "Spreading Pond Cost ($)"
+                    injection_col = "Injection Wells Cost ($)"
+                    dry_well_col = "Dry Wells Cost ($)"
+                elif cost_type == "Maintenance":
+                    spreading_col = "Spreading Pond Maintenance Cost ($)"
+                    injection_col = "Injection Wells Maintenance Cost ($)"
+                    dry_well_col = "Dry Wells Maintenance Cost ($)"
+                elif cost_type == "NPV":
+                    spreading_col = "Spreading Pond Net Present Value ($)"
+                    injection_col = "Injection Wells Net Present Value ($)"
+                    dry_well_col = "Dry Wells Net Present Value ($)"
+                else:
+                    spreading_col = "Spreading Pond Cost ($)"
+                    injection_col = "Injection Wells Cost ($)"
+                    dry_well_col = "Dry Wells Cost ($)"
+                
+                if selected_technology is None:
+                    # Show all three values
+                    spreading = cost_data.get(spreading_col, 0) if spreading_col in cost_data.index else 0
+                    injection = cost_data.get(injection_col, 0) if injection_col in cost_data.index else 0
+                    dry_well = cost_data.get(dry_well_col, 0) if dry_well_col in cost_data.index else 0
+                    
+                    spreading_str = f"${float(spreading):,.0f}" if pd.notna(spreading) and spreading != 0 else "$0"
+                    injection_str = f"${float(injection):,.0f}" if pd.notna(injection) and injection != 0 else "$0"
+                    dry_well_str = f"${float(dry_well):,.0f}" if pd.notna(dry_well) and dry_well != 0 else "$0"
+                    return html.Div([
+                        html.Div(f"Spreading: {spreading_str}", style={"margin-bottom": "5px"}),
+                        html.Div(f"Injection: {injection_str}", style={"margin-bottom": "5px"}),
+                        html.Div(f"Dry Well: {dry_well_str}")
+                    ])
+                else:
+                    # Show selected technology cost
+                    tech_mapping = {
+                        "spreading_basins": spreading_col,
+                        "Surface Recharge": spreading_col,
+                        "injection_wells": injection_col,
+                        "Injection Well": injection_col,
+                        "dry_wells": dry_well_col,
+                        "Dry Well": dry_well_col,
+                    }
+                    
+                    # Try to find matching column
+                    cost_column = None
+                    for tech_key, col_name in tech_mapping.items():
+                        if (tech_key.lower() in str(selected_technology).lower() or 
+                            str(selected_technology).lower() in tech_key.lower()):
+                            if col_name in cost_data.index:
+                                cost_column = col_name
+                                break
+                    
+                    if cost_column and cost_column in cost_data.index:
+                        cost_value = cost_data[cost_column]
+                        return f"${float(cost_value):,.0f}" if pd.notna(cost_value) else "$0"
+                    else:
+                        # Fallback: show all three
+                        spreading = cost_data.get(spreading_col, 0) if spreading_col in cost_data.index else 0
+                        injection = cost_data.get(injection_col, 0) if injection_col in cost_data.index else 0
+                        dry_well = cost_data.get(dry_well_col, 0) if dry_well_col in cost_data.index else 0
+                        
+                        spreading_str = f"${float(spreading):,.0f}" if pd.notna(spreading) and spreading != 0 else "$0"
+                        injection_str = f"${float(injection):,.0f}" if pd.notna(injection) and injection != 0 else "$0"
+                        dry_well_str = f"${float(dry_well):,.0f}" if pd.notna(dry_well) and dry_well != 0 else "$0"
+                        return html.Div([
+                            html.Div(f"Spreading: {spreading_str}", style={"margin-bottom": "5px"}),
+                            html.Div(f"Injection: {injection_str}", style={"margin-bottom": "5px"}),
+                            html.Div(f"Dry Well: {dry_well_str}")
+                        ])
+            else:
+                # Single value (old format)
+                return f"${float(cost_data):,.0f}" if pd.notna(cost_data) else "$0"
+        
+        capital_cost = format_cost_display(capital_cost_num, "Capital")
+        annual_maintenance_cost = format_cost_display(maintenance_cost_num, "Maintenance")
+        
+        # Format NPV display - convert dict to Series for format_cost_display
+        if net_val_dict:
+            npv_series = pd.Series(net_val_dict)
+            npv_20_years = format_cost_display(npv_series, "NPV")
+        else:
+            npv_20_years = "$0"
         
         # Create Capital Cost Table
         capital_df = cost_calculator.capital_costs_calculations.copy()
@@ -851,42 +951,119 @@ def setup_cost_callbacks(app):
         # Keep a copy of numeric values for the plot
         npv_df_plot = npv_df.copy()
         
-        # Format the Total Net Present Value column for table display
-        if 'Total Net Present Value' in npv_df.columns:
-            def format_npv(x):
-                try:
-                    if pd.notna(x) and x != '' and str(x).strip() != '':
-                        return f"${float(x):,.0f}"
-                    return ''
-                except (ValueError, TypeError):
-                    return ''
-            npv_df['Total Net Present Value'] = npv_df['Total Net Present Value'].apply(format_npv)
+        # Get selected technology to determine which NPV to display
+        selected_technology = dash_storage.get_data("selected_mar_technology")
+        
+        # NPV column names
+        npv_columns = [
+            'Spreading Pond Net Present Value ($)',
+            'Injection Wells Net Present Value ($)',
+            'Dry Wells Net Present Value ($)'
+        ]
+        
+        # Format NPV columns for table display
+        def format_npv(x):
+            try:
+                if pd.notna(x) and x != '' and str(x).strip() != '':
+                    return f"${float(x):,.0f}"
+                return ''
+            except (ValueError, TypeError):
+                return ''
+        
+        # Format all NPV columns that exist
+        for col in npv_columns:
+            if col in npv_df.columns:
+                npv_df[col] = npv_df[col].apply(format_npv)
         
         # Fill NaN values with empty strings for better display
         npv_df = npv_df.fillna('')
         
         # Create the bar plot
         npv_plot = go.Figure()
-        npv_plot.add_trace(go.Bar(
-            x=npv_df_plot['Year'],
-            y=npv_df_plot['Total Net Present Value'],
-            marker_color='#3498db',
-            text=[f"${val:,.0f}" for val in npv_df_plot['Total Net Present Value']],
-            textposition='outside',
-            hovertemplate='Year: %{x}<br>Total Net Present Value: $%{y:,.0f}<extra></extra>'
-        ))
-        npv_plot.update_layout(
-            title='Net Present Value Over 20 Years',
-            xaxis_title='Year',
-            yaxis_title='Total Net Present Value ($)',
-            xaxis=dict(tickmode='linear', tick0=1, dtick=1),
-            yaxis=dict(tickformat='$,.0f'),
-            height=500,
-            autosize=True,
-            margin=dict(l=50, r=50, t=50, b=50),
-            plot_bgcolor='white',
-            paper_bgcolor='white'
-        )
+        
+        # Map technology to column name
+        tech_to_column = {
+            "spreading_basins": "Spreading Pond Net Present Value ($)",
+            "Surface Recharge": "Spreading Pond Net Present Value ($)",
+            "injection_wells": "Injection Wells Net Present Value ($)",
+            "Injection Well": "Injection Wells Net Present Value ($)",
+            "dry_wells": "Dry Wells Net Present Value ($)",
+            "Dry Well": "Dry Wells Net Present Value ($)",
+        }
+        
+        if selected_technology is None:
+            # Show all three technologies
+            colors = ['#3498db', '#2ecc71', '#e74c3c']
+            for i, col in enumerate(npv_columns):
+                if col in npv_df_plot.columns:
+                    npv_plot.add_trace(go.Bar(
+                        x=npv_df_plot['Year'],
+                        y=npv_df_plot[col],
+                        name=col.replace(' Net Present Value ($)', ''),
+                        marker_color=colors[i],
+                        text=[f"${val:,.0f}" for val in npv_df_plot[col]],
+                        textposition='outside',
+                        hovertemplate=f'Year: %{{x}}<br>{col}: $%{{y:,.0f}}<extra></extra>'
+                    ))
+            npv_plot.update_layout(
+                title='Net Present Value Over 20 Years',
+                xaxis_title='Year',
+                yaxis_title='Net Present Value ($)',
+                xaxis=dict(tickmode='linear', tick0=1, dtick=1),
+                yaxis=dict(tickformat='$,.0f'),
+                height=500,
+                autosize=True,
+                margin=dict(l=50, r=50, t=50, b=50),
+                plot_bgcolor='white',
+                paper_bgcolor='white',
+                barmode='group'
+            )
+        else:
+            # Show selected technology only
+            cost_column = None
+            for tech_key, col_name in tech_to_column.items():
+                if (tech_key.lower() in str(selected_technology).lower() or 
+                    str(selected_technology).lower() in tech_key.lower()):
+                    if col_name in npv_df_plot.columns:
+                        cost_column = col_name
+                        break
+            
+            if cost_column and cost_column in npv_df_plot.columns:
+                npv_plot.add_trace(go.Bar(
+                    x=npv_df_plot['Year'],
+                    y=npv_df_plot[cost_column],
+                    marker_color='#3498db',
+                    text=[f"${val:,.0f}" for val in npv_df_plot[cost_column]],
+                    textposition='outside',
+                    hovertemplate=f'Year: %{{x}}<br>{cost_column}: $%{{y:,.0f}}<extra></extra>'
+                ))
+            else:
+                # Fallback: show all three
+                colors = ['#3498db', '#2ecc71', '#e74c3c']
+                for i, col in enumerate(npv_columns):
+                    if col in npv_df_plot.columns:
+                        npv_plot.add_trace(go.Bar(
+                            x=npv_df_plot['Year'],
+                            y=npv_df_plot[col],
+                            name=col.replace(' Net Present Value ($)', ''),
+                            marker_color=colors[i],
+                            text=[f"${val:,.0f}" for val in npv_df_plot[col]],
+                            textposition='outside',
+                            hovertemplate=f'Year: %{{x}}<br>{col}: $%{{y:,.0f}}<extra></extra>'
+                        ))
+            
+            npv_plot.update_layout(
+                title='Net Present Value Over 20 Years',
+                xaxis_title='Year',
+                yaxis_title='Net Present Value ($)',
+                xaxis=dict(tickmode='linear', tick0=1, dtick=1),
+                yaxis=dict(tickformat='$,.0f'),
+                height=500,
+                autosize=True,
+                margin=dict(l=50, r=50, t=50, b=50),
+                plot_bgcolor='white',
+                paper_bgcolor='white'
+            )
         
         npv_table = dash_table.DataTable(
             data=npv_df.to_dict('records'),

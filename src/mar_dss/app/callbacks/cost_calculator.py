@@ -1,13 +1,40 @@
 import pandas as pd
 from typing import Optional
 import numpy as np
+from mar_dss.rules.defaults import defaults
+import mar_dss.app.utils.data_storage as dash_storage
 
-FAKE = False
 
+default_engineering_elements = {
+   "Flow Capture Structure": True,
+   "Rough Grading/Grubbing in Field":True,
+  
+
+   "Sediment Removal Pond":True, #
+   "Conveyance to Sediment Removal Pond":"Trapezoidal Channel", # "Gravity Conveyance Pipeline" or "Pumped Conveyance"
+   "Sediment Removal Target":"Medium Silt", # "Medium Silt" or ""Fine Silt"
+   "Contaminant Filters":False, # 
+
+   "Storage Pond":True, #
+   "Pipeline to Storage Pond":True, #
+   "Pump to Storage Pond":True, #
+   "Controls for Storage Pond":True, #
+   "Electrical System for Storage Pond":True, #
+
+   "Pipeline to Infiltration Site":True, #
+   "Pump to Infiltration Site":True, #
+   "Controls for Infiltration Site":True, #
+   "Electrical System for Infiltration Site":True, #
+
+   "Dry Wells Infiltration":"None", # "Dry Wells Infiltration" or "None"
+   "Injection Wells Infiltration":"None", # "Injection Wells Infiltration" or "None"
+   "Infiltration Basin":"None", # "Infiltration Basin" or "None"  
+   
+}
 
 class CostCalculator:
     def __init__(
-        self,
+        self,        
         water_source: Optional[str] = None,
         storm_design_depth: Optional[float] = None,
         drainage_basin_area_acres: Optional[float] = None,
@@ -26,6 +53,8 @@ class CostCalculator:
         dry_well_diameter_ft: Optional[float] = None,
         collection_to_sediment_removal__conveyance_method: Optional[str] = None,
         recharge_method: Optional[str] = None,
+        
+
     ):
         """Initialize MAR Cost Calculator with project parameters."""
         if water_source is not None:
@@ -123,6 +152,7 @@ class CostCalculator:
             )
 
     def calculate_cost(self):
+        self.read_engineering_elements()
         self.hydro_calculations()
         self.conveyance_calculations()
         self.sediment_removal_pond()
@@ -135,6 +165,10 @@ class CostCalculator:
         self.capital_costs()
         self.maintenance_costs()
         self.net_present_value()
+    
+    def read_engineering_elements(self):
+        # todo: read from data storage
+        self.engineering_elements = default_engineering_elements
 
 
     def hydro_calculations(self):
@@ -144,36 +178,14 @@ class CostCalculator:
         hydro.basin_area_acres = self.drainage_basin_area_acres
         hydro.basin_area_ft2 = (
             self.drainage_basin_area_acres * 43560
-        )
-        if 0:# not used
-            hydro.storm_design_depth_inches = self.storm_design_depth
+        )      
 
         peak_flow_rate_ft3_per_hour = self.total_runoff_volume_ft3/12.0
         self.peak_flow_rate_gpm = peak_flow_rate_ft3_per_hour * 0.124675
         hydro.total_storm_volume_gals = (
             self.total_storm_volume_af * 325851.43
-        )
-        
-        # todo: not used, remove if not needed
-        if 0:
-            hydro.infil_rate_ft_per_hr = (
-                self.basin_soil_type_infiltration_rate_in_per_hr / 12
-            )
-
-        # todo: not used, remove if not needed
-        if 0:
-            hydro.infil_vol_gals_per_12_hours = (
-                hydro.basin_area_ft2 * hydro.infil_rate_ft_per_hr * 12 * 7.48
-            )
-        
-        # todo: not used, remove if not needed
-        if 0:
-            hydro.volume_infiltrated_ft3 = (
-                hydro.total_storm_volume_gals -
-                hydro.infil_vol_gals_per_12_hours
-            )
-        
-
+        )        
+       
         # assuming triangular unit hydrograph, height is h and base 24 hours
         # the peak flow if total runoff volume is V
         
@@ -508,17 +520,35 @@ class CostCalculator:
         columns = [
             'Category', 'Item', 'Unit', 'Unit Cost $', 'Number of Units'
         ]
-        df = pd.DataFrame(columns=columns)
+        df = pd.DataFrame(columns=columns)        
 
+        # ======== collection point and site preparation ========
+        unit_price = 0
+        if self.engineering_elements["Rough Grading/Grubbing in Field"]:
+            unit_price = 1500
         df.loc[0] = [
             'COLLECTION BASIN PREPARATION',
-            'Rough Grading/Grubbing in Field', 'acres', 1500,
+            'Rough Grading/Grubbing in Field', 'acres', unit_price,
             self.hydro.basin_area_acres
         ]
+        unit_price = 0
+        if self.engineering_elements["Flow Capture Structure"]:
+            unit_price = 10000
         df.loc[1] = [
             'COLLECTION BASIN PREPARATION', 'Flow Capture Structure',
-            'LS', 10000, 1.0
+            'LS', unit_price, 1.0
         ]
+
+        # unit_price = 0
+        # if self.engineering_elements["Pump is used to divert water"]:
+        #     unit_price = 50000  
+        # df.loc[2] = [
+        #     'COLLECTION BASIN PREPARATION', 'Pump', 'LF', unit_price, 1.0
+        # ]
+
+        # ======== conveyance to sediment removal pond ========
+        remove_sediment = self.engineering_elements["Sediment Removal Pond"]
+       
 
         if (
             self.collection_to_sediment_removal__conveyance_method ==
@@ -546,54 +576,105 @@ class CostCalculator:
                 'Pumped Conveyance', 'LF', 400,
                 self.distance_collection_to_sediment_pond_ft
             ]
+        
+        if remove_sediment:
+            unit_price = 0
+        else:
+            unit_price = 10000
 
         df.loc[5] = [
-            'SEDIMENT REMOVAL POND', 'Trash Rack', 'LS', 10000, 1
+            'SEDIMENT REMOVAL POND', 'Trash Rack', 'LS', unit_price, 1
         ]
+
+        if not(remove_sediment):
+            unit_price = 0
+        else:
+            unit_price = 500000
         pond_area = self.sediment_removal_pond_area_acres
         df.loc[6] = [
-            'SEDIMENT REMOVAL POND', self.sediment_type, 'Acre', 500000,
+            'SEDIMENT REMOVAL POND', self.sediment_type, 'Acre', unit_price,
             pond_area
         ]
 
+        # ==== storage
+        storage = self.engineering_elements["Storage Pond"]
+        if not(storage):
+            unit_price = 0
+        else:
+            unit_price = 72
         df.loc[7] = [
             'PUMPED CONVEYANCE TO STORAGE/INFILTRATION POND',
             'Pipeline Cost',
-            'LF', 72, self.distance_sediment_to_storage_pond_ft
+            'LF', unit_price, self.distance_sediment_to_storage_pond_ft
         ]
+        unit_price = 0
+        if self.engineering_elements["Pump to Storage Pond"] and storage:
+            unit_price = 100000
         df.loc[8] = [
             'PUMPED CONVEYANCE TO STORAGE/INFILTRATION POND',
-            'Pumping and Bag Filter Cost', 'LS', 100000, 1
+            'Pumping and Bag Filter Cost', 'LS', unit_price, 1
         ]
+        unit_price = 0
+        if self.engineering_elements["Controls for Storage Pond"] and storage:
+            unit_price = 50000
         df.loc[9] = [
             'PUMPED CONVEYANCE TO STORAGE/INFILTRATION POND',
-            'Controls', 'LS', 50000, 1
+            'Controls', 'LS', unit_price, 1
         ]
+        if self.engineering_elements["Electrical System for Storage Pond"] and storage:
+            unit_price = 20000
+        else:
+            unit_price = 0
+
         df.loc[10] = [
             'PUMPED CONVEYANCE TO STORAGE/INFILTRATION POND',
-            'Electrical System', 'LS', 20000, 1
+            'Electrical System', 'LS', unit_price, 1
         ]
 
+        if storage:
+            unit_price = 200000
+        else:
+            unit_price = 0
+
         df.loc[11] = [
-            'STORAGE POND', 'Pond construction cost', 'Acre', 200000,
+            'STORAGE POND', 'Pond construction cost', 'Acre', unit_price,
             self.storage_pond.area_ft2 / 43560.0
         ]
 
+        # ==== infiltration site
+        
+        if self.engineering_elements["Pipeline to Infiltration Site"]:
+            unit_price = 72
+        else:
+            unit_price = 0
+
         df.loc[12] = [
             'PUMPED CONVEYANCE TO INFILTRATION SITE',
-            'Pipeline Cost', 'LF', 72, 500
+            'Pipeline Cost', 'LF', unit_price, 500
         ]
+        if self.engineering_elements["Pump to Infiltration Site"]:
+            unit_price = 100000
+        else:
+            unit_price = 0
         df.loc[13] = [
             'PUMPED CONVEYANCE TO INFILTRATION SITE',
-            'Pumping and Bag Filter Cost', 'LS', 100000, 1
+            'Pumping and Bag Filter Cost', 'LS', unit_price, 1
         ]
+        if self.engineering_elements["Controls for Infiltration Site"]:
+            unit_price = 50000
+        else:
+            unit_price = 0
         df.loc[14] = [
             'PUMPED CONVEYANCE TO INFILTRATION SITE',
-            'Controls', 'LS', 50000, 1
+            'Controls', 'LS', unit_price, 1
         ]
+        if self.engineering_elements["Electrical System for Infiltration Site"]:
+            unit_price = 20000
+        else:
+            unit_price = 0
         df.loc[15] = [
             'PUMPED CONVEYANCE TO INFILTRATION SITE',
-            'Electrical System', 'LS', 20000, 1
+            'Electrical System', 'LS', unit_price, 1
         ]
 
         mask = (
@@ -601,66 +682,104 @@ class CostCalculator:
             self.dry_well_diameter_ft
         )
 
-        unit_price = 0
-        if self.recharge_method == "dry_well":
-            unit_price = 50000
+        # unit_price = 0
+        # if self.recharge_method == "dry_well":
+        unit_price = 50000
         df.loc[16] = [
             'INFILTRATION', 'Dry Well Cost', 'LF', unit_price,
             self.dry_wells_infiltration_calculations[mask][
                 "Number of Wells Required"
             ].values[0]
         ]
-        unit_price = 0
-        if self.recharge_method == "injection_well":
-            unit_price = 250000
+        unit_price = 250000        
         df.loc[17] = [
             'INFILTRATION', 'Injection Wells', 'EA', unit_price,
             self.number_of_injection_wells
         ]
-        unit_price = 0
-        if self.recharge_method in ["dry_well", "injection_well"]:
-            unit_price = 100000
+       
+        unit_price = 100000
 
         df.loc[18] = [
             'INFILTRATION', "Distribution Piping", "LS", unit_price, 1
         ]
-        unit_price = 0
-        if self.recharge_method == "infiltration_basin":
-            unit_price = 200000
+      
+        unit_price = 200000
         df.loc[19] = [
             'INFILTRATION', "Infiltration Basin", "Acre", unit_price,
             self.infiltration_basin_calculations["Basin Area (sf)"][0] /
             43560.0
         ]
 
-        df['Total Cost ($)'] = (
-            df['Unit Cost $'] * df['Number of Units']
-        )
-        subtotal = df['Total Cost ($)'].sum()
-        df.loc['Subtotal', 'Total Cost ($)'] = subtotal
-        df.loc['Project Management', 'Total Cost ($)'] = subtotal * 0.1
-        df.loc['Permitting', 'Total Cost ($)'] = subtotal * 0.02
-        df.loc['Legal Fees', 'Total Cost ($)'] = subtotal * 0.02
-        df.loc['Engineering', 'Total Cost ($)'] = subtotal * 0.1
-        df.loc['Construction Admin and Oversight', 'Total Cost ($)'] = (
-            subtotal * 0.12
-        )
+        for recharge_method in ["Spreading Pond", "Injection Wells", "Dry Wells"]:
+            name = recharge_method + " Cost ($)"
+            unit_price = 0
+            if recharge_method == "Spreading Pond":
+                unit_price = 200000
+                df.loc[16,  'Unit Cost $'] = 0 # dru well
+                df.loc[17,  'Unit Cost $'] = 0 # injection wells
+                df.loc[18,  'Unit Cost $'] = 0 # distribution piping
+                df.loc[19,  'Unit Cost $'] = unit_price # infiltration basin
+            elif recharge_method == "Injection Wells":
+                unit_price = 250000
+                df.loc[16,  'Unit Cost $'] = 0 # dru well
+                df.loc[17,  'Unit Cost $'] = unit_price # injection wells
+                df.loc[18,  'Unit Cost $'] = 100000 # distribution piping
+                df.loc[19,  'Unit Cost $'] = 0 # infiltration basin
+            elif recharge_method == "Dry Wells":
+                unit_price = 50000                 
+                df.loc[16,  'Unit Cost $'] = unit_price # dry well
+                df.loc[17,  'Unit Cost $'] = 0 # injection wells
+                df.loc[18,  'Unit Cost $'] = 100000 # distribution piping
+                df.loc[19,  'Unit Cost $'] = 0 # infiltration basin
 
-        df.loc['subtotal_with_fees', 'Total Cost ($)'] = (
-            df.loc['Subtotal', 'Total Cost ($)'] +
-            df.loc['Project Management', 'Total Cost ($)'] +
-            df.loc['Permitting', 'Total Cost ($)'] +
-            df.loc['Legal Fees', 'Total Cost ($)'] +
-            df.loc['Engineering', 'Total Cost ($)'] +
-            df.loc['Construction Admin and Oversight', 'Total Cost ($)']
-        )
-        df.loc['Contingency', 'Total Cost ($)'] = (
-            df.loc['subtotal_with_fees', 'Total Cost ($)'] * 0.3
-        )
-        df.loc['Capital Total Cost', 'Total Cost ($)'] = (
-            df.loc['subtotal_with_fees', 'Total Cost ($)'] +
-            df.loc['Contingency', 'Total Cost ($)']
-        )
+            df[name] = (
+                df['Unit Cost $'] * df['Number of Units']
+            )
+            subtotal = df[name].sum()
+            df.loc['Subtotal', name] = subtotal
+            df.loc['Project Management', name] = subtotal * 0.1
+            df.loc['Permitting',name] = subtotal * 0.02
+            df.loc['Legal Fees', name] = subtotal * 0.02
+            df.loc['Engineering', name] = subtotal * 0.1
+            df.loc['Construction Admin and Oversight',name] = (
+                subtotal * 0.12
+            )
+
+            df.loc['subtotal_with_fees',name] = (
+            df.loc['Subtotal',name] +
+            df.loc['Project Management', name] +
+            df.loc['Permitting', name] +
+            df.loc['Legal Fees', name] +
+            df.loc['Engineering', name] +
+            df.loc['Construction Admin and Oversight', name]
+            )
+            df.loc['Contingency', name] = (
+            df.loc['subtotal_with_fees', name] * 0.3
+            )
+            df.loc['Capital Total Cost', name] = (
+            df.loc['subtotal_with_fees', name] +
+            df.loc['Contingency', name]
+             )
+
+            
+
+
+
+        # df.loc['subtotal_with_fees', 'Total Cost ($)'] = (
+        #     df.loc['Subtotal', 'Total Cost ($)'] +
+        #     df.loc['Project Management', 'Total Cost ($)'] +
+        #     df.loc['Permitting', 'Total Cost ($)'] +
+        #     df.loc['Legal Fees', 'Total Cost ($)'] +
+        #     df.loc['Engineering', 'Total Cost ($)'] +
+        #     df.loc['Construction Admin and Oversight', 'Total Cost ($)']
+        # )
+        # df.loc['Contingency', 'Total Cost ($)'] = (
+        #     df.loc['subtotal_with_fees', 'Total Cost ($)'] * 0.3
+        # )
+        # df.loc['Capital Total Cost', 'Total Cost ($)'] = (
+        #     df.loc['subtotal_with_fees', 'Total Cost ($)'] +
+        #     df.loc['Contingency', 'Total Cost ($)']
+        # )
         self.capital_costs_calculations = df
 
     def maintenance_costs(self):
@@ -806,91 +925,117 @@ class CostCalculator:
             self.infiltration_basin_calculations["Basin Area (sf)"][0] /
             43560.0
         ]
+        for recharge_method in ["Spreading Pond", "Injection Wells", "Dry Wells"]:
+            name = recharge_method + " Maintenance Cost ($)"
+            unit_price = 0
+            if recharge_method == "Spreading Pond":
+               
+                df.loc[17,  'Unit Cost $'] = 0 # DRY WELL
+                df.loc[18,  'Unit Cost $'] = 0 # injection well maintenance
+                df.loc[19,  'Unit Cost $'] = 0 # injection well pumping and bag filter
+                df.loc[20,  'Unit Cost $'] = 0 # injection well power
+                df.loc[21,  'Unit Cost $'] = 2500 # infiltration basin maintenance
+            elif recharge_method == "Injection Wells":
+                df.loc[17,  'Unit Cost $'] = 0 # DRY WELL
+                df.loc[18,  'Unit Cost $'] = 2000 # injection well maintenance
+                df.loc[19,  'Unit Cost $'] = 2000 # injection well pumping and bag filter
+                df.loc[20,  'Unit Cost $'] = 1000 # injection well power
+                df.loc[21,  'Unit Cost $'] = 0 # infiltration basin maintenance
+            elif recharge_method == "Dry Wells":
+                df.loc[17,  'Unit Cost $'] = 1000 # DRY WELL
+                df.loc[18,  'Unit Cost $'] = 0 # injection well maintenance
+                df.loc[19,  'Unit Cost $'] = 0 # injection well pumping and bag filter
+                df.loc[20,  'Unit Cost $'] = 0 # injection well power
+                df.loc[21,  'Unit Cost $'] = 0 # infiltration basin maintenance
+            
+            
 
-        df['Total Cost ($)'] = (
-            df['Unit Cost $'] * df['Number of Units']
-        )
+            df[name] = (
+                df['Unit Cost $'] * df['Number of Units']
+            )
 
-        subtotal = df['Total Cost ($)'].sum()
-        df.loc['Subtotal Maintenance Cost ($)', 'Total Cost ($)'] = (
-            subtotal
-        )
+            subtotal = df[name].sum()
+            df.loc['Subtotal Maintenance Cost ($)', name] = (
+                subtotal
+            )
 
-        df.loc['Project Management', 'Total Cost ($)'] = (
-            subtotal * 0.1
-        )
-        df.loc['Reporting', 'Total Cost ($)'] = (
-            subtotal * 0.02
-        )
-        df.loc['Engineering', 'Total Cost ($)'] = (
-            subtotal * 0.1
-        )
-        df.loc['Construction Admin and Oversight', 'Total Cost ($)'] = (
-            subtotal * 0.12
-        )
-        df.loc['Subtotal with Admin Fees', 'Total Cost ($)'] = (
-            subtotal +
-            df.loc['Project Management', 'Total Cost ($)'] +
-            df.loc['Reporting', 'Total Cost ($)'] +
-            df.loc['Engineering', 'Total Cost ($)'] +
-            df.loc['Construction Admin and Oversight', 'Total Cost ($)']
-        )
-        df.loc['Contingency', 'Total Cost ($)'] = (
-            df.loc['Subtotal with Admin Fees', 'Total Cost ($)'] * 0.3
-        )
-        df.loc['Annual Grand Maintenance Cost', 'Total Cost ($)'] = (
-            df.loc['Subtotal with Admin Fees', 'Total Cost ($)'] +
-            df.loc['Contingency', 'Total Cost ($)']
-        )
+            df.loc['Project Management', name] = (
+                subtotal * 0.1
+            )
+            df.loc['Reporting', name] = (
+                subtotal * 0.02
+            )
+            df.loc['Engineering', name] = (
+                subtotal * 0.1
+            )
+            df.loc['Construction Admin and Oversight', name] = (
+                subtotal * 0.12
+            )
+            df.loc['Subtotal with Admin Fees', name] = (
+                subtotal +
+                df.loc['Project Management', name] +
+                df.loc['Reporting', name] +
+                df.loc['Engineering', name] +
+                df.loc['Construction Admin and Oversight', name]
+            )
+            df.loc['Contingency', name] = (
+                df.loc['Subtotal with Admin Fees', name] * 0.3
+            )
+            df.loc['Annual Grand Maintenance Cost', name] = (
+                df.loc['Subtotal with Admin Fees', name] +
+                df.loc['Contingency', name]
+            )
 
         self.maintenance_costs_calculations = df
 
     def net_present_value(self):
-        capital_cost = (
-            self.capital_costs_calculations.loc[
-                'Capital Total Cost', 'Total Cost ($)'
-            ]
-        )
-
-        annual_maintenance_cost = (
-            self.maintenance_costs_calculations.loc[
-                'Annual Grand Maintenance Cost', 'Total Cost ($)'
-            ]
-        )
-        annual_esclation_rate = 2.99 / 100
-        npv_discount_rate = 5.01 / 100
-
-        inflation_adjusted_maintenance_cost = []
-        pv_costs = 0
-        net_value = []
-        for i in range(1, 21):
-            if i == 1:
-                inflation_adjusted_maintenance_cost.append(
-                    annual_maintenance_cost
-                )
-                pv_costs = (
-                    pv_costs +
-                    (annual_maintenance_cost /
-                     (1 + npv_discount_rate)**i)
-                )
-                net_value.append(pv_costs + capital_cost)
-                continue
-            previous_cost = inflation_adjusted_maintenance_cost[i-2]
-            current_cost = (
-                previous_cost + previous_cost * annual_esclation_rate
-            )
-            inflation_adjusted_maintenance_cost.append(current_cost)
-            pv_costs = (
-                pv_costs + (current_cost / (1 + npv_discount_rate)**i)
-            )
-            net_value.append(pv_costs + capital_cost)
-        pv_costs = pv_costs + capital_cost
-        df = pd.DataFrame(
-            net_value, columns=['Total Net Present Value']
-        )
+        df = pd.DataFrame()           
         df.index = range(1, 21)
         df.index.name = 'Year'
-        df['Total Net Present Value'] = net_value
+        for recharge_method in ["Spreading Pond", "Injection Wells", "Dry Wells"]:
+            name1 = recharge_method + " Cost ($)"
+            capital_cost = (
+                self.capital_costs_calculations.loc[
+                    'Capital Total Cost', name1
+                ]
+            )
+            name2 = recharge_method + " Maintenance Cost ($)"
+
+            annual_maintenance_cost = (
+                self.maintenance_costs_calculations.loc[
+                    'Annual Grand Maintenance Cost', name2
+                ]
+            )
+            annual_esclation_rate = 2.99 / 100
+            npv_discount_rate = 5.01 / 100
+
+            inflation_adjusted_maintenance_cost = []
+            pv_costs = 0
+            net_value = []
+            for i in range(1, 21):
+                if i == 1:
+                    inflation_adjusted_maintenance_cost.append(
+                        annual_maintenance_cost
+                    )
+                    pv_costs = (
+                        pv_costs +
+                        (annual_maintenance_cost /
+                        (1 + npv_discount_rate)**i)
+                    )
+                    net_value.append(pv_costs + capital_cost)
+                    continue
+                previous_cost = inflation_adjusted_maintenance_cost[i-2]
+                current_cost = (
+                    previous_cost + previous_cost * annual_esclation_rate
+                )
+                inflation_adjusted_maintenance_cost.append(current_cost)
+                pv_costs = (
+                    pv_costs + (current_cost / (1 + npv_discount_rate)**i)
+                )
+                net_value.append(pv_costs + capital_cost)
+            pv_costs = pv_costs + capital_cost
+            name3 = recharge_method + " Net Present Value ($)"
+            df[name3] = net_value
         self.net_present_value_calculations = df
 
 
