@@ -3,6 +3,7 @@ Callbacks for Legal Constraints tab - MAR legal/regulatory feasibility.
 """
 
 from dash import Input, Output, html
+import dash
 import plotly.graph_objects as go
 import mar_dss.app.utils.data_storage as data_storage
 
@@ -402,5 +403,118 @@ def setup_legal_constraints_callbacks(app):
             quality_branch,
             permits_list,
         )
+
+    # Callbacks to restore regulation component values from data_storage when tab is accessed
+    @app.callback(
+        Output("legal-proj-federal-nexus", "value"),
+        [Input("top-tabs", "active_tab")],
+        prevent_initial_call=False
+    )
+    def restore_federal_nexus(active_tab):
+        """Restore federal nexus value from regulation_data when Regulations tab is accessed."""
+        if active_tab == "legal":
+            regulation_data = data_storage.get_data("regulation_data")
+            if regulation_data and "group_0" in regulation_data:
+                return regulation_data["group_0"].get("federal_nexus", "No")
+        return dash.no_update
+
+    @app.callback(
+        Output("legal-proj-tribal-interstate", "value"),
+        [Input("top-tabs", "active_tab")],
+        prevent_initial_call=False
+    )
+    def restore_tribal_interstate(active_tab):
+        """Restore tribal/interstate value from regulation_data when Regulations tab is accessed."""
+        if active_tab == "legal":
+            regulation_data = data_storage.get_data("regulation_data")
+            if regulation_data and "group_0" in regulation_data:
+                return regulation_data["group_0"].get("tribal_interstate", "None")
+        return dash.no_update
+
+    @app.callback(
+        [Output("legal-site-control", "value"),
+         Output("legal-site-zoning", "value"),
+         Output("legal-site-wetlands", "value"),
+         Output("legal-site-sensitive", "value"),
+         Output("legal-site-public-lands", "value"),
+         Output("legal-site-dams", "value"),
+         Output("legal-site-seismic", "value")],
+        [Input("top-tabs", "active_tab")],
+        prevent_initial_call=False
+    )
+    def restore_site_values(active_tab):
+        """Restore site feasibility values from regulation_data when Regulations tab is accessed."""
+        if active_tab == "legal":
+            regulation_data = data_storage.get_data("regulation_data")
+            if regulation_data and "group_a" in regulation_data:
+                group_a = regulation_data["group_a"]
+                return (
+                    group_a.get("site_control", "Have site control"),
+                    group_a.get("zoning", "Allowed"),
+                    group_a.get("wetlands", "No impacts"),
+                    group_a.get("sensitive", "None"),
+                    group_a.get("public_lands", "Not applicable"),
+                    group_a.get("dams", "Not applicable"),
+                    group_a.get("seismic", "Compliant"),
+                )
+        return [dash.no_update] * 7
+
+    @app.callback(
+        [Output("legal-src-right", "value"),
+         Output("legal-src-accounting", "value"),
+         Output("legal-src-compact", "value"),
+         Output("legal-src-type", "value"),
+         Output("legal-src-type-feasible", "value"),
+         Output("legal-src-conveyance", "value")],
+        [Input("top-tabs", "active_tab")],
+        prevent_initial_call=False
+    )
+    def restore_source_values(active_tab):
+        """Restore water source values from regulation_data when Regulations tab is accessed."""
+        if active_tab == "legal":
+            regulation_data = data_storage.get_data("regulation_data")
+            if regulation_data and "group_b" in regulation_data:
+                group_b = regulation_data["group_b"]
+                return (
+                    group_b.get("right", "Valid right/contract"),
+                    group_b.get("accounting", "Authorized"),
+                    group_b.get("compact", "Not applicable"),
+                    group_b.get("src_type", "stormwater"),
+                    group_b.get("src_feasible", "Feasible"),
+                    group_b.get("conveyance", "Available"),
+                )
+        return [dash.no_update] * 6
+
+    @app.callback(
+        [Output("legal-qual-method", "value"),
+         Output("legal-qual-uic", "value"),
+         Output("legal-qual-usdw", "value"),
+         Output("legal-qual-mcls", "value"),
+         Output("legal-qual-antideg", "value"),
+         Output("legal-qual-compat", "value"),
+         Output("legal-qual-cecs", "value"),
+         Output("legal-qual-residuals", "value"),
+         Output("legal-qual-wells", "value")],
+        [Input("top-tabs", "active_tab")],
+        prevent_initial_call=False
+    )
+    def restore_quality_values(active_tab):
+        """Restore water quality values from regulation_data when Regulations tab is accessed."""
+        if active_tab == "legal":
+            regulation_data = data_storage.get_data("regulation_data")
+            if regulation_data and "group_c" in regulation_data:
+                group_c = regulation_data["group_c"]
+                return (
+                    group_c.get("method", "infiltration"),
+                    group_c.get("uic", "Not applicable"),
+                    group_c.get("usdw", "No"),
+                    group_c.get("mcls", "Assured"),
+                    group_c.get("antideg", "No lowering"),
+                    group_c.get("compat", "Acceptable"),
+                    group_c.get("cecs", "Compliant"),
+                    group_c.get("residuals", "Permittable"),
+                    group_c.get("wells", "Compliant"),
+                )
+        return [dash.no_update] * 9
 
 

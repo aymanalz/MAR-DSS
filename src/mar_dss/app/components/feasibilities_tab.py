@@ -65,7 +65,7 @@ def create_feasibilities_content():
                 ],
                 className="mb-4"
             ),
-            # Constraints Heatmap
+            # Constraints Heatmaps (separated by type)
             dbc.Row(
                 [
                     dbc.Col(
@@ -73,17 +73,75 @@ def create_feasibilities_content():
                             dbc.Card(
                                 [
                                     dbc.CardHeader(
-                                        "Constraints Heatmap",
+                                        "Hydrogeologic Constraints Heatmap",
                                         className="fw-bold text-white",
                                         style={"backgroundColor": "#1e3a5f"}
                                     ),
                                     dbc.CardBody(
                                         [
                                             dcc.Graph(
-                                                id="constraints-heatmap-chart",
+                                                id="hydrogeologic-constraints-heatmap-chart",
                                                 style={"height": "400px"}
                                             ),
-                                            html.Div(id="constraints-heatmap-legend", className="mt-3")
+                                            html.Div(id="hydrogeologic-constraints-heatmap-legend", className="mt-3")
+                                        ]
+                                    )
+                                ]
+                            )
+                        ],
+                        width=12,
+                        className="mb-3"
+                    )
+                ],
+                className="mb-4"
+            ),
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader(
+                                        "Environmental Constraints Heatmap",
+                                        className="fw-bold text-white",
+                                        style={"backgroundColor": "#1e3a5f"}
+                                    ),
+                                    dbc.CardBody(
+                                        [
+                                            dcc.Graph(
+                                                id="environmental-constraints-heatmap-chart",
+                                                style={"height": "400px"}
+                                            ),
+                                            html.Div(id="environmental-constraints-heatmap-legend", className="mt-3")
+                                        ]
+                                    )
+                                ]
+                            )
+                        ],
+                        width=12,
+                        className="mb-3"
+                    )
+                ],
+                className="mb-4"
+            ),
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader(
+                                        "Regulation Constraints Heatmap",
+                                        className="fw-bold text-white",
+                                        style={"backgroundColor": "#1e3a5f"}
+                                    ),
+                                    dbc.CardBody(
+                                        [
+                                            dcc.Graph(
+                                                id="regulation-constraints-heatmap-chart",
+                                                style={"height": "400px"}
+                                            ),
+                                            html.Div(id="regulation-constraints-heatmap-legend", className="mt-3")
                                         ]
                                     )
                                 ]

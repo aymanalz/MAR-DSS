@@ -296,12 +296,20 @@ def setup_overview_callbacks(app):
                     key = row["key"]
                     value = row["value"]
                     
-                    # Handle list values that might be stored as strings in CSV
-                    if isinstance(value, str) and value.startswith('[') and value.endswith(']'):
-                        try:
-                            value = ast.literal_eval(value)
-                        except (ValueError, SyntaxError):
-                            pass  # Keep as string if parsing fails
+                    # Handle list and dict values that might be stored as strings in CSV
+                    if isinstance(value, str):
+                        if value.startswith('[') and value.endswith(']'):
+                            # Handle lists
+                            try:
+                                value = ast.literal_eval(value)
+                            except (ValueError, SyntaxError):
+                                pass  # Keep as string if parsing fails
+                        elif value.startswith('{') and value.endswith('}'):
+                            # Handle dictionaries (e.g., regulation_data)
+                            try:
+                                value = ast.literal_eval(value)
+                            except (ValueError, SyntaxError):
+                                pass  # Keep as string if parsing fails
                     
                     print(f"Setting data: {key} = {value}")
                     dash_storage.set_data(key, value)

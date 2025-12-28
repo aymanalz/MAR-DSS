@@ -205,18 +205,27 @@ def compute_spread_area(k_min_vadose, max_available_area, gw_depth, source_water
                                          k=k_mean,
                                          b=saturated_thickness, 
                                          sy=sy_mean)
+        # if infl_rate > k_min_vadose:
+        #     infl_rate = k_min_vadose
+        #     break
 
         if infl_rate < k_min_vadose:
             spread_area = spread_area * infl_rate/k_min_vadose
         else:
             # If spread area is too large, reduce it
-            spread_area = spread_area * k_min_vadose/ infl_rate 
+            spread_area = spread_area * infl_rate/ k_min_vadose 
+        
+            
+            
         iteration += 1
 
         if abs(infl_rate - k_min_vadose) < 1e-5:
             break
     
     # Ensure we don't exceed max available area
+    if spread_area > max_available_area:
+            spread_area = max_available_area
+            
     spread_area = min(spread_area, max_available_area)
     
     return {"spread_area": spread_area, "infl_rate": infl_rate, "inf_k_ratio": infl_rate/k_min_vadose}

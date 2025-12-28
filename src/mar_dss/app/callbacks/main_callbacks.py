@@ -604,8 +604,8 @@ def setup_main_callbacks(app, dashboard_instance):
                 # covert the data to pandas dataframe, keys are in a column called "key" and values are in a column called "value"
                 df_ = []
                 for key, value in data.items():
-                    if key in ["decision_graph"]:
-                        # skip writing decision_graph to csv
+                    if key in ["decision_graph", "feasibility_analysis_hash"]:
+                        # skip writing decision_graph and feasibility_analysis_hash to csv
                         continue
                     df_.append([key, value])
                 df = pd.DataFrame(df_, columns=["key", "value"])
@@ -746,6 +746,9 @@ def setup_main_callbacks(app, dashboard_instance):
             # Create a clean, serializable copy to avoid circular references
             clean_data = {}
             for key, value in project_data.items():
+                # Skip feasibility_analysis_hash (internal caching, not needed in saved project)
+                if key in ["feasibility_analysis_hash"]:
+                    continue
                 try:
                     # Test if the value can be serialized
                     json.dumps(value)
@@ -810,6 +813,9 @@ def setup_main_callbacks(app, dashboard_instance):
             # Create a clean, serializable copy to avoid circular references
             clean_data = {}
             for key, value in project_data.items():
+                # Skip feasibility_analysis_hash (internal caching, not needed in saved project)
+                if key in ["feasibility_analysis_hash"]:
+                    continue
                 try:
                     # Test if the value can be serialized
                     json.dumps(value)

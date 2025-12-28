@@ -62,14 +62,32 @@ def _get_empty_dashboard_content():
     
     empty_stats = html.Div()
     
-    empty_heatmap_fig = go.Figure()
-    empty_heatmap_fig.update_layout(
-        title="Constraints Heatmap",
+    empty_hydro_heatmap_fig = go.Figure()
+    empty_hydro_heatmap_fig.update_layout(
+        title="Hydrogeologic Constraints Heatmap",
         template="plotly_white",
         height=400
     )
     
-    empty_heatmap_legend = html.Div()
+    empty_hydro_heatmap_legend = html.Div()
+    
+    empty_env_heatmap_fig = go.Figure()
+    empty_env_heatmap_fig.update_layout(
+        title="Environmental Constraints Heatmap",
+        template="plotly_white",
+        height=400
+    )
+    
+    empty_env_heatmap_legend = html.Div()
+    
+    empty_reg_heatmap_fig = go.Figure()
+    empty_reg_heatmap_fig.update_layout(
+        title="Regulation Constraints Heatmap",
+        template="plotly_white",
+        height=400
+    )
+    
+    empty_reg_heatmap_legend = html.Div()
     
     empty_capital_fig = go.Figure()
     empty_capital_fig.update_layout(
@@ -92,7 +110,11 @@ def _get_empty_dashboard_content():
         height=350
     )
     
-    return no_data_msg, empty_fig, empty_stats, empty_heatmap_fig, empty_heatmap_legend, empty_capital_fig, empty_maintenance_fig, empty_npv_fig
+    return (no_data_msg, empty_fig, empty_stats, 
+            empty_hydro_heatmap_fig, empty_hydro_heatmap_legend,
+            empty_env_heatmap_fig, empty_env_heatmap_legend,
+            empty_reg_heatmap_fig, empty_reg_heatmap_legend,
+            empty_capital_fig, empty_maintenance_fig, empty_npv_fig)
 
 
 def _categorize_options(results, filters):
@@ -389,8 +411,8 @@ def _create_funnel_stats(stats):
     )
 
 
-def _prepare_constraints_data(results, filters):
-    """Prepare constraint data for heatmap."""
+def _prepare_constraints_data(results, filters, constraint_type=None):
+    """Prepare constraint data for heatmap, optionally filtered by type."""
     all_constraints = set()
     constraint_data = {}  # {option_name: {constraint_name: response_level}}
     
@@ -402,39 +424,56 @@ def _prepare_constraints_data(results, filters):
             soft_constraints = filter_data.get('soft', [])
             
             # Process hard constraints (convert pass/fail to response level)
-            for hc in hard_constraints:
-                constraint_name = hc.get('name', 'Unknown')
-                all_constraints.add(constraint_name)
-                # Hard constraint: 0 if pass, 4 if fail
-                response_level = 0 if hc.get('pass', True) else 4
-                constraint_data[option_name][constraint_name] = response_level
+            # Note: Hard constraints don't have a type, so we only include them when constraint_type is None
+            if constraint_type is None:
+                for hc in hard_constraints:
+                    constraint_name = hc.get('name', 'Unknown')
+                    all_constraints.add(constraint_name)
+                    # Hard constraint: 0 if pass, 4 if fail
+                    response_level = 0 if hc.get('pass', True) else 4
+                    constraint_data[option_name][constraint_name] = response_level
             
             # Process soft constraints (use response level directly)
             for sc in soft_constraints:
                 constraint_name = sc.get('name', 'Unknown')
-                all_constraints.add(constraint_name)
-                response_level = sc.get('response', 0)
-                # If this constraint already exists (from hard), keep the higher severity
-                if constraint_name in constraint_data[option_name]:
-                    constraint_data[option_name][constraint_name] = max(
-                        constraint_data[option_name][constraint_name],
-                        response_level
-                    )
-                else:
-                    constraint_data[option_name][constraint_name] = response_level
+                constraint_type_value = sc.get('type', 'unknown')
+                
+                # Filter by constraint type if specified
+                if constraint_type is None or constraint_type_value == constraint_type:
+                    all_constraints.add(constraint_name)
+                    response_level = sc.get('response', 0)
+                    # If this constraint already exists (from hard), keep the higher severity
+                    if constraint_name in constraint_data[option_name]:
+                        constraint_data[option_name][constraint_name] = max(
+                            constraint_data[option_name][constraint_name],
+                            response_level
+                        )
+                    else:
+                        constraint_data[option_name][constraint_name] = response_level
+    
+    # Filter constraint_data to only include constraints that are in all_constraints
+    # This ensures we only show constraints that match the type filter
+    for option_name in constraint_data.keys():
+        constraint_data[option_name] = {
+            k: v for k, v in constraint_data[option_name].items() 
+            if k in all_constraints
+        }
     
     return sorted(all_constraints), constraint_data
 
 
-def _create_constraints_heatmap(results, filters):
-    """Create the constraints heatmap chart and legend."""
-    sorted_constraints, constraint_data = _prepare_constraints_data(results, filters)
+def _create_constraints_heatmap(results, filters, constraint_type=None, title=None):
+    """Create the constraints heatmap chart and legend for a specific constraint type."""
+    sorted_constraints, constraint_data = _prepare_constraints_data(results, filters, constraint_type)
     option_names = list(results.keys())
+    
+    if title is None:
+        title = "Constraints Heatmap"
     
     if not sorted_constraints or not constraint_data:
         heatmap_fig = go.Figure()
         heatmap_fig.update_layout(
-            title="Constraints Heatmap",
+            title=title,
             template="plotly_white",
             height=400,
             xaxis_title="No constraints data available",
@@ -484,7 +523,7 @@ def _create_constraints_heatmap(results, filters):
     ))
     
     heatmap_fig.update_layout(
-        title="Constraints Heatmap",
+        title=title,
         xaxis_title="Constraints",
         yaxis_title="Options",
         template="plotly_white",
@@ -708,8 +747,12 @@ def setup_feasibilities_callbacks(app):
         [Output("executive-summary-content", "children"),
          Output("decision-funnel-chart", "figure"),
          Output("decision-funnel-stats", "children"),
-         Output("constraints-heatmap-chart", "figure"),
-         Output("constraints-heatmap-legend", "children"),
+         Output("hydrogeologic-constraints-heatmap-chart", "figure"),
+         Output("hydrogeologic-constraints-heatmap-legend", "children"),
+         Output("environmental-constraints-heatmap-chart", "figure"),
+         Output("environmental-constraints-heatmap-legend", "children"),
+         Output("regulation-constraints-heatmap-chart", "figure"),
+         Output("regulation-constraints-heatmap-legend", "children"),
          Output("capital-cost-chart", "figure"),
          Output("maintenance-cost-chart", "figure"),
          Output("npv-cost-chart", "figure")],
@@ -723,7 +766,9 @@ def setup_feasibilities_callbacks(app):
         # Update when Analysis tab is accessed OR when Feasibilities sub-tab is selected
         # This ensures data loads immediately when Analysis tab opens
         if top_tab != "analysis" and active_tab != "analysis-feasibilities":
-            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+            return (dash.no_update, dash.no_update, dash.no_update, 
+                    dash.no_update, dash.no_update, dash.no_update, dash.no_update,
+                    dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update)
         
         # Ensure DSS results are available
         dss_results = _ensure_dss_results_available(top_tab)
@@ -743,15 +788,30 @@ def setup_feasibilities_callbacks(app):
         executive_summary = _build_executive_summary(categorized_data)
         funnel_fig = _create_decision_funnel_chart(categorized_data["stats"])
         funnel_stats = _create_funnel_stats(categorized_data["stats"])
-        heatmap_fig, heatmap_legend = _create_constraints_heatmap(results, filters)
+        
+        # Create separate heatmaps for each constraint type
+        hydro_heatmap_fig, hydro_heatmap_legend = _create_constraints_heatmap(
+            results, filters, constraint_type="hydrogeologic", title="Hydrogeologic Constraints Heatmap"
+        )
+        env_heatmap_fig, env_heatmap_legend = _create_constraints_heatmap(
+            results, filters, constraint_type="environmental", title="Environmental Constraints Heatmap"
+        )
+        reg_heatmap_fig, reg_heatmap_legend = _create_constraints_heatmap(
+            results, filters, constraint_type="Regulation", title="Regulation Constraints Heatmap"
+        )
+        
         capital_fig, maintenance_fig, npv_fig = _create_cost_comparison_charts()
         
         return (
             html.Div(executive_summary),
             funnel_fig,
             funnel_stats,
-            heatmap_fig,
-            heatmap_legend,
+            hydro_heatmap_fig,
+            hydro_heatmap_legend,
+            env_heatmap_fig,
+            env_heatmap_legend,
+            reg_heatmap_fig,
+            reg_heatmap_legend,
             capital_fig,
             maintenance_fig,
             npv_fig
