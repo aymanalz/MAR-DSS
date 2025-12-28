@@ -261,7 +261,166 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     }
     constraints.append(leakage_significance_metric)
 
+    # ==================================================================
+    # Environmental Assessment Constraints (based on Water Quality & Geochemistry tab)
+    # ==================================================================
     
-
+    # Get environmental assessment data from data storage
+    # Note: data_storage is the same module used throughout the app
+    tss_turbidity_risk = data_storage.get_data("tss_turbidity_risk") or "LOW RISK"
+    doc_toc_risk = data_storage.get_data("doc_toc_risk") or "LOW RISK"
+    ph_alkalinity_risk = data_storage.get_data("ph_alkalinity_risk") or "LOW RISK"
+    tds_salinity_risk = data_storage.get_data("tds_salinity_risk") or "LOW RISK"
+    inorganic_contaminants_risk = data_storage.get_data("inorganic_contaminants_risk") or "LOW RISK"
+    emerging_contaminants_risk = data_storage.get_data("emerging_contaminants_risk") or "LOW RISK"
+    redox_compatibility_risk = data_storage.get_data("redox_compatibility_risk") or "LOW RISK"
+    pathogen_risk = data_storage.get_data("pathogen_risk") or "LOW RISK"
+    vadose_zone_pollution = data_storage.get_data("vadose_zone_pollution") or "None"
+    
+    # ==================================================================
+    # 1. Clogging & Fouling Risks (Group 1)
+    # ==================================================================
+    # Based on TSS/Turbidity (Step 1) and DOC/TOC (Step 2A)
+    clogging_fouling_response = 0
+    clogging_fouling_penalty = []
+    
+    # Check TSS/Turbidity risk
+    if tss_turbidity_risk == "HIGH RISK":
+        clogging_fouling_response = max(clogging_fouling_response, 3)
+        clogging_fouling_penalty.append("Mitigation + Cost: High TSS/Turbidity (>20 mg/L, >10 NTU) requires treatment to prevent clogging")
+    elif tss_turbidity_risk == "MODERATE RISK":
+        clogging_fouling_response = max(clogging_fouling_response, 1)
+        if not clogging_fouling_penalty:
+            clogging_fouling_penalty.append("Warning + Cost: Moderate TSS/Turbidity (10-20 mg/L, 5-10 NTU) may require treatment")
+    
+    # Check DOC/TOC risk
+    if doc_toc_risk == "HIGH RISK":
+        clogging_fouling_response = max(clogging_fouling_response, 3)
+        clogging_fouling_penalty.append("Mitigation + Cost: High DOC/TOC (>10 mg/L) can cause biofouling, requires treatment")
+    elif doc_toc_risk == "MODERATE RISK":
+        clogging_fouling_response = max(clogging_fouling_response, 2)
+        if not clogging_fouling_penalty:
+            clogging_fouling_penalty.append("Warning + Cost: Moderate DOC/TOC (5-10 mg/L) may cause biofouling, monitor closely")
+    
+    clogging_fouling_constraint = {
+        "name": "Clogging & Fouling Risks",
+        "response": clogging_fouling_response,
+        "penalty": clogging_fouling_penalty,
+        "type": "environmental",
+        "hard": True if "Clogging & Fouling Risks" in hardend_constraints else False
+    }
+    constraints.append(clogging_fouling_constraint)
+    
+    # ==================================================================
+    # 2. Chemical Compatibility (Group 2)
+    # ==================================================================
+    # Based on pH/Alkalinity (Step 2B), TDS/Salinity (Step 3), Redox Compatibility (Step 5B)
+    chemical_compatibility_response = 0
+    chemical_compatibility_penalty = []
+    
+    # Check pH/Alkalinity risk
+    if ph_alkalinity_risk == "HIGH RISK":
+        chemical_compatibility_response = max(chemical_compatibility_response, 3)
+        chemical_compatibility_penalty.append("Mitigation + Cost: Significant pH/alkalinity mismatch (>1.0 unit) requires geochemical assessment")
+    elif ph_alkalinity_risk == "MODERATE RISK":
+        chemical_compatibility_response = max(chemical_compatibility_response, 2)
+        if not chemical_compatibility_penalty:
+            chemical_compatibility_penalty.append("Warning + Cost: Moderate pH/alkalinity difference (0.5-1.0 units) may cause geochemical reactions")
+    
+    # Check TDS/Salinity risk (CRITICAL CHECKPOINT)
+    if tds_salinity_risk == "HIGH RISK":
+        chemical_compatibility_response = max(chemical_compatibility_response, 4)
+        chemical_compatibility_penalty.append("Reject: TDS increase >500 mg/L - likely NOT SUITABLE, requires economic study")
+    elif tds_salinity_risk == "MODERATE RISK":
+        chemical_compatibility_response = max(chemical_compatibility_response, 2)
+        if not chemical_compatibility_penalty:
+            chemical_compatibility_penalty.append("Warning + Cost: Moderate TDS increase (250-500 mg/L) - long-term salinization risk")
+    
+    # Check Redox Compatibility risk
+    if redox_compatibility_risk == "HIGH RISK":
+        chemical_compatibility_response = max(chemical_compatibility_response, 4)
+        chemical_compatibility_penalty.append("Reject: Significant redox incompatibility - high risk of irreversible aquifer degradation")
+    elif redox_compatibility_risk == "MODERATE RISK":
+        chemical_compatibility_response = max(chemical_compatibility_response, 3)
+        if not chemical_compatibility_penalty:
+            chemical_compatibility_penalty.append("Mitigation + Cost: Redox incompatibility may cause Fe/Mn precipitation or As mobilization")
+    
+    chemical_compatibility_constraint = {
+        "name": "Chemical Compatibility",
+        "response": chemical_compatibility_response,
+        "penalty": chemical_compatibility_penalty,
+        "type": "environmental",
+        "hard": True if "Chemical Compatibility" in hardend_constraints else False
+    }
+    constraints.append(chemical_compatibility_constraint)
+    
+    # ==================================================================
+    # 3. Water-Quality Compliance (Group 3)
+    # ==================================================================
+    # Based on Inorganic Contaminants (Step 4), Emerging Contaminants (Step 5A), Pathogen Risk (Step 6)
+    water_quality_compliance_response = 0
+    water_quality_compliance_penalty = []
+    
+    # Check Inorganic Contaminants risk (CRITICAL CHECKPOINT)
+    if inorganic_contaminants_risk == "HIGH RISK":
+        water_quality_compliance_response = max(water_quality_compliance_response, 4)
+        water_quality_compliance_penalty.append("Reject: Inorganic contaminants ≥100% of limits - likely NOT SUITABLE due to cost/complexity")
+    elif inorganic_contaminants_risk == "MODERATE RISK":
+        water_quality_compliance_response = max(water_quality_compliance_response, 2)
+        if not water_quality_compliance_penalty:
+            water_quality_compliance_penalty.append("Warning + Cost: Inorganic contaminants 50-100% of limits - treatment required")
+    
+    # Check Emerging Contaminants risk
+    if emerging_contaminants_risk == "HIGH RISK":
+        water_quality_compliance_response = max(water_quality_compliance_response, 3)
+        water_quality_compliance_penalty.append("Mitigation + Cost: High emerging contaminants (PFAS >100 ng/L or multiple compounds) - comprehensive treatability study required")
+    elif emerging_contaminants_risk == "MODERATE RISK":
+        water_quality_compliance_response = max(water_quality_compliance_response, 2)
+        if not water_quality_compliance_penalty:
+            water_quality_compliance_penalty.append("Warning + Cost: Emerging contaminants detected at low levels - monitor and evaluate treatment")
+    
+    # Check Pathogen Risk (CRITICAL CHECKPOINT)
+    if pathogen_risk == "HIGH RISK":
+        water_quality_compliance_response = max(water_quality_compliance_response, 4)
+        water_quality_compliance_penalty.append("Reject: High pathogen risk - MANDATORY multi-barrier disinfection required, public health risk if not properly treated")
+    elif pathogen_risk == "MODERATE RISK":
+        water_quality_compliance_response = max(water_quality_compliance_response, 3)
+        if not water_quality_compliance_penalty:
+            water_quality_compliance_penalty.append("Mitigation + Cost: Moderate pathogen risk - disinfection required")
+    
+    water_quality_compliance_constraint = {
+        "name": "Water-Quality Compliance",
+        "response": water_quality_compliance_response,
+        "penalty": water_quality_compliance_penalty,
+        "type": "environmental",
+        "hard": True if "Water-Quality Compliance" in hardend_constraints else False
+    }
+    constraints.append(water_quality_compliance_constraint)
+    
+    # ==================================================================
+    # 4. Need for Remediation (Group 4)
+    # ==================================================================
+    # Based on Vadose Zone Pollution (Step 7)
+    remediation_needed_response = 0
+    remediation_needed_penalty = []
+    
+    if vadose_zone_pollution == "Yes, highly toxic contaminants in the vadose zone (e.g., heavy metals, volatile organic compounds, radioactive materials)":
+        remediation_needed_response = 4
+        remediation_needed_penalty.append("Reject: Highly toxic contaminants in vadose zone - comprehensive remediation required ($50K-$10M), high risk of contaminant migration to aquifer")
+    elif vadose_zone_pollution == "Yes, biodegradable Pollution":
+        remediation_needed_response = 2
+        remediation_needed_penalty.append("Warning + Cost: Biodegradable pollution in vadose zone - monitor natural attenuation, consider enhanced bioremediation if needed")
+    elif vadose_zone_pollution == "None":
+        remediation_needed_response = 0
+        remediation_needed_penalty = []
+    
+    remediation_needed_constraint = {
+        "name": "Need for Remediation",
+        "response": remediation_needed_response,
+        "penalty": remediation_needed_penalty,
+        "type": "environmental",
+        "hard": True if "Need for Remediation" in hardend_constraints else False
+    }
+    constraints.append(remediation_needed_constraint)
 
     return constraints
