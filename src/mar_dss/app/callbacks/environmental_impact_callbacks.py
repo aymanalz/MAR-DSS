@@ -23,9 +23,10 @@ def calculate_cost_score(risks_and_treatments):
     """
     Calculate total costs based on required treatments.
     Separates vadose zone remediation costs from water treatment costs.
-    Returns: (water_treatment_cost_per_ft3, vadose_remediation_cost_per_ft3, cost_details)
+    Returns: (water_treatment_cost_per_ft3, vadose_remediation_total_cost, cost_details)
     - water_treatment_cost_per_ft3: estimated water treatment cost per ft³
-    - vadose_remediation_cost_per_ft3: estimated vadose zone remediation cost per ft³
+    - vadose_remediation_total_cost: fixed estimate of $200,000 for vadose zone remediation
+      (actual costs can vary from $50K to $10M depending on site conditions)
     - cost_details: list of cost breakdown details with sections
     """
     if not risks_and_treatments:
@@ -88,19 +89,19 @@ def calculate_cost_score(risks_and_treatments):
     # 1 m³ ≈ 35.3147 ft³
     water_treatment_cost_per_ft3 = water_treatment_cost_per_m3 / 35.3147 if water_treatment_cost_per_m3 > 0 else 0
     
-    # Convert vadose remediation cost from $/acre-ft to $/ft³
-    # 1 acre-ft = 43,560 ft³
-    vadose_remediation_cost_per_ft3 = vadose_remediation_cost_per_acreft / 43560 if vadose_remediation_cost_per_acreft > 0 else 0
-    
     # Update water treatment details to show cost per ft³
     for detail in water_treatment_details:
         if 'cost_per_m3' in detail:
             detail['cost_per_ft3'] = detail['cost_per_m3'] / 35.3147
     
-    # Update vadose remediation details to show cost per ft³
-    for detail in vadose_remediation_details:
-        if 'cost_per_acreft' in detail:
-            detail['cost_per_ft3'] = detail['cost_per_acreft'] / 43560
+    # Vadose zone remediation is a one-time site cost
+    # Use fixed total cost estimate of $200,000
+    # Note: Actual costs can vary by orders of magnitude ($50K - $10M) depending on:
+    # - Contaminant type and concentration
+    # - Site size and depth
+    # - Remediation technology required
+    # - Regulatory requirements
+    vadose_remediation_total_cost = 200000 if vadose_remediation_cost_per_acreft > 0 else 0
     
     # Combine cost details with sections
     cost_details = {
@@ -108,7 +109,7 @@ def calculate_cost_score(risks_and_treatments):
         'vadose_remediation': vadose_remediation_details
     }
     
-    return round(water_treatment_cost_per_ft3, 2), round(vadose_remediation_cost_per_ft3, 2), cost_details
+    return round(water_treatment_cost_per_ft3, 2), round(vadose_remediation_total_cost, 2), cost_details
 
 
 def generate_required_treatment_summary(risks_and_treatments):
@@ -359,7 +360,7 @@ def setup_environmental_impact_callbacks(app):
             gauge_fig.update_layout(height=250)
 
         # 4. Calculate Costs
-        water_treatment_cost_per_ft3, vadose_remediation_cost_per_ft3, cost_details = calculate_cost_score(required_treatments_raw)
+        water_treatment_cost_per_ft3, vadose_remediation_total_cost, cost_details = calculate_cost_score(required_treatments_raw)
         
         # 5. Create Cost Gauge Plot (showing actual cost, not a score)
         try:
@@ -431,21 +432,33 @@ def setup_environmental_impact_callbacks(app):
             
             # Vadose Zone Remediation Section
             if vadose_remediation_details:
-                cost_details_html.append(html.H6("(2) Vadose Zone Remediation Costs (per ft³)", className="font-weight-bold mt-3 mb-2 text-danger"))
-                cost_details_html.append(html.P(f"Total Vadose Zone Remediation Cost: ${vadose_remediation_cost_per_ft3:.2f}/ft³", className="font-weight-bold mb-2"))
+                cost_details_html.append(html.H6("(2) Vadose Zone Remediation Costs (Total Project Cost)", className="font-weight-bold mt-3 mb-2 text-danger"))
+                cost_details_html.append(html.P([
+                    html.Strong(f"Estimated Total Vadose Zone Remediation Cost: ${vadose_remediation_total_cost:,.0f}"),
+                ], className="font-weight-bold mb-2"))
+                cost_details_html.append(html.Div([
+                    html.P([
+                        html.Strong("Note: "),
+                        "Vadose zone remediation costs can vary by orders of magnitude depending on contaminant type, "
+                        "site size, depth, remediation technology, and regulatory requirements. "
+                        "Typical range: $50,000 - $10,000,000. "
+                        "The estimate above ($200,000) represents a mid-range scenario. "
+                        "Consult with remediation specialists for site-specific cost estimates."
+                    ], className="text-muted mb-2", style={"fontSize": "0.9rem", "fontStyle": "italic"})
+                ], className="alert alert-warning mb-3"))
                 for detail in vadose_remediation_details:
-                    cost_per_ft3 = detail.get('cost_per_ft3', 0)
-                    if cost_per_ft3 > 0:
+                    cost_per_acreft = detail.get('cost_per_acreft', 0)
+                    if cost_per_acreft > 0:
                         cost_details_html.append(html.Div([
                             html.Span(f"{detail['risk_factor']}: {detail['technology']}", className="font-weight-bold"),
-                            html.Span(f" - ${cost_per_ft3:.2f}/ft³", className="float-right badge badge-danger")
+                            html.Span(f" - ${cost_per_acreft:,.0f}/acre-ft", className="float-right badge badge-danger")
                         ], className="d-flex justify-content-between mb-1 p-2 rounded", style={
                             "background-color": "#f8d7da",
                             "border-left": "4px solid #dc3545"
                         }))
         else:
             cost_details_html = [
-                html.P("No treatment required. Cost: $0.00/ft³", className="text-muted")
+                html.P("No treatment required. Water Treatment Cost: $0.00/ft³", className="text-muted")
             ]
         
         # 7. Generate Treatment Summary Table

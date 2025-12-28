@@ -161,18 +161,22 @@ TREATMENT_COST_MAP = {
     "Advanced pH Control System": 50,
     "Comprehensive Geochemical Modeling": 0,  # Study cost, not treatment
     "Comprehensive Site Assessment": 0,  # Study cost
-    "Enhanced Bioremediation (if needed)": 150,
-    "Vadose Zone Monitoring Program": 30,
-    "Natural Attenuation Monitoring": 15,
     "NO direct treatment typically effective": 0,  # Study only
-    # Note: Vadose zone remediation costs are in VADOSE_REMEDIATION_COSTS, not here
+    # Note: Vadose zone remediation costs (Enhanced Bioremediation, Monitoring Programs, etc.) 
+    # are in VADOSE_REMEDIATION_COSTS, not here
 }
 
 # 6. Vadose Zone Remediation Costs (in $/acre-ft for remediation)
 # These are separate from water treatment costs and represent site remediation expenses
 VADOSE_REMEDIATION_COSTS = {
+    # Biodegradable pollution treatments (lower cost)
+    "Enhanced Bioremediation (if needed)": 100,  # $/acre-ft (moderate cost for biodegradable contaminants)
+    "Vadose Zone Monitoring Program": 15,  # $/acre-ft (low cost monitoring)
+    "Natural Attenuation Monitoring": 10,  # $/acre-ft (lowest cost, passive monitoring)
+    
+    # Highly toxic contaminants treatments (much higher cost)
     "Source Control Measures": 50,  # $/acre-ft
-    "Vadose Zone Remediation (Soil Vapor Extraction, Bioremediation, Chemical Oxidation)": 2000,  # $/acre-ft (high cost for comprehensive remediation)
+    "Vadose Zone Remediation (Soil Vapor Extraction, Bioremediation, Chemical Oxidation)": 2000,  # $/acre-ft (very high cost for comprehensive remediation of toxic contaminants)
     "Intensive Vadose Zone Monitoring": 20,  # $/acre-ft
     "Containment Barriers (if needed)": 500,  # $/acre-ft
     "Comprehensive Site Assessment": 0,  # Study cost, not per volume
@@ -461,6 +465,15 @@ def create_water_quality_content():
                         "border-left": "5px solid #dc3545"
                     }),
                     
+                ]),
+                
+                # ========== GROUP 4: NEED FOR REMEDIATION ==========
+                html.Div([
+                    html.H4("4. Need for Remediation", className="mb-3 mt-4 text-primary", style={
+                        "border-bottom": "3px solid #6f42c1",
+                        "padding-bottom": "10px"
+                    }),
+                    
                     # Step 7: Vadose Zone Pollution
                     dbc.Card([
                         dbc.CardHeader([
@@ -483,7 +496,7 @@ def create_water_quality_content():
                     ], className="mb-3", style={
                         "box-shadow": "0 4px 8px 0 rgba(0,0,0,0.2)",
                         "transition": "0.3s",
-                        "border-left": "5px solid #dc3545"
+                        "border-left": "5px solid #6f42c1"
                     }),
                 ]),
                 
@@ -537,13 +550,8 @@ def create_water_quality_content():
             
             # Right Column for Outputs (Results, Score, Treatment)
             dbc.Col([
-                html.H3("Final Assessment Output", className="mb-4 text-danger"),
-                
-                # Final Decision Box
-                html.Div(id='env-final-decision-output', className="mb-4"),
-                
-                # Score Tally and Cost Gauge (Side by Side)
-                html.H4("Risk Score & Treatment Cost", className="mt-4 mb-3 text-info"),
+                # Score Tally and Cost Gauge (Side by Side) - Moved to top
+                html.H4("Risk Score & Treatment Cost", className="mb-3 text-info"),
                 dbc.Row([
                     dbc.Col([
                         html.H5("Risk Score", className="text-center mb-2", style={"fontSize": "1rem"}),
@@ -561,7 +569,12 @@ def create_water_quality_content():
                             style={'height': '250px', 'width': '100%', 'minHeight': '250px'}
                         ),
                     ], width=6),
-                ], className="mb-3"),
+                ], className="mb-4"),
+                
+                html.H3("Final Assessment Output", className="mb-4 text-danger"),
+                
+                # Final Decision Box
+                html.Div(id='env-final-decision-output', className="mb-4"),
                 
                 # Risk Score Details
                 html.H5("Risk Score Details", className="mt-3 mb-2 text-info", style={"fontSize": "1.1rem"}),
