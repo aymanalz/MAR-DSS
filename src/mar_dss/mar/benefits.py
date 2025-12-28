@@ -28,10 +28,7 @@ def benefits(option: MAROption) -> List[Dict[str, float]]:
     }
     benefits_list.append(source_water_volume_rechargable)
 
-    # ==================================================================
-    # 2. Climate resilience
-    # ==================================================================
-    
+  
    
 
     # normalize weights to 1

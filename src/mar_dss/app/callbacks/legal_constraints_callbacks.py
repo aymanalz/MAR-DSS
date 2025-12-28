@@ -4,6 +4,7 @@ Callbacks for Legal Constraints tab - MAR legal/regulatory feasibility.
 
 from dash import Input, Output, html
 import plotly.graph_objects as go
+import mar_dss.app.utils.data_storage as data_storage
 
 
 def _classify_branch(statuses):
@@ -353,6 +354,43 @@ def setup_legal_constraints_callbacks(app):
         permits_list = [html.Li(p, className="list-group-item") for p in permits] or [
             html.Li("No specific permits inferred. Verify state/local requirements.", className="list-group-item list-group-item-light")
         ]
+
+        # Store regulation data in data_storage for soft constraints evaluation
+        regulation_data = {
+            "group_0": {
+                "federal_nexus": federal_nexus,
+                "tribal_interstate": tribal_interstate,
+            },
+            "group_a": {
+                "site_control": a_control,
+                "zoning": a_zoning,
+                "wetlands": a_wetlands,
+                "sensitive": a_sensitive,
+                "public_lands": a_public,
+                "dams": a_dams,
+                "seismic": a_seismic,
+            },
+            "group_b": {
+                "right": b_right,
+                "accounting": b_account,
+                "compact": b_compact,
+                "src_type": b_src_type,
+                "src_feasible": b_src_feasible,
+                "conveyance": b_convey,
+            },
+            "group_c": {
+                "method": c_method,
+                "uic": c_uic,
+                "usdw": c_usdw,
+                "mcls": c_mcls,
+                "antideg": c_antideg,
+                "compat": c_compat,
+                "cecs": c_cecs,
+                "residuals": c_residuals,
+                "wells": c_wells,
+            },
+        }
+        data_storage.set_data("regulation_data", regulation_data)
 
         return (
             decision_children,
