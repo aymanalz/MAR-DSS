@@ -18,7 +18,7 @@ def benefits(option: MAROption) -> List[Dict[str, float]]:
         value = rechargable_percentage/100
         weight = 100
     else: # confined       
-       value = rechargable_percentage/100
+       value = confined_rechargability/100
        weight = 100
 
     source_water_volume_rechargable = {

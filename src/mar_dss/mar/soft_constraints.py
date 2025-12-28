@@ -52,6 +52,7 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
         "name": "Ground surface slope Suitability",
         "response": response,   # 0–4
         "penalty": penalty,
+        "type": "hydrogeologic",
         "hard": True if "Ground surface slope Suitability" in hardend_constraints else False
     }
     constraints.append(ground_surface_slope)
@@ -75,6 +76,7 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
         "name": "Vadose zone infiltration",
         "response": response,   # 0–4
         "penalty": penalty,
+        "type": "hydrogeologic",
         "hard": True if "Vadose zone infiltration" in hardend_constraints else False
     }
     constraints.append(vadose_infiltration)
@@ -98,7 +100,8 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     vadose_pollution_metric = {
         "name": "Vadose zone pollution",
         "response": response,   # 0–4
-        "penalty": penalty,
+        "penalty": penalty, 
+        "type": "hydrogeologic",
         "hard": True if "Vadose zone pollution" in hardend_constraints else False
     }
     constraints.append(vadose_pollution_metric)
@@ -125,6 +128,7 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
         "name": "Vadose zone pollution biodegradability",
         "response": response,   # 0–4
         "penalty": penalty,
+        "type": "hydrogeologic",
         "hard": True if "Vadose zone biodegradability" in hardend_constraints else False
     }
     constraints.append(vadose_biodegradable_metric)
@@ -147,6 +151,7 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
         "name": "Vadose zone remediation needed",
         "response": response,   # 0–4
         "penalty": penalty,
+        "type": "hydrogeologic",
         "hard": True if "Vadose zone remediation needed" in hardend_constraints else False
     }
     constraints.append(vadose_remediation_needed)
@@ -171,6 +176,7 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
         "name": "Vadose zone residence time",
         "response": response,   # 0–4
         "penalty": penalty,
+        "type": "hydrogeologic",
         "hard": True if "Vadose zone residence time" in hardend_constraints else False
     }
     constraints.append(vadose_residence_time_metric)
@@ -193,6 +199,7 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
         "name": "Surface recharge suitability",
         "response": response,   # 0–4
         "penalty": penalty,
+        "type": "hydrogeologic",
         "hard": True if "Surface recharge suitability" in hardend_constraints else False
     }
     constraints.append(surface_recharge_suitability_metric)
@@ -221,7 +228,8 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     confined_aquifer_depth_metric = {
         "name": "Confined aquifer depth Suitability",
         "response": response,   # 0–4
-        "penalty": penalty,
+        "penalty": penalty, 
+        "type": "hydrogeologic",
         "hard": True if "Confined aquifer depth" in hardend_constraints else False
     }
     constraints.append(confined_aquifer_depth_metric)
@@ -247,7 +255,8 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     leakage_significance_metric = {
         "name": "Confined leakage significance",
         "response": response,   # 0–4
-        "penalty": penalty,
+        "penalty": penalty, 
+        "type": "hydrogeologic",
         "hard": True if "Confined leakage significance" in hardend_constraints else False
     }
     constraints.append(leakage_significance_metric)
