@@ -11,9 +11,104 @@ import dash_bootstrap_components as dbc
 from mar_dss.app.components.environmental_impact_tab import (
     DECISION_LOGIC,
     TREATMENT_OPTIONS,
+    TREATMENT_COST_MAP,
+    VADOSE_REMEDIATION_COSTS,
+    COST_SCALE_TO_SCORE,
 )
 from mar_dss.app.callbacks.ai_environment import get_mar_factors
 import mar_dss.app.utils.data_storage as dash_storage
+
+
+def calculate_cost_score(risks_and_treatments):
+    """
+    Calculate total costs based on required treatments.
+    Separates vadose zone remediation costs from water treatment costs.
+    Returns: (water_treatment_cost_per_ft3, vadose_remediation_cost_per_ft3, cost_details)
+    - water_treatment_cost_per_ft3: estimated water treatment cost per ft³
+    - vadose_remediation_cost_per_ft3: estimated vadose zone remediation cost per ft³
+    - cost_details: list of cost breakdown details with sections
+    """
+    if not risks_and_treatments:
+        return 0, 0, {'water_treatment': [], 'vadose_remediation': []}
+    
+    water_treatment_cost_per_m3 = 0
+    vadose_remediation_cost_per_acreft = 0
+    water_treatment_details = []
+    vadose_remediation_details = []
+    
+    # Collect all treatments and their costs
+    # For each risk factor, use the most expensive treatment option
+    # Then sum across all risk factors (since multiple treatments may be needed)
+    for risk_factor, treatments in risks_and_treatments:
+        max_cost_for_risk = 0
+        best_tech = None
+        best_scale = None
+        
+        for tech_name, cost_scale in treatments:
+            # Check if this is a vadose zone remediation treatment
+            is_vadose_remediation = tech_name in VADOSE_REMEDIATION_COSTS
+            
+            if is_vadose_remediation:
+                # Get cost from vadose remediation mapping (already in $/acre-ft)
+                cost = VADOSE_REMEDIATION_COSTS.get(tech_name, 0)
+            elif tech_name in TREATMENT_COST_MAP:
+                # Get cost from water treatment mapping (in $/m³)
+                cost = TREATMENT_COST_MAP[tech_name]
+            else:
+                # Try to extract from cost scale
+                cost = COST_SCALE_TO_SCORE.get(cost_scale, 0) * 50  # Rough estimate: score * 50 ($/m³)
+            
+            # Track the most expensive treatment for this risk factor
+            if cost > max_cost_for_risk:
+                max_cost_for_risk = cost
+                best_tech = tech_name
+                best_scale = cost_scale
+        
+        if max_cost_for_risk > 0:
+            # Separate vadose zone remediation from water treatment
+            is_vadose = best_tech in VADOSE_REMEDIATION_COSTS
+            if is_vadose:
+                vadose_remediation_cost_per_acreft += max_cost_for_risk
+                vadose_remediation_details.append({
+                    'risk_factor': risk_factor,
+                    'technology': best_tech,
+                    'cost_per_acreft': max_cost_for_risk,
+                    'cost_scale': best_scale
+                })
+            else:
+                water_treatment_cost_per_m3 += max_cost_for_risk
+                water_treatment_details.append({
+                    'risk_factor': risk_factor,
+                    'technology': best_tech,
+                    'cost_per_m3': max_cost_for_risk,
+                    'cost_scale': best_scale
+                })
+    
+    # Convert water treatment cost from $/m³ to $/ft³
+    # 1 m³ ≈ 35.3147 ft³
+    water_treatment_cost_per_ft3 = water_treatment_cost_per_m3 / 35.3147 if water_treatment_cost_per_m3 > 0 else 0
+    
+    # Convert vadose remediation cost from $/acre-ft to $/ft³
+    # 1 acre-ft = 43,560 ft³
+    vadose_remediation_cost_per_ft3 = vadose_remediation_cost_per_acreft / 43560 if vadose_remediation_cost_per_acreft > 0 else 0
+    
+    # Update water treatment details to show cost per ft³
+    for detail in water_treatment_details:
+        if 'cost_per_m3' in detail:
+            detail['cost_per_ft3'] = detail['cost_per_m3'] / 35.3147
+    
+    # Update vadose remediation details to show cost per ft³
+    for detail in vadose_remediation_details:
+        if 'cost_per_acreft' in detail:
+            detail['cost_per_ft3'] = detail['cost_per_acreft'] / 43560
+    
+    # Combine cost details with sections
+    cost_details = {
+        'water_treatment': water_treatment_details,
+        'vadose_remediation': vadose_remediation_details
+    }
+    
+    return round(water_treatment_cost_per_ft3, 2), round(vadose_remediation_cost_per_ft3, 2), cost_details
 
 
 def generate_required_treatment_summary(risks_and_treatments):
@@ -78,7 +173,9 @@ def setup_environmental_impact_callbacks(app):
             Output('env-final-decision-output', 'children'),
             Output('env-final-decision-output', 'style'),
             Output('env-score-gauge', 'figure'),
+            Output('env-cost-gauge', 'figure'),
             Output('env-score-details-output', 'children'),
+            Output('env-cost-details-output', 'children'),
             Output('env-treatment-summary-output', 'children'),
             Output('env-recommendations-list', 'children')
         ],
@@ -261,10 +358,100 @@ def setup_environmental_impact_callbacks(app):
             )
             gauge_fig.update_layout(height=250)
 
-        # 4. Generate Treatment Summary Table
+        # 4. Calculate Costs
+        water_treatment_cost_per_ft3, vadose_remediation_cost_per_ft3, cost_details = calculate_cost_score(required_treatments_raw)
+        
+        # 5. Create Cost Gauge Plot (showing actual cost, not a score)
+        try:
+            # Fixed range: 0 to 70 $/ft³
+            max_range = 70.0
+            
+            cost_gauge_fig = go.Figure(go.Indicator(
+                mode="gauge+number",
+                value=water_treatment_cost_per_ft3,
+                domain={'x': [0, 1], 'y': [0, 1]},
+                title={'text': "Water Treatment Cost ($/ft³)", 'font': {'size': 18}},
+                number={'valueformat': '$,.2f', 'suffix': '/ft³'},
+                gauge={
+                    'axis': {'range': [0, max_range], 'tickwidth': 1, 'tickcolor': "darkblue", 'tickformat': '$,.2f'},
+                    'bar': {'color': "darkorange"},
+                    'bgcolor': "white",
+                    'borderwidth': 2,
+                    'bordercolor': "gray",
+                    'steps': [
+                        {'range': [0, max_range * 0.2], 'color': 'lightgreen'},
+                        {'range': [max_range * 0.2, max_range * 0.4], 'color': 'yellow'},
+                        {'range': [max_range * 0.4, max_range * 0.6], 'color': 'orange'},
+                        {'range': [max_range * 0.6, max_range * 0.8], 'color': 'lightcoral'},
+                        {'range': [max_range * 0.8, max_range], 'color': 'red'}],
+                    'threshold': {
+                        'line': {'color': "red", 'width': 4},
+                        'thickness': 0.75,
+                        'value': water_treatment_cost_per_ft3}}
+            ))
+            cost_gauge_fig.update_layout(
+                margin=dict(l=10, r=10, t=50, b=10), 
+                height=250,
+                autosize=True,
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)'
+            )
+        except Exception as e:
+            # Fallback figure if there's an error
+            cost_gauge_fig = go.Figure()
+            cost_gauge_fig.add_annotation(
+                text=f"Error creating cost gauge: {str(e)}",
+                xref="paper", yref="paper",
+                x=0.5, y=0.5, showarrow=False
+            )
+            cost_gauge_fig.update_layout(height=250)
+        
+        # 6. Generate Cost Details Output (with two sections)
+        cost_details_html = []
+        
+        # Section 1: Water Treatment Costs
+        water_treatment_details = cost_details.get('water_treatment', [])
+        vadose_remediation_details = cost_details.get('vadose_remediation', [])
+        
+        if water_treatment_details or vadose_remediation_details:
+            # Water Treatment Section
+            if water_treatment_details:
+                cost_details_html.append(html.H6("(1) Water Treatment Costs (per ft³ of source water)", className="font-weight-bold mt-3 mb-2 text-primary"))
+                cost_details_html.append(html.P(f"Total Water Treatment Cost: ${water_treatment_cost_per_ft3:.2f}/ft³", className="font-weight-bold mb-2"))
+                for detail in water_treatment_details:
+                    cost_per_ft3 = detail.get('cost_per_ft3', 0)
+                    if cost_per_ft3 > 0:
+                        cost_details_html.append(html.Div([
+                            html.Span(f"{detail['risk_factor']}: {detail['technology']}", className="font-weight-bold"),
+                            html.Span(f" - ${cost_per_ft3:.2f}/ft³", className="float-right badge badge-warning")
+                        ], className="d-flex justify-content-between mb-1 p-2 rounded", style={
+                            "background-color": "#fff3cd",
+                            "border-left": "4px solid #ffc107"
+                        }))
+            
+            # Vadose Zone Remediation Section
+            if vadose_remediation_details:
+                cost_details_html.append(html.H6("(2) Vadose Zone Remediation Costs (per ft³)", className="font-weight-bold mt-3 mb-2 text-danger"))
+                cost_details_html.append(html.P(f"Total Vadose Zone Remediation Cost: ${vadose_remediation_cost_per_ft3:.2f}/ft³", className="font-weight-bold mb-2"))
+                for detail in vadose_remediation_details:
+                    cost_per_ft3 = detail.get('cost_per_ft3', 0)
+                    if cost_per_ft3 > 0:
+                        cost_details_html.append(html.Div([
+                            html.Span(f"{detail['risk_factor']}: {detail['technology']}", className="font-weight-bold"),
+                            html.Span(f" - ${cost_per_ft3:.2f}/ft³", className="float-right badge badge-danger")
+                        ], className="d-flex justify-content-between mb-1 p-2 rounded", style={
+                            "background-color": "#f8d7da",
+                            "border-left": "4px solid #dc3545"
+                        }))
+        else:
+            cost_details_html = [
+                html.P("No treatment required. Cost: $0.00/ft³", className="text-muted")
+            ]
+        
+        # 7. Generate Treatment Summary Table
         treatment_summary_table = generate_required_treatment_summary(required_treatments_raw)
         
-        # 5. Format Recommendations
+        # 8. Format Recommendations
         if not recommendations_list:
             recommendations_list = [
                 html.Li(
@@ -273,7 +460,7 @@ def setup_environmental_impact_callbacks(app):
                 )
             ]
             
-        return decision_content, result_style, gauge_fig, risk_details, treatment_summary_table, recommendations_list
+        return decision_content, result_style, gauge_fig, cost_gauge_fig, risk_details, cost_details_html, treatment_summary_table, recommendations_list
     
     # Callbacks to save water quality inputs to data storage
     @app.callback(
