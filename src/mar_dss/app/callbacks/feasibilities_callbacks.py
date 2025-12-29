@@ -924,6 +924,9 @@ def setup_feasibilities_callbacks(app):
             ]
             values = [hydro_score, env_score, reg_score, cost_efficiency]
             
+            # Calculate average score
+            average_score = sum(values) / len(values)
+            
             # Close the polygon by adding the first point at the end
             categories_closed = categories + [categories[0]]
             values_closed = values + [values[0]]
@@ -945,7 +948,7 @@ def setup_feasibilities_callbacks(app):
                 hovertemplate='<b>%{theta}</b><br>Value: %{r:.1f}<extra></extra>'
             ))
             
-            # Update layout with black background and white grid
+            # Update layout with white background and grey grid
             fig.update_layout(
                 polar=dict(
                     radialaxis=dict(
@@ -954,33 +957,34 @@ def setup_feasibilities_callbacks(app):
                         tickmode='linear',
                         tick0=0,
                         dtick=20,
-                        tickfont=dict(size=10, color='white'),
-                        gridcolor='white',
+                        tickfont=dict(size=10, color='black'),
+                        gridcolor='grey',
                         gridwidth=1,
-                        linecolor='white',
+                        linecolor='grey',
                         linewidth=2,
                         showline=True
                     ),
                     angularaxis=dict(
-                        tickfont=dict(size=12, color='white', family='Arial, sans-serif'),
-                        linecolor='white',
+                        tickfont=dict(size=12, color='black', family='Arial, sans-serif'),
+                        linecolor='grey',
                         linewidth=2,
-                        gridcolor='white',
+                        gridcolor='grey',
                         gridwidth=1
                     ),
-                    bgcolor='black'
+                    bgcolor='white'
                 ),
-                plot_bgcolor='black',
-                paper_bgcolor='black',
+                plot_bgcolor='white',
+                paper_bgcolor='white',
                 showlegend=False,
                 height=450,
-                margin=dict(l=80, r=80, t=80, b=80),
+                margin=dict(l=80, r=80, t=100, b=80),  # Increased top margin for subtitle
                 title=dict(
-                    text=option_name,
+                    text=f'{option_name}<br><span style="font-size:14px; color:red;">Average Score: {average_score:.1f}%</span>',
                     x=0.5,
-                    y=0.95,
-                    font=dict(size=18, color='white', family='Arial, sans-serif'),
-                    xanchor='center'
+                    y=0.98,
+                    font=dict(size=18, color='#006400', family='Arial, sans-serif', weight='bold'),
+                    xanchor='center',
+                    yanchor='top'
                 )
             )
             
