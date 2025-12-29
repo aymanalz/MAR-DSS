@@ -859,9 +859,10 @@ def setup_feasibilities_callbacks(app):
                 className="text-muted text-center p-4"
             )
         
-        # Get scores and NPV data
+        # Get scores and cost data
         scores = getattr(dss_results, 'scores', {})
-        net_val_dict = dash_storage.get_data("net_val") or {}
+        capital_cost_num = dash_storage.get_data("capital_cost_num")
+        maintenance_cost_num = dash_storage.get_data("maintenance_cost_num")
         
         if not scores:
             return html.Div(
@@ -869,26 +870,49 @@ def setup_feasibilities_callbacks(app):
                 className="text-muted text-center p-4"
             )
         
-        # Map option names to cost column names for NPV
-        option_to_npv_col = {
-            "Surface Recharge": "Spreading Pond Net Present Value ($)",
-            "Injection Well": "Injection Wells Net Present Value ($)",
-            "Dry Well": "Dry Wells Net Present Value ($)"
+        # Map option names to cost column names
+        option_to_capital_col = {
+            "Surface Recharge": "Spreading Pond Cost ($)",
+            "Injection Well": "Injection Wells Cost ($)",
+            "Dry Well": "Dry Wells Cost ($)"
         }
         
-        # Get all NPV values and find minimum
-        npv_dict = {}  # Store NPV per option
-        npv_values = []
-        for option_name in scores.keys():
-            npv_col = option_to_npv_col.get(option_name)
-            if npv_col and npv_col in net_val_dict:
-                npv_val = float(net_val_dict[npv_col]) if pd.notna(net_val_dict[npv_col]) else 0
-                npv_dict[option_name] = npv_val
-                if npv_val > 0:  # Only include positive NPV values
-                    npv_values.append(npv_val)
+        option_to_maintenance_col = {
+            "Surface Recharge": "Spreading Pond Maintenance Cost ($)",
+            "Injection Well": "Injection Wells Maintenance Cost ($)",
+            "Dry Well": "Dry Wells Maintenance Cost ($)"
+        }
         
-        # Find minimum NPV for cost efficiency calculation
-        min_npv = min(npv_values) if npv_values else 1
+        # Get all capital and maintenance costs and find minimums
+        capital_cost_dict = {}  # Store capital cost per option
+        maintenance_cost_dict = {}  # Store maintenance cost per option
+        capital_costs = []
+        maintenance_costs = []
+        
+        for option_name in scores.keys():
+            # Get capital cost
+            capital_col = option_to_capital_col.get(option_name)
+            if capital_col and capital_cost_num is not None and capital_col in capital_cost_num.index:
+                capital_val = float(capital_cost_num[capital_col]) if pd.notna(capital_cost_num[capital_col]) else 0
+                capital_cost_dict[option_name] = capital_val
+                if capital_val > 0:
+                    capital_costs.append(capital_val)
+            else:
+                capital_cost_dict[option_name] = 0
+            
+            # Get maintenance cost
+            maintenance_col = option_to_maintenance_col.get(option_name)
+            if maintenance_col and maintenance_cost_num is not None and maintenance_col in maintenance_cost_num.index:
+                maintenance_val = float(maintenance_cost_num[maintenance_col]) if pd.notna(maintenance_cost_num[maintenance_col]) else 0
+                maintenance_cost_dict[option_name] = maintenance_val
+                if maintenance_val > 0:
+                    maintenance_costs.append(maintenance_val)
+            else:
+                maintenance_cost_dict[option_name] = 0
+        
+        # Find minimum costs for efficiency calculation
+        min_capital_cost = min(capital_costs) if capital_costs else 1
+        min_maintenance_cost = min(maintenance_costs) if maintenance_costs else 1
         
         # Create spider plots for each option
         spider_plots = []
@@ -898,31 +922,34 @@ def setup_feasibilities_callbacks(app):
             env_score = option_scores.get("environmental", 0.0)
             reg_score = option_scores.get("regulation", 0.0)
             
-            # Calculate cost efficiency: 100 for lowest cost, 100 * (min_cost / x) for others
-            npv_val = npv_dict.get(option_name, 0.0)
-            if npv_val > 0 and min_npv > 0:
-                # Cost efficiency = 100 * (minimum cost / current cost)
-                # For minimum cost: 100 * (min_npv / min_npv) = 100
-                # For higher costs: 100 * (min_npv / higher_cost) < 100
-                cost_efficiency = 100.0 * (min_npv / npv_val)
+            # Calculate capital cost efficiency: 100 for lowest cost, 100 * (min_cost / x) for others
+            capital_val = capital_cost_dict.get(option_name, 0.0)
+            if capital_val > 0 and min_capital_cost > 0:
+                capital_efficiency = 100.0 * (min_capital_cost / capital_val)
             else:
-                # Handle edge cases (zero or negative NPV)
-                cost_efficiency = 0.0
+                capital_efficiency = 0.0
+            capital_efficiency = max(0.0, min(100.0, capital_efficiency))
             
-            # Clamp to [0, 100]
-            cost_efficiency = max(0.0, min(100.0, cost_efficiency))
+            # Calculate maintenance cost efficiency: 100 for lowest cost, 100 * (min_cost / x) for others
+            maintenance_val = maintenance_cost_dict.get(option_name, 0.0)
+            if maintenance_val > 0 and min_maintenance_cost > 0:
+                maintenance_efficiency = 100.0 * (min_maintenance_cost / maintenance_val)
+            else:
+                maintenance_efficiency = 0.0
+            maintenance_efficiency = max(0.0, min(100.0, maintenance_efficiency))
             
             # Create spider plot
             fig = go.Figure()
             
-            # Categories for radar chart with scores included in labels
+            # Categories for radar chart with scores included in labels (now 5 scores)
             categories = [
                 f'Hydrogeologic ({hydro_score:.0f}%)',
                 f'Environmental ({env_score:.0f}%)',
                 f'Regulation ({reg_score:.0f}%)',
-                f'Cost Efficiency ({cost_efficiency:.0f}%)'
+                f'Capital Cost Efficiency ({capital_efficiency:.0f}%)',
+                f'Maintenance Cost Efficiency ({maintenance_efficiency:.0f}%)'
             ]
-            values = [hydro_score, env_score, reg_score, cost_efficiency]
+            values = [hydro_score, env_score, reg_score, capital_efficiency, maintenance_efficiency]
             
             # Calculate average score
             average_score = sum(values) / len(values)
