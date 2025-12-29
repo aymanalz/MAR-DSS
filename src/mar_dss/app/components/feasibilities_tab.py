@@ -152,6 +152,31 @@ def create_feasibilities_content():
                 ],
                 className="mb-4"
             ),
+            # Spider Plots for Each MAR Option
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader(
+                                        "MAR Option Performance Comparison",
+                                        className="fw-bold text-white",
+                                        style={"backgroundColor": "#1e3a5f"}
+                                    ),
+                                    dbc.CardBody(
+                                        [
+                                            html.Div(id="spider-plots-container")
+                                        ]
+                                    )
+                                ]
+                            )
+                        ],
+                        width=12,
+                        className="mb-4"
+                    )
+                ]
+            ),
             # Cost Comparison Charts
             dbc.Row(
                 [

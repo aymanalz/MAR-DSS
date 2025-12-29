@@ -31,6 +31,7 @@ def forward_run(cost_override: Optional[Dict[str, float]] = None):
         pass
     results = {}
     filters = {}
+    scores = {}
     for option in mar_options_list:
         hc_list = hc_module.hard_constraints(option)
         sc_list = sc_module.soft_constraints(option)
@@ -39,7 +40,9 @@ def forward_run(cost_override: Optional[Dict[str, float]] = None):
         dss_instance = DecisionSupportSystem(hc_list, sc_list, benefits_list)
         results[option.name] = dss_instance.evaluate(option)
         filters[option.name] = {'hard': hc_list, 'soft': sc_list, 'benefits': benefits_list}
+        scores[option.name] = dss_instance.calculate_type_scores()
     dss_result = DssResult()
     dss_result.results = results
     dss_result.filters = filters
+    dss_result.scores = scores
     return dss_result

@@ -836,6 +836,150 @@ def setup_feasibilities_callbacks(app):
             maintenance_fig,
             npv_fig
         )
+    
+    @app.callback(
+        Output("spider-plots-container", "children"),
+        [Input("top-tabs", "active_tab"),
+         Input("analysis-tabs", "active_tab"),
+         Input("knowledge-graph-store", "data")],
+        prevent_initial_call=False
+    )
+    def update_spider_plots(top_tab, active_tab, graph_store):
+        """Create spider plots for each MAR option showing scores and NPV."""
+        # Update when Analysis tab is accessed OR when Feasibilities sub-tab is selected
+        if top_tab != "analysis" and active_tab != "analysis-feasibilities":
+            return html.Div("Loading...", className="text-center text-muted p-4")
+        
+        # Ensure DSS results are available
+        dss_results = _ensure_dss_results_available(top_tab)
+        
+        if dss_results is None or not hasattr(dss_results, 'results') or not dss_results.results:
+            return html.Div(
+                "No DSS evaluation results available. Please run the feasibility analysis first.",
+                className="text-muted text-center p-4"
+            )
+        
+        # Get scores and NPV data
+        scores = getattr(dss_results, 'scores', {})
+        net_val_dict = dash_storage.get_data("net_val") or {}
+        
+        if not scores:
+            return html.Div(
+                "No scoring data available. Please run the feasibility analysis first.",
+                className="text-muted text-center p-4"
+            )
+        
+        # Map option names to cost column names for NPV
+        option_to_npv_col = {
+            "Surface Recharge": "Spreading Pond Net Present Value ($)",
+            "Injection Well": "Injection Wells Net Present Value ($)",
+            "Dry Well": "Dry Wells Net Present Value ($)"
+        }
+        
+        # Get all NPV values and find minimum
+        npv_dict = {}  # Store NPV per option
+        npv_values = []
+        for option_name in scores.keys():
+            npv_col = option_to_npv_col.get(option_name)
+            if npv_col and npv_col in net_val_dict:
+                npv_val = float(net_val_dict[npv_col]) if pd.notna(net_val_dict[npv_col]) else 0
+                npv_dict[option_name] = npv_val
+                if npv_val > 0:  # Only include positive NPV values
+                    npv_values.append(npv_val)
+        
+        # Find minimum NPV for cost efficiency calculation
+        min_npv = min(npv_values) if npv_values else 1
+        
+        # Create spider plots for each option
+        spider_plots = []
+        for option_name, option_scores in scores.items():
+            # Get scores
+            hydro_score = option_scores.get("hydrogeologic", 0.0)
+            env_score = option_scores.get("environmental", 0.0)
+            reg_score = option_scores.get("regulation", 0.0)
+            
+            # Calculate cost efficiency: 100 for lowest cost, 100 * (min_cost / x) for others
+            npv_val = npv_dict.get(option_name, 0.0)
+            if npv_val > 0 and min_npv > 0:
+                # Cost efficiency = 100 * (minimum cost / current cost)
+                # For minimum cost: 100 * (min_npv / min_npv) = 100
+                # For higher costs: 100 * (min_npv / higher_cost) < 100
+                cost_efficiency = 100.0 * (min_npv / npv_val)
+            else:
+                # Handle edge cases (zero or negative NPV)
+                cost_efficiency = 0.0
+            
+            # Clamp to [0, 100]
+            cost_efficiency = max(0.0, min(100.0, cost_efficiency))
+            
+            # Create spider plot
+            fig = go.Figure()
+            
+            # Categories for radar chart
+            categories = ['Hydrogeologic', 'Environmental', 'Regulation', 'Cost Efficiency']
+            values = [hydro_score, env_score, reg_score, cost_efficiency]
+            
+            # Add trace
+            fig.add_trace(go.Scatterpolar(
+                r=values,
+                theta=categories,
+                fill='toself',
+                name=option_name,
+                line=dict(color='#1e3a5f', width=2),
+                fillcolor='rgba(30, 58, 95, 0.3)'
+            ))
+            
+            # Update layout
+            fig.update_layout(
+                polar=dict(
+                    radialaxis=dict(
+                        visible=True,
+                        range=[0, 100],
+                        tickfont=dict(size=10)
+                    ),
+                    angularaxis=dict(
+                        tickfont=dict(size=12)
+                    )
+                ),
+                showlegend=False,
+                height=400,
+                margin=dict(l=50, r=50, t=50, b=50),
+                title=dict(
+                    text=option_name,
+                    x=0.5,
+                    font=dict(size=16, color='#1e3a5f')
+                )
+            )
+            
+            # Create card for this option's spider plot
+            spider_plots.append(
+                dbc.Col(
+                    [
+                        dbc.Card(
+                            [
+                                dbc.CardBody(
+                                    [
+                                        dcc.Graph(figure=fig)
+                                    ]
+                                )
+                            ],
+                            className="h-100"
+                        )
+                    ],
+                    width=4,
+                    className="mb-3"
+                )
+            )
+        
+        # Return in rows of 3
+        rows = []
+        for i in range(0, len(spider_plots), 3):
+            row_plots = spider_plots[i:i+3]
+            rows.append(
+                dbc.Row(row_plots, className="mb-3")
+            )
+        
+        return html.Div(rows)
 
 
 def _get_response_color(level):
