@@ -14,7 +14,12 @@ logger = logging.getLogger(__name__)
 
 
 def _ensure_dss_results_available(top_tab):
-    """Ensure DSS results are available, running analysis if needed."""
+    """Ensure DSS results are available, running analysis if needed.
+    
+    This function ensures that Analysis tab callbacks have run before
+    Feasibilities tab tries to access the results.
+    """
+    # If Analysis tab is accessed, ensure feasibility analysis has run first
     if top_tab == "analysis":
         logger.debug("Analysis tab accessed - ensuring feasibility analysis has run")
         try:
@@ -29,7 +34,7 @@ def _ensure_dss_results_available(top_tab):
     
     # If no DSS results exist after running analysis, try running integrated analysis directly
     if dss_results is None or not hasattr(dss_results, 'results') or not dss_results.results:
-        logger.info("No DSS results found after feasibility analysis. Running integrated analysis directly...")
+        logger.info("No DSS results found. Running integrated analysis directly...")
         try:
             from mar_dss.app.callbacks.analysis_callbacks import run_integrated_analysis
             dss_results, _ = run_integrated_analysis()
@@ -762,7 +767,17 @@ def setup_feasibilities_callbacks(app):
         prevent_initial_call=False
     )
     def update_feasibilities_dashboard(top_tab, active_tab, graph_store):
-        """Update Executive Summary and Decision Funnel based on DSS results."""
+        """Update Executive Summary and Decision Funnel based on DSS results.
+        
+        This callback depends on Analysis tab callbacks completing first.
+        When Analysis tab is accessed, it initializes the graph and runs feasibility analysis.
+        This callback then uses those results to populate the Feasibilities dashboard.
+        
+        Execution order:
+        1. Analysis tab callbacks run (initialize graph, run feasibility analysis)
+        2. This callback runs and ensures analysis has completed
+        3. Then it accesses and displays the results
+        """
         # Update when Analysis tab is accessed OR when Feasibilities sub-tab is selected
         # This ensures data loads immediately when Analysis tab opens
         if top_tab != "analysis" and active_tab != "analysis-feasibilities":
@@ -770,7 +785,12 @@ def setup_feasibilities_callbacks(app):
                     dash.no_update, dash.no_update, dash.no_update, dash.no_update,
                     dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update)
         
-        # Ensure DSS results are available
+        # CRITICAL: Ensure Analysis tab callbacks have run first
+        # This ensures the knowledge graph is initialized and feasibility analysis has completed
+        # before we try to access DSS results.
+        # _ensure_dss_results_available() will run run_feasibility_analysis() if needed,
+        # ensuring Analysis tab callbacks complete before this callback proceeds.
+        logger.debug("Feasibilities callback triggered - ensuring Analysis callbacks have completed")
         dss_results = _ensure_dss_results_available(top_tab)
         
         # Check if results are available

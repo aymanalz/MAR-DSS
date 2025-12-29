@@ -225,10 +225,93 @@ def compute_spread_area(k_min_vadose, max_available_area, gw_depth, source_water
     # Ensure we don't exceed max available area
     if spread_area > max_available_area:
             spread_area = max_available_area
+    if infl_rate > k_min_vadose:
+        infl_rate = k_min_vadose
             
-    spread_area = min(spread_area, max_available_area)
-    
     return {"spread_area": spread_area, "infl_rate": infl_rate, "inf_k_ratio": infl_rate/k_min_vadose}
+
+def compute_number_of_injection_wells(source_water_volume, op_gw_depth, strat_df, gw_depth, Hmax, confined, unconfined):
+    if confined:
+        if len(strat_df) != 4:
+            raise ValueError("Stratigraphy table must have four layers for confined aquifer")
+        
+        kaq = strat_df.iloc[2]["K"]
+        B = strat_df.iloc[2]["thickness"]
+        Ss = strat_df.iloc[2]["sy/ss"]
+        transmissivity = kaq * B
+        Ss = Ss * B
+        Qmax = defaults["max_injection_Q_per_well"] 
+        max_Q_per_well = theis_drawdown_or_Q(Q_or_dh=Hmax, T=transmissivity, S=Ss, r=1, t=50, compute_Q=True)
+        Q_per_well = min(Qmax, max_Q_per_well)     
+        number_of_wells = np.ceil((np.max(source_water_volume)/30.25) / Q_per_well)       
+        number_of_wells =min(defaults["max_number_of_injection_wells"], number_of_wells)
+        return {"number_of_wells": number_of_wells, "Q_per_well": Q_per_well} 
+
+        
+      
+    if unconfined:
+        # thiem equation
+        avg_gw_depth = np.mean(gw_depth)
+        layer_depths = strat_df['thickness'].cumsum()
+
+        saturated_layres = layer_depths - avg_gw_depth
+        saturated_layres = saturated_layres[saturated_layres>0]
+        saturated_thickness = saturated_layres.sum()
+        sat_thks = saturated_layres.diff()
+        sat_thks.iloc[0] = saturated_layres.iloc[0]
+
+        sy_s = strat_df.iloc[-(len(sat_thks)):]['sy/ss']
+        k_s = strat_df.iloc[-(len(sat_thks)):]['K']
+        k_mean = (k_s.values * sat_thks.values).sum() / sat_thks.values.sum()
+        sy_mean = (sy_s.values * sat_thks.values).sum() / sat_thks.values.sum()
+        dh = avg_gw_depth - op_gw_depth
+
+        # corrected drawdown for unconfined aquifer
+        dh_corrected = dh - dh*dh/(2.0*saturated_thickness)
+        transmissivity = k_mean * saturated_thickness
+        Ss = sy_mean * saturated_thickness
+        max_Q_per_well = theis_drawdown_or_Q(Q_or_dh=dh_corrected, T=transmissivity, S=Ss, r=1, t=50, compute_Q=True)
+
+        #max_Q_per_well = (2 * 3.14159 * k_mean*saturated_thickness*dh) / (np.log(300))
+        Qmax = defaults["max_injection_Q_per_well"] #  ft^3/day, arround 20L/sec
+        Q_per_well = min(max_Q_per_well, Qmax)
+        number_of_wells = np.ceil((np.max(source_water_volume)/30.25) / Q_per_well)
+        number_of_wells =min(defaults["max_number_of_injection_wells"], number_of_wells)
+                                        
+        return {"number_of_wells": number_of_wells, "Q_per_well": Q_per_well} # irrelevant for unconfined aquifer
+    
+def compute_number_of_dry_wells(source_water_volume, op_gw_depth, strat_df, gw_depth, unconfined):
+   if unconfined:
+        # thiem equation
+        avg_gw_depth = np.mean(gw_depth)
+        layer_depths = strat_df['thickness'].cumsum()
+
+        saturated_layres = layer_depths - avg_gw_depth
+        saturated_layres = saturated_layres[saturated_layres>0]
+        saturated_thickness = saturated_layres.sum()
+        sat_thks = saturated_layres.diff()
+        sat_thks.iloc[0] = saturated_layres.iloc[0]
+
+        sy_s = strat_df.iloc[-(len(sat_thks)):]['sy/ss']
+        k_s = strat_df.iloc[-(len(sat_thks)):]['K']
+        k_mean = (k_s.values * sat_thks.values).sum() / sat_thks.values.sum()
+        sy_mean = (sy_s.values * sat_thks.values).sum() / sat_thks.values.sum()
+        dh = avg_gw_depth - max(op_gw_depth, defaults["max_drywell_depth_ft"])
+        if dh <=0:
+            return {"number_of_wells": 0, "Q_per_well": 0}
+        # corrected drawdown for unconfined aquifer
+        dh_corrected = dh - dh*dh/(2.0*saturated_thickness)
+        transmissivity = k_mean * saturated_thickness
+        Ss = sy_mean * saturated_thickness
+        max_Q_per_well = theis_drawdown_or_Q(Q_or_dh=dh_corrected, T=transmissivity, S=Ss, r=1, t=50, compute_Q=True)
+
+        #max_Q_per_well = (2 * 3.14159 * k_mean*saturated_thickness*dh) / (np.log(300))
+        Qmax = defaults["max_injection_Q_per_well"] #  ft^3/day, arround 20L/sec
+        Q_per_well = min(max_Q_per_well, Qmax)
+        number_of_wells = np.ceil((np.max(source_water_volume)/30.25) / Q_per_well)
+        number_of_wells =min(defaults["max_number_of_injection_wells"], number_of_wells)
+                                        
+        return {"number_of_dry_wells": number_of_wells, "Q_per_dry_well": Q_per_well} # irrelevant for unconfined aquifer
 
 def compute_annual_recharge_volume(design_sizing_result, source_water_volume):
     if design_sizing_result is None:
@@ -244,7 +327,26 @@ def compute_annual_recharge_volume(design_sizing_result, source_water_volume):
         act_recharge =min(current_month_storage, source_water_volume[i])
         annual_recharge_volume += act_recharge
 
-    return annual_recharge_volume
+    return annual_recharge_volume   
+
+def compute_annual_injection_volume(number_of_injection_wells_result, source_water_volume):
+    if number_of_injection_wells_result is None:
+        return None # irrelevant for confined aquifer
+    number_of_wells = number_of_injection_wells_result["number_of_wells"]
+    Q_per_well = number_of_injection_wells_result["Q_per_well"]
+    annual_injection_volume = number_of_wells * Q_per_well * 365.25
+
+    annual_injection_volume = min(annual_injection_volume, np.sum(source_water_volume))
+    return annual_injection_volume
+
+def compute_annual_dry_well_volume(number_of_dry_wells_result, source_water_volume):
+    if number_of_dry_wells_result is None:
+        return None # irrelevant for confined aquifer
+    number_of_wells = number_of_dry_wells_result["number_of_dry_wells"]
+    Q_per_dry_well = number_of_dry_wells_result["Q_per_dry_well"]
+    annual_dry_well_volume = number_of_wells * Q_per_dry_well * 365.25
+    annual_dry_well_volume = min(annual_dry_well_volume, np.sum(source_water_volume))
+    return annual_dry_well_volume
 
 def compute_vadose_residence_time(vadose_biodegradable, design_zing, strat_df,  avg_gw_depth):
 
@@ -291,9 +393,10 @@ def compute_rechargable_percentage(annual_recharge_volume, source_water_volume):
     return 100.0*annual_recharge_volume / np.sum(source_water_volume)
 
 
-def compute_confined_storage_volume(confined, strat_df, Hmax):  
+def compute_confined_storage_volume(confined, strat_df, Hmax, number_of_injection_wells, source_water_volume):  
     # annual injection volume``  
     # we assume the table has four overburden layer, layers 2 bedrock and 1 aquifer in the middle
+    # todo: test
     if confined:        
         if len(strat_df) != 4:
             raise ValueError("Stratigraphy table must have four layers for confined aquifer")
@@ -303,8 +406,15 @@ def compute_confined_storage_volume(confined, strat_df, Hmax):
         Ss = strat_df.iloc[2]["sy/ss"]
         transmissivity = kaq * B
         Ss = Ss * B      
-        
-        max_injection_rate = theis_drawdown_or_Q(Q_or_dh=Hmax, T=transmissivity, S=Ss, r=1, t=50, compute_Q=True)
+
+        if number_of_injection_wells == 1:
+            max_injection_rate = number_of_injection_wells * theis_drawdown_or_Q(Q_or_dh=Hmax, T=transmissivity, S=Ss, r=1, t=50, compute_Q=True)
+        else:
+            Q_per_well = np.max(source_water_volume)/30.25/number_of_injection_wells
+            dh_from_well_at_300ft = theis_drawdown_or_Q(Q_or_dh=Q_per_well, T=transmissivity, S=Ss, r=300, t=50, compute_Q=False)
+            dh_superimposed = (Hmax/number_of_injection_wells) + (dh_from_well_at_300ft * (number_of_injection_wells -1))
+            max_injection_rate = theis_drawdown_or_Q(Q_or_dh=dh_superimposed, T=transmissivity, S=Ss, r=1, t=50, compute_Q=True)
+         
         
         return max_injection_rate * 365.25
     else:

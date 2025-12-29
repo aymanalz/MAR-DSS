@@ -177,14 +177,58 @@ rules:
     group: "Design Sizing"
     leaf: false
 
-  - id: "annual_recharge_volume"
-    name: "annual recharge volume"
+  - id: "number_of_injection_wells"
+    name: "Number of Injection Wells"
+    description: "Computes the number of injection wells needed to achieve the desired recharge rate."
+    type: numeric
+    module: "geohydro_rules"
+    function_name: "compute_number_of_injection_wells"
+    dependencies: [source_water_volume, op_gw_depth, strat_df, monthly_gw_depth, Hmax, confined, unconfined] 
+    certainty: 0.8
+    group: "Design Sizing"
+    leaf: false
+
+  - id: "number_of_dry_wells"
+    name: "Number of Dry Wells"
+    description: "Computes the number of dry wells needed to achieve the desired recharge rate."
+    type: numeric
+    module: "geohydro_rules"
+    function_name: "compute_number_of_dry_wells"
+    dependencies: [source_water_volume, op_gw_depth, strat_df, monthly_gw_depth, unconfined]
+    certainty: 0.8
+    group: "Design Sizing"
+    leaf: false
+
+  - id: "annual_surface_recharge_volume"
+    name: "annual surface recharge volume"
     #symbol: "StorageOK"
     description: "Computes the annual recharge into the vadose zone."
     type: numeric
     module: "geohydro_rules"
     function_name: "compute_annual_recharge_volume"
     dependencies: [design_sizing, source_water_volume]
+    certainty: 0.8
+    group: "Aquifer Properties"
+    leaf: true
+
+  - id: "annual_injection_volume"
+    name: "annual injection volume"
+    description: "Computes the annual injection volume into the aquifer."
+    type: numeric
+    module: "geohydro_rules"
+    function_name: "compute_annual_injection_volume"
+    dependencies: [number_of_injection_wells, source_water_volume]
+    certainty: 0.8
+    group: "Aquifer Properties"
+    leaf: true
+    
+  - id: "annual_dry_well_volume"
+    name: "annual dry well volume"
+    description: "Computes the annual dry well volume into the aquifer."
+    type: numeric
+    module: "geohydro_rules"
+    function_name: "compute_annual_dry_well_volume"
+    dependencies: [number_of_dry_wells, source_water_volume]
     certainty: 0.8
     group: "Aquifer Properties"
     leaf: true
@@ -221,7 +265,7 @@ rules:
     type: numeric
     module: "geohydro_rules"
     function_name: "compute_rechargable_percentage"
-    dependencies: [annual_recharge_volume, source_water_volume ]
+    dependencies: [annual_surface_recharge_volume, source_water_volume ]
     certainty: 0.8
     group: "Aquifer Properties"
     leaf: true
@@ -234,7 +278,7 @@ rules:
     type: numeric 
     module: "geohydro_rules"
     function_name: "compute_confined_storage_volume"
-    dependencies: [confined, strat_df, Hmax]
+    dependencies: [confined, strat_df, Hmax, number_of_injection_wells, source_water_volume]
     certainty: 1.0
     group: "Aquifer Characteristics"
     leaf: false

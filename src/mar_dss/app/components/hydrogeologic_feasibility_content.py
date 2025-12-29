@@ -79,7 +79,7 @@ def create_leaf_node_card(node_id, node_data, score_data):
         if isinstance(value, float):
             if node_id in ['rechargability', 'confined_rechargability']:
                 value_display = f"{value:.1f}%"
-            elif node_id == 'annual_recharge_volume':
+            elif node_id == 'annual_surface_recharge_volume':
                 value_display = f"{value:,.0f} ft³/year"
             elif node_id == 'k_min_vadose':
                 value_display = f"{value:.3f} ft/day"
@@ -213,10 +213,10 @@ def create_hydrogeologic_feasibility_content_dynamic():
         
         # Add leaf node cards if available
         if relevant_leaf_nodes:
-            # Sort to put annual_recharge_volume first, then rechargability/confined_rechargability second
+            # Sort to put annual_surface_recharge_volume first, then rechargability/confined_rechargability second
             def sort_key(x):
                 node_id = x[0]
-                if node_id == 'annual_recharge_volume':
+                if node_id == 'annual_surface_recharge_volume':
                     return (0, 0)
                 elif node_id in ['rechargability', 'confined_rechargability']:
                     return (1, 0)

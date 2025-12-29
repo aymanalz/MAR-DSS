@@ -207,7 +207,12 @@ class DecisionGraph:
         for nid in rule_nodes:
             # if nid == "design_sizing":
             #     print(f"\nDEBUG evaluate() - About to evaluate design_sizing")
-            results[nid] = self.evaluate_node(nid, input_values, cache)
+            try:
+                results[nid] = self.evaluate_node(nid, input_values, cache)
+            except Exception as e:
+                print(f"Error evaluating node '{nid}': {e}")
+                raise ValueError(f"Error evaluating node '{nid}': {e}")
+                
             # if nid == "design_sizing":
             #     print(f"DEBUG evaluate() - Finished evaluating design_sizing, result: {results[nid]}")
 

@@ -594,6 +594,16 @@ def create_and_run_cost_calculator():
     distance_to_storage_pond_ft = float(dash_storage.get_data("distance_to_storage_pond_ft")) or 1.0
     sediment_target = dash_storage.get_data("sediment_target")
     sediment_target_display = "Medium Silt" if sediment_target == "medium_silt" else "Fine Silt"
+    graph = dash_storage.get_data("decision_graph")
+    number_of_injection_wells_results = graph.get_node_value("number_of_injection_wells")
+    number_of_injection_wells = number_of_injection_wells_results['number_of_wells']
+    injection_Q_ft3_per_day = number_of_injection_wells_results['Q_per_well']
+    dry_well_results = graph.get_node_value("number_of_dry_wells")
+    
+    # Convert ft³/day to gpm (gallons per minute)
+    # 1 ft³ = 7.48052 gallons, 1 day = 1440 minutes
+    # gpm = (ft³/day) × (7.48052 gallons/ft³) / (1440 minutes/day)
+    injection_Q_gpm = injection_Q_ft3_per_day * 7.48052 / 1440
     
     storm_design_depth = 1.8
     cost_calculator = CostCalculator(
@@ -608,11 +618,13 @@ def create_and_run_cost_calculator():
         distance_sediment_to_storage_pond_ft=distance_to_storage_pond_ft,
         dry_well_infiltration_rate_in_per_hr=5,
         dry_well_transfer_rate_gpm=50,
-        injection_well_transfer_rate_gpm=50,
-        number_of_injection_wells=5,
+        injection_well_transfer_rate_gpm=injection_Q_gpm,
+        number_of_injection_wells=number_of_injection_wells,
         collection_to_sediment_removal__conveyance_method="trapezoidal",
         dry_well_diameter_ft=6,
-        recharge_method="dry_well"
+        recharge_method="dry_well", 
+        number_of_dry_wells=dry_well_results['number_of_dry_wells'],
+        dry_well_Q_ft3_per_day=dry_well_results['Q_per_dry_well']
     )
     
     # Run cost calculation
@@ -807,22 +819,22 @@ def run_feasibility_analysis():
                       dss_results.results)
     
     # Check if inputs have changed
-    if current_hash == last_hash and last_hash is not None:
+    if current_hash == last_hash:
         # Inputs haven't changed
         logger.debug("Feasibility analysis skipped - inputs unchanged (hash match)")
         
-        # Still ensure graph exists
-        graph = dash_storage.get_data("decision_graph")
-        if graph is None:
-            # If no graph exists, we need to create one
-            graph = get_session_graph()
-            dash_storage.set_data("decision_graph", graph)
+        # # Still ensure graph exists
+        # graph = dash_storage.get_data("decision_graph")
+        # if graph is None:
+        #     # If no graph exists, we need to create one
+        #     graph = get_session_graph()
+        #     dash_storage.set_data("decision_graph", graph)
         
-        # CRITICAL: If DSS results don't exist, run integrated analysis anyway
-        # This handles cases where results were cleared or this is the first run
-        if not has_dss_results:
-            logger.info("Inputs unchanged but DSS results missing - running integrated analysis")
-            dss_results, cost_calculator = run_integrated_analysis()
+        # # CRITICAL: If DSS results don't exist, run integrated analysis anyway
+        # # This handles cases where results were cleared or this is the first run
+        # if not has_dss_results:
+        #     logger.info("Inputs unchanged but DSS results missing - running integrated analysis")
+        #     dss_results, cost_calculator = run_integrated_analysis()
         
         return 1
     
@@ -853,28 +865,49 @@ def setup_analysis_callbacks(app):
         prevent_initial_call=False
     )
     def initialize_knowledge_graph(active_tab):
-        """Initialize knowledge graph when Analysis tab is accessed."""
+        """Initialize knowledge graph when Analysis tab is accessed.
+        
+        This callback runs FIRST when Analysis tab is accessed.
+        It initializes the decision graph and stores it.
+        """
         if active_tab == "analysis":
             # Initialize the graph and store in data_storage
             graph = read_knowledge()
             dash_storage.set_data("decision_graph", graph)
-            return {"initialized": True}
+            logger.debug("Knowledge graph initialized")
+            return {"initialized": True, "graph_ready": True}
         return dash.no_update
     
     # Callback to trigger analysis when Analysis tab is accessed
+    # This runs AFTER initialize_knowledge_graph because it uses allow_duplicate
     @app.callback(
         Output("knowledge-graph-store", "data", allow_duplicate=True),
         [Input("top-tabs", "active_tab")],
         prevent_initial_call='initial_duplicate'
     )
     def handle_analysis_tab_access(active_tab):
-        """Handle when Analysis tab is selected - trigger feasibility analysis."""
+        """Handle when Analysis tab is selected - trigger feasibility analysis.
+        
+        This callback runs SECOND when Analysis tab is accessed.
+        It ensures the graph is initialized, then runs feasibility analysis.
+        This must complete before Feasibilities tab callbacks can access the results.
+        """
         # Trigger when Analysis tab is selected
         if active_tab == "analysis":
-            # Run feasibility analysis (which includes integrated analysis if inputs changed)
-            # run_feasibility_analysis() already calls run_integrated_analysis() when needed
-            #run_feasibility_analysis()
-            pass
+            # Ensure graph is initialized first
+            if 0:
+                graph = dash_storage.get_data("decision_graph")
+                if graph is None:
+                    logger.warning("Graph not initialized, initializing now...")
+                    graph = read_knowledge()
+                    dash_storage.set_data("decision_graph", graph)
+                
+                # Run feasibility analysis (which includes integrated analysis if inputs changed)
+                # run_feasibility_analysis() already calls run_integrated_analysis() when needed
+                logger.debug("Running feasibility analysis from Analysis tab callback")
+                run_feasibility_analysis()
+                logger.debug("Feasibility analysis completed - results available for Feasibilities tab")
+            
         return dash.no_update
     
     # DISABLED: Callback removed because Feasibility Summary tab was removed

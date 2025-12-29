@@ -53,7 +53,8 @@ class CostCalculator:
         dry_well_diameter_ft: Optional[float] = None,
         collection_to_sediment_removal__conveyance_method: Optional[str] = None,
         recharge_method: Optional[str] = None,
-        
+        number_of_dry_wells: Optional[int] = None,
+        dry_well_Q_ft3_per_day: Optional[float] = None,
 
     ):
         """Initialize MAR Cost Calculator with project parameters."""
@@ -139,6 +140,8 @@ class CostCalculator:
             injection_well_transfer_rate_gpm
         )
         self.number_of_injection_wells = number_of_injection_wells
+        self.number_of_dry_wells = number_of_dry_wells
+        self.dry_well_Q_ft3_per_day = dry_well_Q_ft3_per_day
 
         if recharge_method in [
             "dry_well", "injection_well", "infiltration_basin"
@@ -685,12 +688,19 @@ class CostCalculator:
         # unit_price = 0
         # if self.recharge_method == "dry_well":
         unit_price = 50000
-        df.loc[16] = [
-            'INFILTRATION', 'Dry Well Cost', 'LF', unit_price,
-            self.dry_wells_infiltration_calculations[mask][
-                "Number of Wells Required"
-            ].values[0]
-        ]
+        if self.number_of_dry_wells is not None:
+            df.loc[16] = [
+                'INFILTRATION', 'Dry Well Cost', 'LF', unit_price,
+               self.number_of_dry_wells
+            ]
+        else:          
+       
+            df.loc[16] = [
+                'INFILTRATION', 'Dry Well Cost', 'LF', unit_price,
+                self.dry_wells_infiltration_calculations[mask][
+                    "Number of Wells Required"
+                ].values[0]
+            ]
         unit_price = 250000        
         df.loc[17] = [
             'INFILTRATION', 'Injection Wells', 'EA', unit_price,

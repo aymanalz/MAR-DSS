@@ -65,7 +65,7 @@ SCORING_CONFIG = {
         "scoring": {True: 0, False: 100},
         "group": "Environmental Quality"
     },
-    "annual_recharge_volume": {
+    "annual_surface_recharge_volume": {
         "type": "numeric",
         "weight": 1.5,
         "certainty": 0.8,
