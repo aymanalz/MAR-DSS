@@ -915,39 +915,72 @@ def setup_feasibilities_callbacks(app):
             # Create spider plot
             fig = go.Figure()
             
-            # Categories for radar chart
-            categories = ['Hydrogeologic', 'Environmental', 'Regulation', 'Cost Efficiency']
+            # Categories for radar chart with scores included in labels
+            categories = [
+                f'Hydrogeologic ({hydro_score:.0f}%)',
+                f'Environmental ({env_score:.0f}%)',
+                f'Regulation ({reg_score:.0f}%)',
+                f'Cost Efficiency ({cost_efficiency:.0f}%)'
+            ]
             values = [hydro_score, env_score, reg_score, cost_efficiency]
             
-            # Add trace
+            # Close the polygon by adding the first point at the end
+            categories_closed = categories + [categories[0]]
+            values_closed = values + [values[0]]
+            
+            # Add trace with blue polygon
             fig.add_trace(go.Scatterpolar(
-                r=values,
-                theta=categories,
+                r=values_closed,
+                theta=categories_closed,
                 fill='toself',
                 name=option_name,
-                line=dict(color='#1e3a5f', width=2),
-                fillcolor='rgba(30, 58, 95, 0.3)'
+                line=dict(color='#1e90ff', width=3),  # Bright blue line
+                fillcolor='rgba(30, 144, 255, 0.4)',  # Semi-transparent blue fill
+                mode='lines+markers',
+                marker=dict(
+                    size=8,
+                    color='#1e90ff',
+                    line=dict(width=2, color='white')
+                ),
+                hovertemplate='<b>%{theta}</b><br>Value: %{r:.1f}<extra></extra>'
             ))
             
-            # Update layout
+            # Update layout with black background and white grid
             fig.update_layout(
                 polar=dict(
                     radialaxis=dict(
                         visible=True,
                         range=[0, 100],
-                        tickfont=dict(size=10)
+                        tickmode='linear',
+                        tick0=0,
+                        dtick=20,
+                        tickfont=dict(size=10, color='white'),
+                        gridcolor='white',
+                        gridwidth=1,
+                        linecolor='white',
+                        linewidth=2,
+                        showline=True
                     ),
                     angularaxis=dict(
-                        tickfont=dict(size=12)
-                    )
+                        tickfont=dict(size=12, color='white', family='Arial, sans-serif'),
+                        linecolor='white',
+                        linewidth=2,
+                        gridcolor='white',
+                        gridwidth=1
+                    ),
+                    bgcolor='black'
                 ),
+                plot_bgcolor='black',
+                paper_bgcolor='black',
                 showlegend=False,
-                height=400,
-                margin=dict(l=50, r=50, t=50, b=50),
+                height=450,
+                margin=dict(l=80, r=80, t=80, b=80),
                 title=dict(
                     text=option_name,
                     x=0.5,
-                    font=dict(size=16, color='#1e3a5f')
+                    y=0.95,
+                    font=dict(size=18, color='white', family='Arial, sans-serif'),
+                    xanchor='center'
                 )
             )
             
