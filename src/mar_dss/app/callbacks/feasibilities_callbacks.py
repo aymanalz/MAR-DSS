@@ -867,6 +867,7 @@ def _create_spider_plots(dss_results):
     scores = getattr(dss_results, 'scores', {})
     capital_cost_num = dash_storage.get_data("capital_cost_num")
     maintenance_cost_num = dash_storage.get_data("maintenance_cost_num")
+    net_val_dict = dash_storage.get_data("net_val") or {}
     
     if not scores:
         return html.Div(
@@ -887,11 +888,19 @@ def _create_spider_plots(dss_results):
         "Dry Well": "Dry Wells Maintenance Cost ($)"
     }
     
-    # Get all capital and maintenance costs and find minimums
+    option_to_npv_col = {
+        "Surface Recharge": "Spreading Pond Net Present Value ($)",
+        "Injection Well": "Injection Wells Net Present Value ($)",
+        "Dry Well": "Dry Wells Net Present Value ($)"
+    }
+    
+    # Get all capital, maintenance costs, and NPV values and find minimums
     capital_cost_dict = {}  # Store capital cost per option
     maintenance_cost_dict = {}  # Store maintenance cost per option
+    npv_dict = {}  # Store NPV per option
     capital_costs = []
     maintenance_costs = []
+    npv_values = []
     
     for option_name in scores.keys():
         # Get capital cost
@@ -913,10 +922,21 @@ def _create_spider_plots(dss_results):
                 maintenance_costs.append(maintenance_val)
         else:
             maintenance_cost_dict[option_name] = 0
+        
+        # Get NPV
+        npv_col = option_to_npv_col.get(option_name)
+        if npv_col and npv_col in net_val_dict:
+            npv_val = float(net_val_dict[npv_col]) if pd.notna(net_val_dict[npv_col]) else 0
+            npv_dict[option_name] = npv_val
+            if npv_val > 0:
+                npv_values.append(npv_val)
+        else:
+            npv_dict[option_name] = 0
     
-    # Find minimum costs for efficiency calculation
+    # Find minimum costs and NPV for efficiency calculation
     min_capital_cost = min(capital_costs) if capital_costs else 1
     min_maintenance_cost = min(maintenance_costs) if maintenance_costs else 1
+    min_npv = min(npv_values) if npv_values else 1
     
     # Create spider plots for each option
     spider_plots = []
@@ -942,18 +962,28 @@ def _create_spider_plots(dss_results):
             maintenance_efficiency = 0.0
         maintenance_efficiency = max(0.0, min(100.0, maintenance_efficiency))
         
+        # Calculate NPV efficiency: 100 for lowest NPV, 100 * (min_npv / x) for others
+        npv_val = npv_dict.get(option_name, 0.0)
+        if npv_val > 0 and min_npv > 0:
+            npv_efficiency = 100.0 * (min_npv / npv_val)
+        else:
+            npv_efficiency = 0.0
+        npv_efficiency = max(0.0, min(100.0, npv_efficiency))
+        
         # Create spider plot
         fig = go.Figure()
         
-        # Categories for radar chart with scores included in labels (now 5 scores)
+        # Categories for radar chart with scores included in labels (now 6 scores)
+        # Using <br> to put percentage below the label
         categories = [
-            f'Hydrogeologic ({hydro_score:.0f}%)',
-            f'Environmental ({env_score:.0f}%)',
-            f'Regulation ({reg_score:.0f}%)',
-            f'Capital Cost Efficiency ({capital_efficiency:.0f}%)',
-            f'Maintenance Cost Efficiency ({maintenance_efficiency:.0f}%)'
+            f'Hydrogeologic<br>{hydro_score:.0f}%',
+            f'Environmental<br>{env_score:.0f}%',
+            f'Regulation<br>{reg_score:.0f}%',
+            f'Capital Cost<br>Efficiency<br>{capital_efficiency:.0f}%',
+            f'Maintenance Cost<br>Efficiency<br>{maintenance_efficiency:.0f}%',
+            f'NPV Efficiency<br>{npv_efficiency:.0f}%'
         ]
-        values = [hydro_score, env_score, reg_score, capital_efficiency, maintenance_efficiency]
+        values = [hydro_score, env_score, reg_score, capital_efficiency, maintenance_efficiency, npv_efficiency]
         
         # Calculate average score
         average_score = sum(values) / len(values)
