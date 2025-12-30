@@ -385,27 +385,25 @@ def create_water_quality_content():
                 )
             ]
         ),
-        # Main content row - Compact layout
+        # Main content row - Compact layout with 4 cards in grid
         dbc.Row([
-            # Left Column for Inputs (Decision Tree Steps) - More compact
+            # Left Column for Inputs (Decision Tree Steps) - Grid layout
             dbc.Col([
-                html.H5("Assessment Steps", className="mb-2 text-primary", style={"fontSize": "1.1rem"}),
+                html.H5("Assessment Steps", className="mb-3 text-primary", style={"fontSize": "1.1rem"}),
                 
-                # ========== GROUP 1: CLOGGING & FOULING RISKS ==========
-                html.Div([
-                    html.H6("1. Clogging & Fouling Risks", className="mb-2 mt-2 text-primary fw-bold", style={
-                        "border-bottom": "2px solid #007bff",
-                        "padding-bottom": "5px",
-                        "fontSize": "0.95rem"
-                    }),
-                    
-                    # Step 1: Physical Clogging Risk (TSS/Turbidity)
+                # Four cards in a 2x2 grid
+                dbc.Row([
+                    # GROUP 1: CLOGGING & FOULING RISKS
+                    dbc.Col([
                     dbc.Card([
                         dbc.CardHeader([
-                            html.H6("STEP 1: Physical Clogging (TSS/Turbidity)", className="mb-0 text-success", style={"fontSize": "0.9rem"})
-                        ], className="bg-light py-2"),
+                                html.H6("1. Clogging & Fouling Risks", className="mb-0 text-white fw-bold", style={"fontSize": "0.95rem"})
+                            ], className="bg-primary py-2"),
                         dbc.CardBody([
-                            html.P("Is TSS/Turbidity HIGH?", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.9rem"}),
+                                # Step 1: Physical Clogging Risk (TSS/Turbidity)
+                                html.Div([
+                                    html.P("STEP 1: Physical Clogging (TSS/Turbidity)", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.85rem"}),
+                                    html.P("Is TSS/Turbidity HIGH?", className="text-muted mb-2 small", style={"fontSize": "0.8rem"}),
                             dcc.RadioItems(
                                 id="env-step1-input",
                                 options=[
@@ -414,21 +412,15 @@ def create_water_quality_content():
                                     {'label': "HIGH RISK (TSS >20 mg/L, Turbidity >10 NTU)", 'value': "HIGH RISK"},
                                 ],
                                 value=tss_turbidity_risk,
-                                className="d-flex flex-column small",
-                                labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.85rem'}
-                            )
-                        ], style={"padding": "0.75rem"})
-                    ], className="mb-2", style={
-                        "border-left": "4px solid #007bff"
-                    }),
+                                        className="d-flex flex-column small",
+                                        labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.75rem'}
+                                    )
+                                ], className="mb-3"),
                     
                     # Step 2A: DOC/TOC (Organic Matter Fouling)
-                    dbc.Card([
-                        dbc.CardHeader([
-                            html.H6("STEP 2A: Organic Matter Fouling (DOC/TOC)", className="mb-0 text-success", style={"fontSize": "0.9rem"})
-                        ], className="bg-light py-2"),
-                        dbc.CardBody([
-                            html.P("Is Dissolved Organic Carbon (DOC/TOC) HIGH?", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.9rem"}),
+                                html.Div([
+                                    html.P("STEP 2A: Organic Matter Fouling (DOC/TOC)", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.85rem"}),
+                                    html.P("Is Dissolved Organic Carbon (DOC/TOC) HIGH?", className="text-muted mb-2 small", style={"fontSize": "0.8rem"}),
                             dcc.RadioItems(
                                 id="env-step2a-input",
                                 options=[
@@ -437,30 +429,27 @@ def create_water_quality_content():
                                     {'label': "HIGH RISK (DOC >10 mg/L)", 'value': "HIGH RISK"},
                                 ],
                                 value=doc_toc_risk,
-                                className="d-flex flex-column small",
-                                labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.85rem'}
-                            )
-                        ], style={"padding": "0.75rem"})
-                    ], className="mb-2", style={
-                        "border-left": "4px solid #007bff"
-                    }),
-                ]),
-                
-                # ========== GROUP 2: CHEMICAL COMPATIBILITY ==========
-                html.Div([
-                    html.H6("2. Chemical Compatibility", className="mb-2 mt-2 text-primary fw-bold", style={
-                        "border-bottom": "2px solid #28a745",
-                        "padding-bottom": "5px",
-                        "fontSize": "0.95rem"
-                    }),
+                                        className="d-flex flex-column small",
+                                        labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.75rem'}
+                                    )
+                                ])
+                            ], style={"padding": "0.75rem"})
+                        ], className="mb-3 h-100", style={
+                            "border-left": "4px solid #007bff"
+                        })
+                    ], width=12, md=6, lg=6),
                     
-                    # Step 2B: pH/Alkalinity
+                    # GROUP 2: CHEMICAL COMPATIBILITY
+                    dbc.Col([
                     dbc.Card([
                         dbc.CardHeader([
-                            html.H6("STEP 2B: pH/Alkalinity Compatibility", className="mb-0 text-success", style={"fontSize": "0.9rem"})
-                        ], className="bg-light py-2"),
+                                html.H6("2. Chemical Compatibility", className="mb-0 text-white fw-bold", style={"fontSize": "0.95rem"})
+                            ], className="bg-success py-2"),
                         dbc.CardBody([
-                            html.P("Is pH/Alkalinity Significantly Different from Native Groundwater?", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.9rem"}),
+                                # Step 2B: pH/Alkalinity
+                                html.Div([
+                                    html.P("STEP 2B: pH/Alkalinity Compatibility", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.85rem"}),
+                                    html.P("Is pH/Alkalinity Significantly Different from Native Groundwater?", className="text-muted mb-2 small", style={"fontSize": "0.8rem"}),
                             dcc.RadioItems(
                                 id="env-step2b-input",
                                 options=[
@@ -469,21 +458,15 @@ def create_water_quality_content():
                                     {'label': "HIGH RISK (pH difference >1.0 unit, large alkalinity mismatch)", 'value': "HIGH RISK"},
                                 ],
                                 value=ph_alkalinity_risk,
-                                className="d-flex flex-column small",
-                                labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.85rem'}
-                            )
-                        ], style={"padding": "0.75rem"})
-                    ], className="mb-2", style={
-                        "border-left": "4px solid #28a745"
-                    }),
+                                        className="d-flex flex-column small",
+                                        labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.75rem'}
+                                    )
+                                ], className="mb-3"),
                     
                     # Step 3: Salinity Risk (TDS/Salinity)
-                    dbc.Card([
-                        dbc.CardHeader([
-                            html.H6("STEP 3: Salinity Risk (CRITICAL)", className="mb-0 text-success", style={"fontSize": "0.9rem"})
-                        ], className="bg-light py-2"),
-                        dbc.CardBody([
-                            html.P("Is TDS/Salinity significantly higher than Native Groundwater?", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.9rem"}),
+                                html.Div([
+                                    html.P("STEP 3: Salinity Risk (CRITICAL)", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.85rem"}),
+                                    html.P("Is TDS/Salinity significantly higher than Native Groundwater?", className="text-muted mb-2 small", style={"fontSize": "0.8rem"}),
                             dcc.RadioItems(
                                 id="env-step3-input",
                                 options=[
@@ -492,21 +475,15 @@ def create_water_quality_content():
                                     {'label': "HIGH RISK (TDS increase >500 mg/L)", 'value': "HIGH RISK"},
                                 ],
                                 value=tds_salinity_risk,
-                                className="d-flex flex-column small",
-                                labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.85rem'}
-                            )
-                        ], style={"padding": "0.75rem"})
-                    ], className="mb-2", style={
-                        "border-left": "4px solid #28a745"
-                    }),
+                                        className="d-flex flex-column small",
+                                        labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.75rem'}
+                                    )
+                                ], className="mb-3"),
                     
                     # Step 5B: Redox Compatibility
-                    dbc.Card([
-                        dbc.CardHeader([
-                            html.H6("STEP 5B: Redox Compatibility", className="mb-0 text-success", style={"fontSize": "0.9rem"})
-                        ], className="bg-light py-2"),
-                        dbc.CardBody([
-                            html.P("Is Source Water Redox State Incompatible with Native Aquifer?", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.9rem"}),
+                                html.Div([
+                                    html.P("STEP 5B: Redox Compatibility", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.85rem"}),
+                                    html.P("Is Source Water Redox State Incompatible with Native Aquifer?", className="text-muted mb-2 small", style={"fontSize": "0.8rem"}),
                             dcc.RadioItems(
                                 id="env-step5b-input",
                                 options=[
@@ -515,31 +492,30 @@ def create_water_quality_content():
                                     {'label': "HIGH RISK (Significant redox incompatibility, risk of Fe/Mn precipitation or As mobilization)", 'value': "HIGH RISK"},
                                 ],
                                 value=redox_compatibility_risk,
-                                className="d-flex flex-column small",
-                                labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.85rem'}
-                            )
-                        ], style={"padding": "0.75rem"})
-                    ], className="mb-2", style={
-                        "border-left": "4px solid #28a745"
-                    }),
-                ]),
+                                        className="d-flex flex-column small",
+                                        labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.75rem'}
+                                    )
+                                ])
+                            ], style={"padding": "0.75rem"})
+                        ], className="mb-3 h-100", style={
+                            "border-left": "4px solid #28a745"
+                        })
+                    ], width=12, md=6, lg=6),
+                ], className="mb-3"),
                 
-                # ========== GROUP 3: WATER-QUALITY COMPLIANCE ==========
-                html.Div([
-                    html.H6("3. Water-Quality Compliance", className="mb-2 mt-2 text-primary fw-bold", style={
-                        "border-bottom": "2px solid #dc3545",
-                        "padding-bottom": "5px",
-                        "fontSize": "0.95rem"
-                    }),
-                    
-                    # Step 4: Inorganic Contaminants
+                dbc.Row([
+                    # GROUP 3: WATER-QUALITY COMPLIANCE
+                    dbc.Col([
                     dbc.Card([
                         dbc.CardHeader([
-                            html.H6("STEP 4: Inorganic Contaminants (CRITICAL)", className="mb-0 text-success", style={"fontSize": "0.9rem"})
-                        ], className="bg-light py-2"),
+                                html.H6("3. Water-Quality Compliance", className="mb-0 text-white fw-bold", style={"fontSize": "0.95rem"})
+                            ], className="bg-danger py-2"),
                         dbc.CardBody([
-                            html.P("Are key Inorganic Contaminants above Regulatory Limits?", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.9rem"}),
-                            html.P("(Arsenic >10 µg/L, Nitrate >50 mg/L, Heavy Metals, Fluoride >1.5 mg/L, Selenium, Boron)", className="text-muted mb-2 small", style={"fontSize": "0.8rem"}),
+                                # Step 4: Inorganic Contaminants
+                                html.Div([
+                                    html.P("STEP 4: Inorganic Contaminants (CRITICAL)", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.85rem"}),
+                                    html.P("Are key Inorganic Contaminants above Regulatory Limits?", className="text-muted mb-1 small", style={"fontSize": "0.8rem"}),
+                                    html.P("(Arsenic >10 µg/L, Nitrate >50 mg/L, Heavy Metals, Fluoride >1.5 mg/L, Selenium, Boron)", className="text-muted mb-2 small", style={"fontSize": "0.7rem"}),
                             dcc.RadioItems(
                                 id="env-step4-input",
                                 options=[
@@ -548,22 +524,16 @@ def create_water_quality_content():
                                     {'label': "HIGH RISK (≥100% of limit)", 'value': "HIGH RISK"},
                                 ],
                                 value=inorganic_contaminants_risk,
-                                className="d-flex flex-column small",
-                                labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.85rem'}
-                            )
-                        ], style={"padding": "0.75rem"})
-                    ], className="mb-2", style={
-                        "border-left": "4px solid #dc3545"
-                    }),
+                                        className="d-flex flex-column small",
+                                        labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.75rem'}
+                                    )
+                                ], className="mb-3"),
                     
                     # Step 5A: Emerging Contaminants
-                    dbc.Card([
-                        dbc.CardHeader([
-                            html.H6("STEP 5A: Emerging Contaminants", className="mb-0 text-success", style={"fontSize": "0.9rem"})
-                        ], className="bg-light py-2"),
-                        dbc.CardBody([
-                            html.P("Are Emerging Contaminants Present at Risky Levels?", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.9rem"}),
-                            html.P("(PFAS >10-70 ng/L, Pharmaceuticals, EDCs, Pesticides, Microplastics)", className="text-muted mb-2 small", style={"fontSize": "0.8rem"}),
+                                html.Div([
+                                    html.P("STEP 5A: Emerging Contaminants", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.85rem"}),
+                                    html.P("Are Emerging Contaminants Present at Risky Levels?", className="text-muted mb-1 small", style={"fontSize": "0.8rem"}),
+                                    html.P("(PFAS >10-70 ng/L, Pharmaceuticals, EDCs, Pesticides, Microplastics)", className="text-muted mb-2 small", style={"fontSize": "0.7rem"}),
                             dcc.RadioItems(
                                 id="env-step5a-input",
                                 options=[
@@ -572,22 +542,16 @@ def create_water_quality_content():
                                     {'label': "HIGH RISK (Multiple compounds >health guidance OR PFAS >100 ng/L)", 'value': "HIGH RISK"},
                                 ],
                                 value=emerging_contaminants_risk,
-                                className="d-flex flex-column small",
-                                labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.85rem'}
-                            )
-                        ], style={"padding": "0.75rem"})
-                    ], className="mb-2", style={
-                        "border-left": "4px solid #dc3545"
-                    }),
+                                        className="d-flex flex-column small",
+                                        labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.75rem'}
+                                    )
+                                ], className="mb-3"),
                     
                     # Step 6: Pathogen Risk
-                    dbc.Card([
-                        dbc.CardHeader([
-                            html.H6("STEP 6: Pathogen Risk (CRITICAL)", className="mb-0 text-success", style={"fontSize": "0.9rem"})
-                        ], className="bg-light py-2"),
-                        dbc.CardBody([
-                            html.P("Are pathogens present at risky levels?", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.9rem"}),
-                            html.P("(Consider source type: wastewater > stormwater > surface water > groundwater)", className="text-muted mb-2 small", style={"fontSize": "0.8rem"}),
+                                html.Div([
+                                    html.P("STEP 6: Pathogen Risk (CRITICAL)", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.85rem"}),
+                                    html.P("Are pathogens present at risky levels?", className="text-muted mb-1 small", style={"fontSize": "0.8rem"}),
+                                    html.P("(Consider source type: wastewater > stormwater > surface water > groundwater)", className="text-muted mb-2 small", style={"fontSize": "0.7rem"}),
                             dcc.RadioItems(
                                 id="env-step6-input",
                                 options=[
@@ -596,47 +560,45 @@ def create_water_quality_content():
                                     {'label': "HIGH RISK", 'value': "HIGH RISK"},
                                 ],
                                 value=pathogen_risk,
-                                className="d-flex flex-column small",
-                                labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.85rem'}
-                            )
-                        ], style={"padding": "0.75rem"})
-                    ], className="mb-2", style={
-                        "border-left": "4px solid #dc3545"
-                    }),
+                                        className="d-flex flex-column small",
+                                        labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.75rem'}
+                                    )
+                                ])
+                            ], style={"padding": "0.75rem"})
+                        ], className="mb-3 h-100", style={
+                            "border-left": "4px solid #dc3545"
+                        })
+                    ], width=12, md=6, lg=6),
                     
-                ]),
-                
-                # ========== GROUP 4: NEED FOR REMEDIATION ==========
-                html.Div([
-                    html.H6("4. Need for Remediation", className="mb-2 mt-2 text-primary fw-bold", style={
-                        "border-bottom": "2px solid #6f42c1",
-                        "padding-bottom": "5px",
-                        "fontSize": "0.95rem"
-                    }),
-                    
-                    # Step 7: Vadose Zone Pollution
+                    # GROUP 4: NEED FOR REMEDIATION
+                    dbc.Col([
                     dbc.Card([
                         dbc.CardHeader([
-                            html.H6("STEP 7: Vadose Zone Pollution", className="mb-0 text-success", style={"fontSize": "0.9rem"})
-                        ], className="bg-light py-2"),
+                                html.H6("4. Need for Remediation", className="mb-0 text-white fw-bold", style={"fontSize": "0.95rem"})
+                            ], className="bg-secondary py-2"),
                         dbc.CardBody([
-                            html.P("Indicates presence of pollution in the vadose zone.", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.9rem"}),
+                                # Step 7: Vadose Zone Pollution
+                                html.Div([
+                                    html.P("STEP 7: Vadose Zone Pollution", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.85rem"}),
+                                    html.P("Indicates presence of pollution in the vadose zone.", className="text-muted mb-2 small", style={"fontSize": "0.8rem"}),
                             dcc.RadioItems(
                                 id="env-step7-input",
                                 options=[
                                     {'label': "None", 'value': "None"},
                                     {'label': "Yes, biodegradable Pollution", 'value': "Yes, biodegradable Pollution"},
-                                    {'label': "Yes, highly toxic contaminants (e.g., heavy metals, VOCs, radioactive materials)", 'value': "Yes, highly toxic contaminants in the vadose zone (e.g., heavy metals, volatile organic compounds, radioactive materials)"},
+                                            {'label': "Yes, highly toxic contaminants (e.g., heavy metals, VOCs, radioactive materials)", 'value': "Yes, highly toxic contaminants in the vadose zone (e.g., heavy metals, volatile organic compounds, radioactive materials)"},
                                 ],
                                 value=vadose_zone_pollution,
-                                className="d-flex flex-column small",
-                                labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.85rem'}
-                            )
-                        ], style={"padding": "0.75rem"})
-                    ], className="mb-2", style={
-                        "border-left": "4px solid #6f42c1"
-                    }),
-                ]),
+                                        className="d-flex flex-column small",
+                                        labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.75rem'}
+                                    )
+                                ])
+                            ], style={"padding": "0.75rem"})
+                        ], className="mb-3 h-100", style={
+                            "border-left": "4px solid #6f42c1"
+                        })
+                    ], width=12, md=6, lg=6),
+                ], className="mb-3"),
                 
                 html.Hr(className="my-2"),
                 # Appendix / Detailed Treatment Table - Compact
@@ -682,9 +644,6 @@ def create_water_quality_content():
                     }
                 )
             ], width=12, lg=7, style={
-                "max-height": "calc(100vh - 150px)",
-                "overflow-y": "auto",
-                "overflow-x": "hidden",
                 "padding-right": "10px"
             }),
             
