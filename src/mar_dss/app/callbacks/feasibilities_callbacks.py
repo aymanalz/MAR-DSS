@@ -1007,16 +1007,16 @@ def _create_spider_plots(dss_results):
             plot_bgcolor='white',
             paper_bgcolor='white',
             showlegend=False,
-            height=450,
-            margin=dict(l=80, r=80, t=70, b=80),  # Reduced top margin to bring title closer
+            height=405,  # Reduced by 10% from 450
+            margin=dict(l=80, r=80, t=80, b=80),  # Increased top margin to ensure title visibility
             title=dict(
                 text=f'{option_name}<br><span style="font-size:14px; color:red;">Average Score: {average_score:.1f}%</span>',
                 x=0.5,
-                y=0.99,  # Position closer to top
+                y=0.98,  # Position slightly lower to ensure visibility
                 font=dict(size=18, color='#006400', family='Arial, sans-serif', weight='bold'),
                 xanchor='center',
                 yanchor='top',
-                pad=dict(t=5)  # Small padding to ensure visibility
+                pad=dict(t=10)  # Increased padding to ensure title is fully visible
             )
         )
         
@@ -1029,10 +1029,12 @@ def _create_spider_plots(dss_results):
                             dbc.CardBody(
                                 [
                                     dcc.Graph(figure=fig)
-                                ]
+                                ],
+                                style={"paddingTop": "40px", "display": "flex", "flexDirection": "column", "justifyContent": "flex-end"}
                             )
                         ],
-                        className="h-100"
+                        className="h-100",
+                        style={"minHeight": "500px"}  # Increased card height
                     )
                 ],
                 width=4,
