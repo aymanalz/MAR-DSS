@@ -10,26 +10,27 @@ def create_feasibilities_content():
     """Create content for Feasibilities tab."""
     return html.Div(
         [
+            # First row: Executive Summary and Decision Funnel
             dbc.Row(
                 [
-                    # Executive Summary (Left Panel)
                     dbc.Col(
                         [
                             dbc.Card(
                                 [
                                     dbc.CardHeader(
                                         "Executive Summary",
-                                        className="fw-bold text-white",
-                                        style={"backgroundColor": "#1e3a5f"}
+                                        className="fw-bold text-white py-2",
+                                        style={"backgroundColor": "#1e3a5f", "fontSize": "0.9rem"}
                                     ),
                                     dbc.CardBody(
                                         id="executive-summary-content",
                                         children=[
                                             html.Div(
                                                 "Loading feasibility analysis...",
-                                                className="text-center text-muted p-4"
+                                                className="text-center text-muted p-2 small"
                                             )
-                                        ]
+                                        ],
+                                        style={"padding": "0.75rem"}
                                     )
                                 ],
                                 className="h-100"
@@ -37,24 +38,25 @@ def create_feasibilities_content():
                         ],
                         width=6
                     ),
-                    # Decision Funnel (Right Panel)
                     dbc.Col(
                         [
                             dbc.Card(
                                 [
                                     dbc.CardHeader(
                                         "Decision Funnel",
-                                        className="fw-bold text-white",
-                                        style={"backgroundColor": "#1e3a5f"}
+                                        className="fw-bold text-white py-2",
+                                        style={"backgroundColor": "#1e3a5f", "fontSize": "0.9rem"}
                                     ),
                                     dbc.CardBody(
                                         [
                                             dcc.Graph(
                                                 id="decision-funnel-chart",
-                                                style={"height": "300px"}  # Fixed height container
+                                                style={"height": "250px"},
+                                                config={"displayModeBar": False}
                                             ),
-                                            html.Div(id="decision-funnel-stats", className="mt-3")
-                                        ]
+                                            html.Div(id="decision-funnel-stats", className="mt-2")
+                                        ],
+                                        style={"padding": "0.75rem"}
                                     )
                                 ],
                                 className="h-100"
@@ -63,9 +65,9 @@ def create_feasibilities_content():
                         width=6
                     )
                 ],
-                className="mb-4"
+                className="mb-2"
             ),
-            # Spider Plots for Each MAR Option
+            # Second row: Spider Plots
             dbc.Row(
                 [
                     dbc.Col(
@@ -74,101 +76,14 @@ def create_feasibilities_content():
                                 [
                                     dbc.CardHeader(
                                         "MAR Option Performance Comparison",
-                                        className="fw-bold text-white",
-                                        style={"backgroundColor": "#1e3a5f"}
+                                        className="fw-bold text-white py-2",
+                                        style={"backgroundColor": "#1e3a5f", "fontSize": "0.9rem"}
                                     ),
                                     dbc.CardBody(
                                         [
                                             html.Div(id="spider-plots-container")
-                                        ]
-                                    )
-                                ]
-                            )
-                        ],
-                        width=12,
-                        className="mb-4"
-                    )
-                ],
-                className="mb-4"
-            ),
-            # Constraints Heatmaps (separated by type)
-            dbc.Row(
-                [
-                    dbc.Col(
-                        [
-                            dbc.Card(
-                                [
-                                    dbc.CardHeader(
-                                        "Hydrogeologic Constraints Heatmap",
-                                        className="fw-bold text-white",
-                                        style={"backgroundColor": "#1e3a5f"}
-                                    ),
-                                    dbc.CardBody(
-                                        [
-                                            dcc.Graph(
-                                                id="hydrogeologic-constraints-heatmap-chart",
-                                                style={"height": "400px"}
-                                            ),
-                                            html.Div(id="hydrogeologic-constraints-heatmap-legend", className="mt-3")
-                                        ]
-                                    )
-                                ]
-                            )
-                        ],
-                        width=12,
-                        className="mb-3"
-                    )
-                ],
-                className="mb-4"
-            ),
-            dbc.Row(
-                [
-                    dbc.Col(
-                        [
-                            dbc.Card(
-                                [
-                                    dbc.CardHeader(
-                                        "Environmental Constraints Heatmap",
-                                        className="fw-bold text-white",
-                                        style={"backgroundColor": "#1e3a5f"}
-                                    ),
-                                    dbc.CardBody(
-                                        [
-                                            dcc.Graph(
-                                                id="environmental-constraints-heatmap-chart",
-                                                style={"height": "400px"}
-                                            ),
-                                            html.Div(id="environmental-constraints-heatmap-legend", className="mt-3")
-                                        ]
-                                    )
-                                ]
-                            )
-                        ],
-                        width=12,
-                        className="mb-3"
-                    )
-                ],
-                className="mb-4"
-            ),
-            dbc.Row(
-                [
-                    dbc.Col(
-                        [
-                            dbc.Card(
-                                [
-                                    dbc.CardHeader(
-                                        "Regulation Constraints Heatmap",
-                                        className="fw-bold text-white",
-                                        style={"backgroundColor": "#1e3a5f"}
-                                    ),
-                                    dbc.CardBody(
-                                        [
-                                            dcc.Graph(
-                                                id="regulation-constraints-heatmap-chart",
-                                                style={"height": "400px"}
-                                            ),
-                                            html.Div(id="regulation-constraints-heatmap-legend", className="mt-3")
-                                        ]
+                                        ],
+                                        style={"padding": "0.5rem"}
                                     )
                                 ]
                             )
@@ -176,9 +91,9 @@ def create_feasibilities_content():
                         width=12
                     )
                 ],
-                className="mb-4"
+                className="mb-2"
             ),
-            # Cost Comparison Charts
+            # Third row: Constraints Heatmaps (2 per row)
             dbc.Row(
                 [
                     dbc.Col(
@@ -186,9 +101,90 @@ def create_feasibilities_content():
                             dbc.Card(
                                 [
                                     dbc.CardHeader(
+                                        "Hydrogeologic Constraints",
+                                        className="fw-bold text-white py-2",
+                                        style={"backgroundColor": "#1e3a5f", "fontSize": "0.9rem"}
+                                    ),
+                                    dbc.CardBody(
+                                        [
+                                            dcc.Graph(
+                                                id="hydrogeologic-constraints-heatmap-chart",
+                                                style={"height": "300px"},
+                                                config={"displayModeBar": False}
+                                            ),
+                                            html.Div(id="hydrogeologic-constraints-heatmap-legend", className="mt-2")
+                                        ],
+                                        style={"padding": "0.5rem"}
+                                    )
+                                ]
+                            )
+                        ],
+                        width=6
+                    ),
+                    dbc.Col(
+                        [
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader(
+                                        "Environmental Constraints",
+                                        className="fw-bold text-white py-2",
+                                        style={"backgroundColor": "#1e3a5f", "fontSize": "0.9rem"}
+                                    ),
+                                    dbc.CardBody(
+                                        [
+                                            dcc.Graph(
+                                                id="environmental-constraints-heatmap-chart",
+                                                style={"height": "300px"},
+                                                config={"displayModeBar": False}
+                                            ),
+                                            html.Div(id="environmental-constraints-heatmap-legend", className="mt-2")
+                                        ],
+                                        style={"padding": "0.5rem"}
+                                    )
+                                ]
+                            )
+                        ],
+                        width=6
+                    )
+                ],
+                className="mb-2"
+            ),
+            # Fourth row: Regulation Heatmap and Cost Comparison
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader(
+                                        "Regulation Constraints",
+                                        className="fw-bold text-white py-2",
+                                        style={"backgroundColor": "#1e3a5f", "fontSize": "0.9rem"}
+                                    ),
+                                    dbc.CardBody(
+                                        [
+                                            dcc.Graph(
+                                                id="regulation-constraints-heatmap-chart",
+                                                style={"height": "300px"},
+                                                config={"displayModeBar": False}
+                                            ),
+                                            html.Div(id="regulation-constraints-heatmap-legend", className="mt-2")
+                                        ],
+                                        style={"padding": "0.5rem"}
+                                    )
+                                ]
+                            )
+                        ],
+                        width=6
+                    ),
+                    dbc.Col(
+                        [
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader(
                                         "Cost Comparison",
-                                        className="fw-bold text-white",
-                                        style={"backgroundColor": "#1e3a5f"}
+                                        className="fw-bold text-white py-2",
+                                        style={"backgroundColor": "#1e3a5f", "fontSize": "0.9rem"}
                                     ),
                                     dbc.CardBody(
                                         [
@@ -198,7 +194,8 @@ def create_feasibilities_content():
                                                         [
                                                             dcc.Graph(
                                                                 id="capital-cost-chart",
-                                                                style={"height": "350px"}
+                                                                style={"height": "280px"},
+                                                                config={"displayModeBar": False}
                                                             )
                                                         ],
                                                         width=4
@@ -207,7 +204,8 @@ def create_feasibilities_content():
                                                         [
                                                             dcc.Graph(
                                                                 id="maintenance-cost-chart",
-                                                                style={"height": "350px"}
+                                                                style={"height": "280px"},
+                                                                config={"displayModeBar": False}
                                                             )
                                                         ],
                                                         width=4
@@ -216,22 +214,25 @@ def create_feasibilities_content():
                                                         [
                                                             dcc.Graph(
                                                                 id="npv-cost-chart",
-                                                                style={"height": "350px"}
+                                                                style={"height": "280px"},
+                                                                config={"displayModeBar": False}
                                                             )
                                                         ],
                                                         width=4
                                                     )
                                                 ]
                                             )
-                                        ]
+                                        ],
+                                        style={"padding": "0.5rem"}
                                     )
                                 ]
                             )
                         ],
-                        width=12
+                        width=6
                     )
-                ]
+                ],
+                className="mb-2"
             )
-        ]
+        ],
+        style={"padding": "0.5rem"}
     )
-

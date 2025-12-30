@@ -70,7 +70,7 @@ def _get_empty_dashboard_content():
         xaxis_title="Number of Options",
         yaxis_title="",
         template="plotly_white",
-        height=400
+        height=250
     )
     
     empty_stats = html.Div()
@@ -79,7 +79,7 @@ def _get_empty_dashboard_content():
     empty_hydro_heatmap_fig.update_layout(
         title="Hydrogeologic Constraints Heatmap",
         template="plotly_white",
-        height=400
+        height=300
     )
     
     empty_hydro_heatmap_legend = html.Div()
@@ -88,7 +88,7 @@ def _get_empty_dashboard_content():
     empty_env_heatmap_fig.update_layout(
         title="Environmental Constraints Heatmap",
         template="plotly_white",
-        height=400
+        height=300
     )
     
     empty_env_heatmap_legend = html.Div()
@@ -97,7 +97,7 @@ def _get_empty_dashboard_content():
     empty_reg_heatmap_fig.update_layout(
         title="Regulation Constraints Heatmap",
         template="plotly_white",
-        height=400
+        height=300
     )
     
     empty_reg_heatmap_legend = html.Div()
@@ -106,21 +106,21 @@ def _get_empty_dashboard_content():
     empty_capital_fig.update_layout(
         title="Capital Cost",
         template="plotly_white",
-        height=350
+        height=280
     )
     
     empty_maintenance_fig = go.Figure()
     empty_maintenance_fig.update_layout(
         title="Maintenance Cost",
         template="plotly_white",
-        height=350
+        height=280
     )
     
     empty_npv_fig = go.Figure()
     empty_npv_fig.update_layout(
         title="NPV (20 years)",
         template="plotly_white",
-        height=350
+        height=280
     )
     
     empty_spider_plots = html.Div(
@@ -383,10 +383,10 @@ def _create_decision_funnel_chart(stats):
         xaxis_title="Number of Options",
         yaxis_title="",
         template="plotly_white",
-        height=300,
+        height=250,
         autosize=False,
         showlegend=False,
-        margin=dict(l=150, r=50, t=50, b=50),
+        margin=dict(l=120, r=40, t=40, b=40),
         uirevision='constant'
     )
     
@@ -494,7 +494,7 @@ def _create_constraints_heatmap(results, filters, constraint_type=None, title=No
         heatmap_fig.update_layout(
             title=title,
             template="plotly_white",
-            height=400,
+            height=300,
             xaxis_title="No constraints data available",
             yaxis_title=""
         )
@@ -517,7 +517,7 @@ def _create_constraints_heatmap(results, filters, constraint_type=None, title=No
             y_data.append(option_name)
             response_levels.append(response_level)
             # Fixed marker size, or could vary based on response level
-            marker_sizes.append(40)  # Doubled from 20
+            marker_sizes.append(25)  # Smaller circles for compact layout
             hover_texts.append(f'{option_name}<br>{constraint_name}<br>Response Level: {response_level}')
     
     # Create color mapping for response levels
@@ -549,11 +549,57 @@ def _create_constraints_heatmap(results, filters, constraint_type=None, title=No
         ),
         text=[str(level) for level in response_levels],
         textposition='middle center',
-        textfont=dict(size=11, color='white', family='Arial, sans-serif'),
+        textfont=dict(size=9, color='white', family='Arial, sans-serif'),
         hovertemplate='<b>%{customdata[0]}</b><br>%{x}<br>Response Level: %{customdata[1]}<extra></extra>',
         customdata=[[y_data[i], response_levels[i]] for i in range(len(y_data))],
         showlegend=False
     ))
+    
+    # Function to split constraint names into two lines
+    def split_constraint_name(name):
+        """Split constraint name into two lines intelligently."""
+        # Common patterns to split on (in order of preference)
+        split_patterns = [
+            (' Cost ', ' Cost'),
+            (' Efficiency', ' Efficiency'),
+            (' Volume', ' Volume'),
+            (' Rate', ' Rate'),
+            (' Depth', ' Depth'),
+            (' Area', ' Area'),
+            (' Quality', ' Quality'),
+            (' Risk', ' Risk'),
+            (' Impact', ' Impact'),
+            (' Factor', ' Factor'),
+            (' Level', ' Level'),
+            (' Ratio', ' Ratio'),
+            (' Index', ' Index'),
+            (' Constraint', ' Constraint'),
+            (' Feasibility', ' Feasibility')
+        ]
+        
+        # Try to find a split pattern
+        for pattern_with_space, pattern in split_patterns:
+            if pattern_with_space in name:
+                parts = name.split(pattern_with_space, 1)
+                if len(parts) == 2:
+                    return f"{parts[0]}<br>{parts[1]}{pattern}"
+            elif pattern in name and not name.startswith(pattern):
+                # Handle case where pattern is at the end
+                idx = name.rfind(pattern)
+                if idx > 0:
+                    return f"{name[:idx]}<br>{name[idx:]}"
+        
+        # If no pattern found, try to split at middle if long
+        if len(name) > 15:
+            words = name.split()
+            if len(words) > 1:
+                mid = len(words) // 2
+                return f"{' '.join(words[:mid])}<br>{' '.join(words[mid:])}"
+        
+        return name
+    
+    # Create x-axis labels with two lines
+    x_labels = [split_constraint_name(name) for name in sorted_constraints]
     
     # Use categorical axes to ensure consistent spacing across all heatmaps
     # Both x and y axes are categorical to prevent layout shifts
@@ -562,15 +608,21 @@ def _create_constraints_heatmap(results, filters, constraint_type=None, title=No
         xaxis_title="Constraints",
         yaxis_title="Options",
         template="plotly_white",
-        height=400,
+        height=300,
         autosize=False,
-        margin=dict(l=100, r=50, t=50, b=150),  # Increased bottom margin for rotated labels
+        margin=dict(l=80, r=40, t=40, b=100),  # Reduced bottom margin since labels are two lines
         xaxis=dict(
             type='category',  # Categorical x-axis for consistent spacing
+            categoryorder='array',
+            categoryarray=sorted_constraints,  # Use original names for data mapping
+            tickmode='array',
+            tickvals=sorted_constraints,
+            ticktext=x_labels,  # Use two-line labels for display
             side="bottom",
-            tickangle=-45,  # Rotate constraint labels for better readability
+            tickangle=0,  # No rotation needed with two-line labels
             showgrid=True,
-            gridcolor='lightgray'
+            gridcolor='lightgray',
+            tickfont=dict(size=8)  # Smaller font for compact layout
         ),
         yaxis=dict(
             type='category',  # Use categorical axis for consistent spacing
@@ -739,9 +791,9 @@ def _create_cost_chart(option_names, values, title, color):
         xaxis_title="Options",
         yaxis_title="Cost ($)",
         template="plotly_white",
-        height=350,
+        height=280,
         autosize=False,
-        margin=dict(l=50, r=20, t=50, b=50),
+        margin=dict(l=50, r=20, t=40, b=50),
         showlegend=False,
         yaxis=dict(tickformat="$,.0f")
     )
@@ -1072,8 +1124,8 @@ def _create_spider_plots(dss_results):
             plot_bgcolor='white',
             paper_bgcolor='white',
             showlegend=False,
-            height=405,  # Reduced by 10% from 450
-            margin=dict(l=80, r=80, t=80, b=80),  # Increased top margin to ensure title visibility
+            height=350,  # Compact height
+            margin=dict(l=60, r=60, t=70, b=60),  # Reduced margins for compact layout
             title=dict(
                 text=f'{option_name}<br><span style="font-size:14px; color:red;">Average Score: {average_score:.1f}%</span>',
                 x=0.5,
