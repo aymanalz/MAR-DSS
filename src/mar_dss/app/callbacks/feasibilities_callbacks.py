@@ -26,7 +26,7 @@ def _ensure_dss_results_available():
                       dss_results.results)
     
     # Only run analysis if results don't exist
-    if not has_dss_results:
+    if 1:
         logger.debug("No DSS results found - running feasibility analysis")
         try:
             from mar_dss.app.callbacks.analysis_callbacks import run_feasibility_analysis
@@ -123,11 +123,17 @@ def _get_empty_dashboard_content():
         height=350
     )
     
+    empty_spider_plots = html.Div(
+        "No DSS evaluation results available. Please run the feasibility analysis first.",
+        className="text-muted text-center p-4"
+    )
+    
     return (no_data_msg, empty_fig, empty_stats, 
             empty_hydro_heatmap_fig, empty_hydro_heatmap_legend,
             empty_env_heatmap_fig, empty_env_heatmap_legend,
             empty_reg_heatmap_fig, empty_reg_heatmap_legend,
-            empty_capital_fig, empty_maintenance_fig, empty_npv_fig)
+            empty_capital_fig, empty_maintenance_fig, empty_npv_fig,
+            empty_spider_plots)
 
 
 def _categorize_options(results, filters):

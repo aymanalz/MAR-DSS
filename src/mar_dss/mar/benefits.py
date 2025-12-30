@@ -13,7 +13,11 @@ def benefits(option: MAROption) -> List[Dict[str, float]]:
     # 1. Volume of source water that can be recharged
     # ==================================================================
     rechargable_percentage = graph.get_node_value('rechargability')
+    if rechargable_percentage is None:
+        rechargable_percentage = 0
     confined_rechargability = graph.get_node_value('confined_rechargability')
+    if confined_rechargability is None:
+        confined_rechargability = 0
     if aquifer_type.lower() == "Unconfined".lower():        
         value = rechargable_percentage/100
         weight = 100

@@ -338,7 +338,7 @@ class DashboardApp:
             webbrowser.open(url)
 
         try:
-            self.app.run(debug=debug, port=port, host='127.0.0.1')
+                self.app.run(debug=debug, port=port, host='127.0.0.1')
             
         except OSError as e:
             if "Address already in use" in str(e):

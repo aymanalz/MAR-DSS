@@ -194,44 +194,49 @@ def compute_spread_area(k_min_vadose, max_available_area, gw_depth, source_water
 
     # todo: Talk to run to check if the average is the best way to estimate the spread area.
     vol_max_available = (np.max(source_water_volume)/30.25)
+    vol_possiblee = vol_max_available
     spread_area =  vol_max_available / (k_min_vadose)
     
     # Iterative calculation to find appropriate spread area
     max_iterations = 100  # Safety limit
     iteration = 0
     while iteration < max_iterations:
+        spread_area = vol_possiblee / k_min_vadose
+        area = min(spread_area, max_available_area)
         infl_rate = compute_recharge_rate(x=0, y=0,
                                          t=t, del_h=dh,
-                                         spread_area=spread_area,
+                                         spread_area=area,
                                          k=k_mean,
                                          b=saturated_thickness, 
                                          sy=sy_mean)
-        # if infl_rate > k_min_vadose:
-        #     infl_rate = k_min_vadose
-        #     break
-
-        vol = spread_area * infl_rate
-        if (infl_rate < k_min_vadose):  
-           if vol<vol_max_available:
-                spread_area = spread_area * k_min_vadose/infl_rate
-                
-           else:
-                spread_area = spread_area * infl_rate/k_min_vadose
-           spread_area = min(spread_area, max_available_area)
+        if infl_rate <= k_min_vadose:
+            infl_rate = k_min_vadose
+            break
         else:
-            # If spread area is too large, reduce it
-            spread_area = spread_area * infl_rate/ k_min_vadose 
+            vol_possiblee = vol_possiblee * 0.99
+      
+        # vol = spread_area * infl_rate
+        # if (infl_rate < k_min_vadose):  
+        #    if vol<vol_max_available:
+        #         spread_area = spread_area * k_min_vadose/infl_rate
+                
+        #    else:
+        #         spread_area = spread_area * infl_rate/k_min_vadose
+        #    spread_area = min(spread_area, max_available_area)
+        # else:
+        #     # If spread area is too large, reduce it
+        #     spread_area = spread_area * infl_rate/ k_min_vadose 
         
             
             
-        iteration += 1
+        # iteration += 1
 
-        if (infl_rate <= k_min_vadose) and (vol/vol_max_available >= 0.95):
-            break
+        # if (infl_rate <= k_min_vadose) and (vol/vol_max_available >= 0.95):
+        #     break
     
     # Ensure we don't exceed max available area
-    if spread_area > max_available_area:
-            spread_area = max_available_area
+    # if spread_area > max_available_area:
+    #         spread_area = max_available_area
     # if infl_rate > k_min_vadose:
     #     infl_rate = k_min_vadose
             
@@ -305,7 +310,7 @@ def compute_number_of_dry_wells(source_water_volume, op_gw_depth, strat_df, gw_d
         sy_mean = (sy_s.values * sat_thks.values).sum() / sat_thks.values.sum()
         dh = avg_gw_depth - max(op_gw_depth, defaults["max_drywell_depth_ft"])
         if dh <=0:
-            return {"number_of_wells": 0, "Q_per_well": 0}
+            return {"number_of_dry_wells": 0, "Q_per_dry_well": 0}
         # corrected drawdown for unconfined aquifer
         dh_corrected = dh - dh*dh/(2.0*saturated_thickness)
         transmissivity = k_mean * saturated_thickness
