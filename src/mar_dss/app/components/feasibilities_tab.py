@@ -170,7 +170,7 @@ def create_feasibilities_content():
                                             ),
                                             html.Div(id="regulation-constraints-heatmap-legend", className="mt-2")
                                         ],
-                                        style={"padding": "0.5rem"}
+                                        style={"padding": "0.5rem", "minHeight": "350px"}
                                     )
                                 ]
                             )
@@ -194,7 +194,7 @@ def create_feasibilities_content():
                                                         [
                                                             dcc.Graph(
                                                                 id="capital-cost-chart",
-                                                                style={"height": "280px"},
+                                                                style={"height": "300px"},
                                                                 config={"displayModeBar": False}
                                                             )
                                                         ],
@@ -204,7 +204,7 @@ def create_feasibilities_content():
                                                         [
                                                             dcc.Graph(
                                                                 id="maintenance-cost-chart",
-                                                                style={"height": "280px"},
+                                                                style={"height": "300px"},
                                                                 config={"displayModeBar": False}
                                                             )
                                                         ],
@@ -214,16 +214,24 @@ def create_feasibilities_content():
                                                         [
                                                             dcc.Graph(
                                                                 id="npv-cost-chart",
-                                                                style={"height": "280px"},
+                                                                style={"height": "300px"},
                                                                 config={"displayModeBar": False}
                                                             )
                                                         ],
                                                         width=4
                                                     )
-                                                ]
+                                                ],
+                                                className="justify-content-center align-items-center"
                                             )
                                         ],
-                                        style={"padding": "0.5rem"}
+                                        style={
+                                            "padding": "0.5rem", 
+                                            "minHeight": "350px",
+                                            "display": "flex",
+                                            "flexDirection": "column",
+                                            "justifyContent": "center",
+                                            "alignItems": "center"
+                                        }
                                     )
                                 ]
                             )

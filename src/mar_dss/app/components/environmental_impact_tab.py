@@ -30,196 +30,225 @@ DECISION_LOGIC = {
     },
     "step3_tds": {
         "LOW RISK": {"score": 0, "color": "success", "treatment_key": "S3_LOW", "rec": "None."},
-        "MODERATE RISK": {"score": 2, "color": "warning", "treatment_key": "S3_MOD", "rec": "Hydrologic modeling of salinity plume, design buffer zone, implement intensive monitoring. **WARNING:** Long-term salinization risk."},
-        "HIGH RISK": {"score": 0, "color": "danger", "treatment_key": "S3_HIGH", "rec": "**AUTOMATIC ESCALATION.** Economic feasibility study REQUIRED, evaluate alternative water sources. **LIKELY OUTCOME:** NOT SUITABLE."},
+        "MODERATE RISK": {"score": 2, "color": "warning", "treatment_key": "S3_MOD", "rec": "Monitor TDS trends, evaluate blending strategies, consider reverse osmosis if needed."},
+        "HIGH RISK": {"score": 4, "color": "danger", "treatment_key": "S3_HIGH", "rec": "**CRITICAL:** Reverse osmosis or advanced desalination required. High capital and O&M costs expected."},
     },
     "step4_inorganic": {
         "LOW RISK": {"score": 0, "color": "success", "treatment_key": "S4_LOW", "rec": "None."},
-        "MODERATE RISK": {"score": 2, "color": "warning", "treatment_key": "S4_MOD", "rec": "Bench-scale treatment studies, pilot testing required, evaluate SAT attenuation potential, waste disposal plan."},
-        "HIGH RISK": {"score": 0, "color": "danger", "treatment_key": "S4_HIGH", "rec": "**AUTOMATIC ESCALATION.** Comprehensive treatability study REQUIRED, risk assessment. **LIKELY OUTCOME:** NOT SUITABLE due to cost/complexity."},
+        "MODERATE RISK": {"score": 2, "color": "warning", "treatment_key": "S4_MOD", "rec": "Enhanced monitoring, consider targeted treatment (e.g., ion exchange, adsorption)."},
+        "HIGH RISK": {"score": 5, "color": "danger", "treatment_key": "S4_HIGH", "rec": "**CRITICAL:** Source may be unsuitable without extensive treatment. Regulatory compliance mandatory."},
     },
     "step5a_ec": {
         "LOW RISK": {"score": 0, "color": "success", "treatment_key": "S5A_LOW", "rec": "None."},
-        "MODERATE RISK": {"score": 1, "color": "warning", "treatment_key": "S5A_MOD", "rec": "Soil column attenuation studies, GAC adsorption isotherms, GAC regeneration plan, monitor extraction wells."},
-        "HIGH RISK": {"score": 3, "color": "danger", "treatment_key": "S5A_HIGH", "rec": "**Comprehensive treatability study REQUIRED.** PFAS-specific removal testing, multi-year pilot test recommended, budget for spent GAC/PFAS disposal. **WARNING:** Regulatory uncertainty."},
+        "MODERATE RISK": {"score": 1, "color": "warning", "treatment_key": "S5A_MOD", "rec": "Enhanced monitoring, consider GAC or advanced oxidation processes."},
+        "HIGH RISK": {"score": 3, "color": "danger", "treatment_key": "S5A_HIGH", "rec": "Advanced treatment required (GAC, AOP, membrane filtration). High costs and complexity."},
     },
     "step5b_redox": {
         "LOW RISK": {"score": 0, "color": "success", "treatment_key": "S5B_LOW", "rec": "None."},
-        "MODERATE RISK": {"score": 2, "color": "warning", "treatment_key": "S5B_MOD", "rec": "**MANDATORY:** Geochemical modeling (PHREEQC/MINTEQ), pilot injection with redox monitoring, monitor Fe, Mn, As."},
-        "HIGH RISK": {"score": 4, "color": "danger", "treatment_key": "S5B_HIGH", "rec": "**MANDATORY comprehensive assessment:** 3D reactive transport modeling, extended pilot test, multi-level monitoring wells. **WARNING:** High risk of irreversible aquifer degradation."},
+        "MODERATE RISK": {"score": 1, "color": "warning", "treatment_key": "S5B_MOD", "rec": "Geochemical modeling, monitor Fe/Mn/As mobilization, consider aeration."},
+        "HIGH RISK": {"score": 3, "color": "danger", "treatment_key": "S5B_HIGH", "rec": "**MANDATORY:** Detailed redox assessment, pilot injection, consider pre-treatment to adjust redox state."},
     },
     "step6_pathogens": {
-        "LOW RISK": {"score": 0, "color": "success", "treatment_key": "S6_LOW", "rec": "Routine monitoring for indicator organisms recommended."},
-        "MODERATE RISK": {"score": 2, "color": "warning", "treatment_key": "S6_MOD", "rec": "Disinfection required. Conduct pathogen monitoring, evaluate disinfection effectiveness, ensure adequate contact time."},
-        "HIGH RISK": {"score": 3, "color": "danger", "treatment_key": "S6_HIGH", "rec": "**MANDATORY:** Multi-barrier disinfection approach REQUIRED. Comprehensive pathogen monitoring, extended pilot testing, regulatory compliance verification. **WARNING:** Public health risk if not properly treated."},
+        "LOW RISK": {"score": 0, "color": "success", "treatment_key": "S6_LOW", "rec": "None."},
+        "MODERATE RISK": {"score": 2, "color": "warning", "treatment_key": "S6_MOD", "rec": "Disinfection required (chlorination, UV, ozonation). Monitor residual and byproducts."},
+        "HIGH RISK": {"score": 5, "color": "danger", "treatment_key": "S6_HIGH", "rec": "**CRITICAL:** Multi-barrier disinfection mandatory (filtration + disinfection). Source may be unsuitable for direct recharge."},
     },
     "step7_vadose": {
-        "None": {"score": 0, "color": "success", "treatment_key": "S7_NONE", "rec": "No vadose zone pollution detected. No additional treatment required."},
-        "Yes, biodegradable Pollution": {"score": 1, "color": "warning", "treatment_key": "S7_BIO", "rec": "Biodegradable pollution in vadose zone detected. Monitor natural attenuation, consider enhanced bioremediation if needed, implement vadose zone monitoring program."},
-        "Yes, highly toxic contaminants in the vadose zone (e.g., heavy metals, volatile organic compounds, radioactive materials)": {"score": 2, "color": "danger", "treatment_key": "S7_TOXIC", "rec": "**CRITICAL:** Highly toxic contaminants in vadose zone detected. Comprehensive site assessment REQUIRED, evaluate source control measures, consider vadose zone remediation, implement intensive monitoring. **WARNING:** Risk of contaminant migration to aquifer."},
+        "None": {"score": 0, "color": "success", "treatment_key": "S7_NONE", "rec": "None."},
+        "Yes, biodegradable Pollution": {"score": 1, "color": "warning", "treatment_key": "S7_BIO", "rec": "Enhanced monitoring, consider biodegradation enhancement."},
+        "Yes, highly toxic contaminants in the vadose zone (e.g., heavy metals, volatile organic compounds, radioactive materials)": {"score": 3, "color": "danger", "treatment_key": "S7_TOXIC", "rec": "**CRITICAL:** Source may be unsuitable. Extensive remediation and treatment required."},
     },
 }
 
-# 2. Treatment Options Data (Keyed to the logic above)
-TREATMENT_OPTIONS = {
-    "S1_MOD": [("Settling Basins", "Low to Moderate"), ("Sand Filtration", "Moderate"), ("Multi-media Filtration", "Moderate")],
-    "S1_HIGH": [("Coagulation + Sand Filtration", "Moderate to High"), ("Dissolved Air Flotation (DAF)", "High"), ("Membrane Filtration (MF/UF)", "High")],
-    "S2A_MOD": [("Biological Filtration (Slow Sand)", "Low to Moderate"), ("Aeration + Bio-filtration", "Moderate"), ("Coagulation + Filtration", "Moderate")],
-    "S2A_HIGH": [("Enhanced Coagulation + Filtration", "Moderate to High"), ("Ozonation + Bio-filtration", "High"), ("Granular Activated Carbon (GAC)", "High"), ("Advanced Oxidation (UV/H₂O₂)", "Very High")],
-    "S2B_MOD": [("pH Adjustment (Acid/Base Dosing)", "Low"), ("Blending with Native Water", "Low to Moderate")],
-    "S2B_HIGH": [("Advanced pH Control System", "Moderate"), ("Comprehensive Geochemical Modeling", "Moderate + High Study")],
+# 2. Treatment Technology Database
+TREATMENT_DF = pd.DataFrame({
+    "Treatment Technology": [
+        "Sedimentation/Clarification",
+        "Media Filtration (Sand/Anthracite)",
+        "Membrane Filtration (MF/UF)",
+        "Granular Activated Carbon (GAC)",
+        "Ion Exchange",
+        "Reverse Osmosis (RO)",
+        "Advanced Oxidation (AOP)",
+        "Disinfection (Chlorination/UV/Ozone)",
+        "Aeration/Oxidation",
+    ],
+    "Cost Range ($/m³)": [
+        "$0.05-0.15",
+        "$0.10-0.30",
+        "$0.20-0.60",
+        "$0.30-0.80",
+        "$0.40-1.20",
+        "$0.80-2.50",
+        "$0.50-1.50",
+        "$0.10-0.40",
+        "$0.15-0.35",
+    ],
+    "Capital Cost Scale": [
+        "Low",
+        "Low-Medium",
+        "Medium-High",
+        "Medium",
+        "Medium-High",
+        "Very High",
+        "High",
+        "Low-Medium",
+        "Low-Medium",
+    ],
+    "O&M Intensity": [
+        "Low",
+        "Low-Medium",
+        "Medium",
+        "Medium-High",
+        "Medium",
+        "High",
+        "Medium-High",
+        "Low",
+        "Low-Medium",
+    ],
+    "Best For": [
+        "TSS/Turbidity removal",
+        "Particle removal, polishing",
+        "Fine particle, pathogen removal",
+        "Organic matter, emerging contaminants",
+        "Ion removal (nitrate, metals)",
+        "TDS/salinity reduction",
+        "Emerging contaminants, organics",
+        "Pathogen inactivation",
+        "Redox adjustment, Fe/Mn removal",
+    ],
+})
+
+# 3. Treatment Mapping (from decision logic to treatment technologies)
+TREATMENT_MAPPING = {
+    "S1_LOW": [],
+    "S1_MOD": ["Sedimentation/Clarification"],
+    "S1_HIGH": ["Sedimentation/Clarification", "Media Filtration (Sand/Anthracite)", "Membrane Filtration (MF/UF)"],
+    "S2A_LOW": [],
+    "S2A_MOD": ["Granular Activated Carbon (GAC)"],
+    "S2A_HIGH": ["Granular Activated Carbon (GAC)", "Advanced Oxidation (AOP)"],
+    "S2B_LOW": [],
+    "S2B_MOD": ["Aeration/Oxidation"],
+    "S2B_HIGH": ["Aeration/Oxidation", "Reverse Osmosis (RO)"],
     "S3_LOW": [],
-    "S3_MOD": [("NO direct treatment typically effective", "Moderate Study Cost")],
-    "S3_HIGH": [("Nanofiltration (NF)", "Very High - Prohibitive"), ("Reverse Osmosis (RO)", "Very High - Prohibitive"), ("Electrodialysis", "Very High - Prohibitive")],
+    "S3_MOD": ["Reverse Osmosis (RO)"],
+    "S3_HIGH": ["Reverse Osmosis (RO)"],
     "S4_LOW": [],
-    "S4_MOD": [("Biological Denitrification/Ion Exchange/RO (for Nitrate)", "Moderate to Very High"), ("Coagulation/Adsorptive Media/Ion Exchange (for Arsenic)", "Moderate to High"), ("pH Adjustment + Precipitation/Ion Exchange/Membrane (for Metals)", "Low to Very High")],
-    "S4_HIGH": [("Multi-stage Treatment Train/Advanced RO System/Combination", "Very High - Prohibitive")],
+    "S4_MOD": ["Ion Exchange", "Media Filtration (Sand/Anthracite)"],
+    "S4_HIGH": ["Ion Exchange", "Reverse Osmosis (RO)", "Media Filtration (Sand/Anthracite)"],
     "S5A_LOW": [],
-    "S5A_MOD": [("Soil Aquifer Treatment (SAT) - Natural Attenuation", "Low to Moderate"), ("Granular Activated Carbon (GAC)", "High"), ("Powdered Activated Carbon (PAC)", "Moderate"), ("Ozonation", "High")],
-    "S5A_HIGH": [("GAC + Ion Exchange (for PFAS)", "Very High"), ("Advanced Oxidation (UV/H₂O₂ or UV/O₃)", "Very High"), ("Reverse Osmosis (for PFAS)", "Very High")],
+    "S5A_MOD": ["Granular Activated Carbon (GAC)"],
+    "S5A_HIGH": ["Granular Activated Carbon (GAC)", "Advanced Oxidation (AOP)", "Membrane Filtration (MF/UF)"],
     "S5B_LOW": [],
-    "S5B_MOD": [("Pre-aeration/De-aeration/Blending Strategy", "Low to Moderate + Study Costs")],
-    "S5B_HIGH": [("Redox Control Pre-treatment", "High + Significant Uncertainty")],
+    "S5B_MOD": ["Aeration/Oxidation"],
+    "S5B_HIGH": ["Aeration/Oxidation", "Reverse Osmosis (RO)"],
     "S6_LOW": [],
-    "S6_MOD": [("UV Disinfection", "Moderate to High"), ("Chlorination", "Low to Moderate"), ("Ozonation", "High"), ("Sand/Media Filtration", "Low to Moderate"), ("Membrane Filtration (MF/UF)", "High")],
-    "S6_HIGH": [("Multi-barrier: Pre-treatment + UV + Chlorination", "Very High"), ("Membrane Filtration (MF/UF) + UV Disinfection", "Very High"), ("Advanced Oxidation (UV/H₂O₂ or O₃) + Filtration", "Very High"), ("Reverse Osmosis", "Very High - Prohibitive"), ("Extended SAT (Soil Aquifer Treatment)", "Moderate to High")],
+    "S6_MOD": ["Disinfection (Chlorination/UV/Ozone)", "Membrane Filtration (MF/UF)"],
+    "S6_HIGH": ["Membrane Filtration (MF/UF)", "Disinfection (Chlorination/UV/Ozone)", "Advanced Oxidation (AOP)"],
     "S7_NONE": [],
-    "S7_BIO": [("Enhanced Bioremediation (if needed)", "Moderate"), ("Vadose Zone Monitoring Program", "Low to Moderate"), ("Natural Attenuation Monitoring", "Low")],
-    "S7_TOXIC": [("Source Control Measures", "Moderate to High"), ("Vadose Zone Remediation (Soil Vapor Extraction, Bioremediation, Chemical Oxidation)", "Very High"), ("Intensive Vadose Zone Monitoring", "Moderate"), ("Containment Barriers (if needed)", "High"), ("Comprehensive Site Assessment", "Moderate + High Study")],
+    "S7_BIO": ["Aeration/Oxidation"],
+    "S7_TOXIC": ["Reverse Osmosis (RO)", "Advanced Oxidation (AOP)", "Granular Activated Carbon (GAC)"],
 }
 
-# 3. Full Treatment Table for Appendix/Summary
-TREATMENT_DF = pd.DataFrame([
-    ["Settling Basins", "10-30", "Low", "Low", "High TSS"],
-    ["Sand Filtration", "15-50", "Moderate", "Low", "Moderate TSS"],
-    ["pH Adjustment", "5-25", "Low", "Moderate", "pH mismatch"],
-    ["Aeration", "10-40", "Low-Moderate", "Low-Moderate", "Low DO, VOCs"],
-    ["Biological Filtration", "20-80", "Low-Moderate", "Moderate", "DOC, NH₄⁺"],
-    ["Coagulation + Filtration", "40-100", "Moderate", "Moderate", "TSS, DOC, turbidity"],
-    ["Multi-media Filtration", "25-70", "Moderate", "Moderate", "TSS, fine particles"],
-    ["DAF", "60-150", "High", "Moderate", "High TSS, algae"],
-    ["Ozonation", "100-250", "High", "High", "DOC, pathogens, oxidation"],
-    ["PAC", "80-200", "Moderate", "High", "Organics, taste/odor"],
-    ["GAC", "120-300", "High", "Very High", "Organics, PFAS, PPCPs"],
-    ["Ion Exchange", "80-250", "Moderate-High", "High", "Nitrate, As, hardness"],
-    ["Biological Denitrification", "60-150", "Moderate-High", "Moderate-High", "Nitrate"],
-    ["UV/AOP", "150-400", "Very High", "High", "Emerging contaminants"],
-    ["Membrane (MF/UF)", "80-200", "High", "High", "Particles, pathogens"],
-    ["Nanofiltration", "200-500", "Very High", "Very High", "TDS, hardness, organics"],
-    ["Reverse Osmosis", "300-800", "Very High", "Very High", "TDS, salts, most contaminants"],
-    ["Electrodialysis", "250-600", "Very High", "Very High", "Salinity, TDS"],
-], columns=["Treatment Technology", "Cost Range ($/m³)", "Capital Cost Scale", "O&M Intensity", "Best For"])
+# 4. Treatment Options (maps treatment keys to list of (tech_name, cost_scale) tuples)
+# Based on TREATMENT_MAPPING and TREATMENT_DF cost scales
+TREATMENT_OPTIONS = {
+    "S1_LOW": [],
+    "S1_MOD": [("Sedimentation/Clarification", "Low")],
+    "S1_HIGH": [
+        ("Sedimentation/Clarification", "Low"),
+        ("Media Filtration (Sand/Anthracite)", "Low-Medium"),
+        ("Membrane Filtration (MF/UF)", "Medium-High")
+    ],
+    "S2A_LOW": [],
+    "S2A_MOD": [("Granular Activated Carbon (GAC)", "Medium")],
+    "S2A_HIGH": [
+        ("Granular Activated Carbon (GAC)", "Medium"),
+        ("Advanced Oxidation (AOP)", "High")
+    ],
+    "S2B_LOW": [],
+    "S2B_MOD": [("Aeration/Oxidation", "Low-Medium")],
+    "S2B_HIGH": [
+        ("Aeration/Oxidation", "Low-Medium"),
+        ("Reverse Osmosis (RO)", "Very High")
+    ],
+    "S3_LOW": [],
+    "S3_MOD": [("Reverse Osmosis (RO)", "Very High")],
+    "S3_HIGH": [("Reverse Osmosis (RO)", "Very High")],
+    "S4_LOW": [],
+    "S4_MOD": [
+        ("Ion Exchange", "Medium-High"),
+        ("Media Filtration (Sand/Anthracite)", "Low-Medium")
+    ],
+    "S4_HIGH": [
+        ("Ion Exchange", "Medium-High"),
+        ("Reverse Osmosis (RO)", "Very High"),
+        ("Media Filtration (Sand/Anthracite)", "Low-Medium")
+    ],
+    "S5A_LOW": [],
+    "S5A_MOD": [("Granular Activated Carbon (GAC)", "Medium")],
+    "S5A_HIGH": [
+        ("Granular Activated Carbon (GAC)", "Medium"),
+        ("Advanced Oxidation (AOP)", "High"),
+        ("Membrane Filtration (MF/UF)", "Medium-High")
+    ],
+    "S5B_LOW": [],
+    "S5B_MOD": [("Aeration/Oxidation", "Low-Medium")],
+    "S5B_HIGH": [
+        ("Aeration/Oxidation", "Low-Medium"),
+        ("Reverse Osmosis (RO)", "Very High")
+    ],
+    "S6_LOW": [],
+    "S6_MOD": [
+        ("Disinfection (Chlorination/UV/Ozone)", "Low-Medium"),
+        ("Membrane Filtration (MF/UF)", "Medium-High")
+    ],
+    "S6_HIGH": [
+        ("Membrane Filtration (MF/UF)", "Medium-High"),
+        ("Disinfection (Chlorination/UV/Ozone)", "Low-Medium"),
+        ("Advanced Oxidation (AOP)", "High")
+    ],
+    "S7_NONE": [],
+    "S7_BIO": [("Aeration/Oxidation", "Low-Medium")],
+    "S7_TOXIC": [
+        ("Reverse Osmosis (RO)", "Very High"),
+        ("Advanced Oxidation (AOP)", "High"),
+        ("Granular Activated Carbon (GAC)", "Medium")
+    ],
+}
 
-# 4. Cost Mapping for Treatment Technologies (maps technology names to average cost per m³)
-# Uses mid-point of cost ranges from TREATMENT_DF, or estimates for technologies not in the table
+# 5. Treatment Cost Map (costs in $/m³, using mid-range values from TREATMENT_DF)
 TREATMENT_COST_MAP = {
-    "Settling Basins": 20,  # 10-30 avg
-    "Sand Filtration": 32.5,  # 15-50 avg
-    "pH Adjustment": 15,  # 5-25 avg
-    "Aeration": 25,  # 10-40 avg
-    "Biological Filtration": 50,  # 20-80 avg
-    "Biological Filtration (Slow Sand)": 50,
-    "Coagulation + Filtration": 70,  # 40-100 avg
-    "Coagulation + Sand Filtration": 70,
-    "Enhanced Coagulation + Filtration": 85,
-    "Multi-media Filtration": 47.5,  # 25-70 avg
-    "Dissolved Air Flotation (DAF)": 105,  # 60-150 avg
-    "Ozonation": 175,  # 100-250 avg
-    "Ozonation + Bio-filtration": 200,
-    "Powdered Activated Carbon (PAC)": 140,  # 80-200 avg
-    "PAC": 140,
-    "Granular Activated Carbon (GAC)": 210,  # 120-300 avg
-    "GAC": 210,
-    "GAC + Ion Exchange (for PFAS)": 300,
-    "Ion Exchange": 165,  # 80-250 avg
-    "Biological Denitrification": 105,  # 60-150 avg
-    "Biological Denitrification/Ion Exchange/RO (for Nitrate)": 400,
-    "Coagulation/Adsorptive Media/Ion Exchange (for Arsenic)": 200,
-    "pH Adjustment + Precipitation/Ion Exchange/Membrane (for Metals)": 350,
-    "UV Disinfection": 200,
-    "UV/AOP": 275,  # 150-400 avg
-    "Advanced Oxidation (UV/H₂O₂)": 275,
-    "Advanced Oxidation (UV/H₂O₂ or UV/O₃)": 300,
-    "Membrane Filtration (MF/UF)": 140,  # 80-200 avg
-    "Membrane (MF/UF)": 140,
-    "Membrane Filtration (MF/UF) + UV Disinfection": 340,
-    "Multi-barrier: Pre-treatment + UV + Chlorination": 350,
-    "Advanced Oxidation (UV/H₂O₂ or O₃) + Filtration": 400,
-    "Nanofiltration (NF)": 350,  # 200-500 avg
-    "Reverse Osmosis (RO)": 550,  # 300-800 avg
-    "Reverse Osmosis": 550,
-    "Reverse Osmosis (for PFAS)": 550,
-    "Electrodialysis": 425,  # 250-600 avg
-    "Multi-stage Treatment Train/Advanced RO System/Combination": 700,
-    "Chlorination": 20,
-    "Sand/Media Filtration": 32.5,
-    "Extended SAT (Soil Aquifer Treatment)": 100,
-    "Soil Aquifer Treatment (SAT) - Natural Attenuation": 30,
-    "Pre-aeration/De-aeration/Blending Strategy": 25,
-    "Redox Control Pre-treatment": 200,
-    "Blending with Native Water": 10,
-    "Advanced pH Control System": 50,
-    "Comprehensive Geochemical Modeling": 0,  # Study cost, not treatment
-    "Comprehensive Site Assessment": 0,  # Study cost
-    "NO direct treatment typically effective": 0,  # Study only
-    # Note: Vadose zone remediation costs (Enhanced Bioremediation, Monitoring Programs, etc.) 
-    # are in VADOSE_REMEDIATION_COSTS, not here
+    "Sedimentation/Clarification": 0.10,  # $0.05-0.15 -> 0.10
+    "Media Filtration (Sand/Anthracite)": 0.20,  # $0.10-0.30 -> 0.20
+    "Membrane Filtration (MF/UF)": 0.40,  # $0.20-0.60 -> 0.40
+    "Granular Activated Carbon (GAC)": 0.55,  # $0.30-0.80 -> 0.55
+    "Ion Exchange": 0.80,  # $0.40-1.20 -> 0.80
+    "Reverse Osmosis (RO)": 1.65,  # $0.80-2.50 -> 1.65
+    "Advanced Oxidation (AOP)": 1.00,  # $0.50-1.50 -> 1.00
+    "Disinfection (Chlorination/UV/Ozone)": 0.25,  # $0.10-0.40 -> 0.25
+    "Aeration/Oxidation": 0.25,  # $0.15-0.35 -> 0.25
 }
 
-# 6. Vadose Zone Remediation Costs (in $/acre-ft for remediation)
-# These are separate from water treatment costs and represent site remediation expenses
+# 6. Vadose Zone Remediation Costs (in $/acre-ft)
 VADOSE_REMEDIATION_COSTS = {
-    # Biodegradable pollution treatments (lower cost)
-    "Enhanced Bioremediation (if needed)": 100,  # $/acre-ft (moderate cost for biodegradable contaminants)
-    "Vadose Zone Monitoring Program": 15,  # $/acre-ft (low cost monitoring)
-    "Natural Attenuation Monitoring": 10,  # $/acre-ft (lowest cost, passive monitoring)
-    
-    # Highly toxic contaminants treatments (much higher cost)
-    "Source Control Measures": 50,  # $/acre-ft
-    "Vadose Zone Remediation (Soil Vapor Extraction, Bioremediation, Chemical Oxidation)": 2000,  # $/acre-ft (very high cost for comprehensive remediation of toxic contaminants)
-    "Intensive Vadose Zone Monitoring": 20,  # $/acre-ft
-    "Containment Barriers (if needed)": 500,  # $/acre-ft
-    "Comprehensive Site Assessment": 0,  # Study cost, not per volume
+    "Vadose Zone Remediation (Biodegradable)": 50,  # Low end estimate
+    "Vadose Zone Remediation (Toxic Contaminants)": 500,  # High end estimate
 }
 
-# 5. Cost Scale to Score Mapping (converts cost scale descriptions to numeric scores)
+# 7. Cost Scale to Score Mapping (for fallback cost estimation)
 COST_SCALE_TO_SCORE = {
     "Low": 1,
-    "Low to Moderate": 2,
+    "Low-Medium": 2,
     "Moderate": 3,
-    "Moderate to High": 4,
+    "Medium": 3,
+    "Medium-High": 4,
     "High": 5,
     "Very High": 6,
     "Very High - Prohibitive": 7,
-    "Moderate + High Study": 3.5,
-    "Moderate Study Cost": 2,
-    "Low to Moderate + Study Costs": 2.5,
-    "High + Significant Uncertainty": 5.5,
+    "Moderate Study Cost": 3,
+    "Moderate + High Study": 4,
 }
-
-
-# Helper function to create the input cards for each step
-def create_step_card(step_id, title, question, options):
-    """Create a step card for assessment inputs."""
-    return dbc.Card([
-        dbc.CardHeader([
-            html.H5(title, className="mb-0 text-success")
-        ], className="bg-light"),
-        dbc.CardBody([
-            html.P(question, className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
-            dcc.RadioItems(
-                id=step_id,
-                options=[{'label': opt, 'value': opt} for opt in options],
-                value=options[0],  # Default to the lowest risk option
-                className="d-flex flex-column",
-                labelStyle={'display': 'block', 'margin-bottom': '8px'}
-            )
-        ])
-    ], className="mb-3", style={
-        "box-shadow": "0 4px 8px 0 rgba(0,0,0,0.2)",
-        "transition": "0.3s",
-        "border-left": "5px solid #004d40"
-    })
 
 
 def create_water_quality_content():
@@ -235,27 +264,148 @@ def create_water_quality_content():
     pathogen_risk = dash_storage.get_data("pathogen_risk") or "LOW RISK"
     vadose_zone_pollution = dash_storage.get_data("vadose_zone_pollution") or "None"
     
+    # Get water quality parameters from data storage
+    physical_parameters = dash_storage.get_data("physical_parameters") or []
+    chemical_parameters = dash_storage.get_data("chemical_parameters") or []
+    biological_indicators = dash_storage.get_data("biological_indicators") or []
+    emerging_contaminants = dash_storage.get_data("emerging_contaminants") or []
+    
     return [
-        # Main content row
+        # Water Quality Card at the top - Compact
+        dbc.Row(
+            [
+                dbc.Col(
+                    [
+                        dbc.Card(
+                            [
+                                dbc.CardHeader(
+                                    "Water Quality Parameters",
+                                    className="fw-bold bg-primary text-white py-2",
+                                    style={"fontSize": "0.9rem"}
+                                ),
+                                dbc.CardBody(
+                                    [
+                                        dbc.Row(
+                                            [
+                                                dbc.Col(
+                                                    [
+                                                        html.H6(
+                                                            "Physical Parameters",
+                                                            className="fw-bold mb-2 small",
+                                                            style={"fontSize": "0.85rem"}
+                                                        ),
+                                                        dbc.Checklist(
+                                                            id="physical-parameters",
+                                                            options=[
+                                                                {"label": "Temperature", "value": "temperature"},
+                                                                {"label": "Turbidity", "value": "turbidity"},
+                                                                {"label": "Total Suspended Solids", "value": "tss"},
+                                                            ],
+                                                            value=physical_parameters,
+                                                            inline=False,
+                                                            className="small"
+                                                        ),
+                                                    ],
+                                                    width=3,
+                                                ),
+                                                dbc.Col(
+                                                    [
+                                                        html.H6(
+                                                            "Chemical Parameters",
+                                                            className="fw-bold mb-2 small",
+                                                            style={"fontSize": "0.85rem"}
+                                                        ),
+                                                        dbc.Checklist(
+                                                            id="chemical-parameters",
+                                                            options=[
+                                                                {"label": "Salinity/TDS", "value": "salinity_tds"},
+                                                                {"label": "Major Ions", "value": "major_ions"},
+                                                                {"label": "Nitrate", "value": "nitrate"},
+                                                                {"label": "Phosphate", "value": "phosphate"},
+                                                                {"label": "Trace Metals", "value": "trace_metals"},
+                                                            ],
+                                                            value=chemical_parameters,
+                                                            inline=False,
+                                                            className="small"
+                                                        ),
+                                                    ],
+                                                    width=3,
+                                                ),
+                                                dbc.Col(
+                                                    [
+                                                        html.H6(
+                                                            "Biological Indicators",
+                                                            className="fw-bold mb-2 small",
+                                                            style={"fontSize": "0.85rem"}
+                                                        ),
+                                                        dbc.Checklist(
+                                                            id="biological-indicators",
+                                                            options=[
+                                                                {"label": "E. coli", "value": "e_coli"},
+                                                                {"label": "Viruses", "value": "viruses"},
+                                                                {"label": "Protozoa", "value": "protozoa"},
+                                                            ],
+                                                            value=biological_indicators,
+                                                            inline=False,
+                                                            className="small"
+                                                        ),
+                                                    ],
+                                                    width=3,
+                                                ),
+                                                dbc.Col(
+                                                    [
+                                                        html.H6(
+                                                            "Emerging Contaminants",
+                                                            className="fw-bold mb-2 small",
+                                                            style={"fontSize": "0.85rem"}
+                                                        ),
+                                                        dbc.Checklist(
+                                                            id="emerging-contaminants",
+                                                            options=[
+                                                                {"label": "PFAS", "value": "pfas"},
+                                                                {"label": "Pesticides", "value": "pesticides"},
+                                                            ],
+                                                            value=emerging_contaminants,
+                                                            inline=False,
+                                                            className="small"
+                                                        ),
+                                                    ],
+                                                    width=3,
+                                                ),
+                                            ]
+                                        )
+                                    ],
+                                    style={"padding": "0.75rem"}
+                                ),
+                            ],
+                            className="mb-2"
+                        )
+                    ],
+                    width=12,
+                )
+            ]
+        ),
+        # Main content row - Compact layout
         dbc.Row([
-            # Left Column for Inputs (Decision Tree Steps)
+            # Left Column for Inputs (Decision Tree Steps) - More compact
             dbc.Col([
-                html.H3("Assessment Inputs", className="mb-4 text-primary"),
+                html.H5("Assessment Steps", className="mb-2 text-primary", style={"fontSize": "1.1rem"}),
                 
                 # ========== GROUP 1: CLOGGING & FOULING RISKS ==========
                 html.Div([
-                    html.H4("1. Clogging & Fouling Risks", className="mb-3 mt-4 text-primary", style={
-                        "border-bottom": "3px solid #007bff",
-                        "padding-bottom": "10px"
+                    html.H6("1. Clogging & Fouling Risks", className="mb-2 mt-2 text-primary fw-bold", style={
+                        "border-bottom": "2px solid #007bff",
+                        "padding-bottom": "5px",
+                        "fontSize": "0.95rem"
                     }),
                     
                     # Step 1: Physical Clogging Risk (TSS/Turbidity)
                     dbc.Card([
                         dbc.CardHeader([
-                            html.H5("STEP 1: PHYSICAL CLOGGING RISK (TSS/Turbidity)", className="mb-0 text-success")
-                        ], className="bg-light"),
+                            html.H6("STEP 1: Physical Clogging (TSS/Turbidity)", className="mb-0 text-success", style={"fontSize": "0.9rem"})
+                        ], className="bg-light py-2"),
                         dbc.CardBody([
-                            html.P("Is TSS/Turbidity HIGH?", className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
+                            html.P("Is TSS/Turbidity HIGH?", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.9rem"}),
                             dcc.RadioItems(
                                 id="env-step1-input",
                                 options=[
@@ -264,23 +414,21 @@ def create_water_quality_content():
                                     {'label': "HIGH RISK (TSS >20 mg/L, Turbidity >10 NTU)", 'value': "HIGH RISK"},
                                 ],
                                 value=tss_turbidity_risk,
-                                className="d-flex flex-column",
-                                labelStyle={'display': 'block', 'margin-bottom': '8px'}
+                                className="d-flex flex-column small",
+                                labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.85rem'}
                             )
-                        ])
-                    ], className="mb-3", style={
-                        "box-shadow": "0 4px 8px 0 rgba(0,0,0,0.2)",
-                        "transition": "0.3s",
-                        "border-left": "5px solid #007bff"
+                        ], style={"padding": "0.75rem"})
+                    ], className="mb-2", style={
+                        "border-left": "4px solid #007bff"
                     }),
                     
                     # Step 2A: DOC/TOC (Organic Matter Fouling)
                     dbc.Card([
                         dbc.CardHeader([
-                            html.H5("STEP 2A: ORGANIC MATTER FOULING RISK (DOC/TOC)", className="mb-0 text-success")
-                        ], className="bg-light"),
+                            html.H6("STEP 2A: Organic Matter Fouling (DOC/TOC)", className="mb-0 text-success", style={"fontSize": "0.9rem"})
+                        ], className="bg-light py-2"),
                         dbc.CardBody([
-                            html.P("Is Dissolved Organic Carbon (DOC/TOC) HIGH?", className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
+                            html.P("Is Dissolved Organic Carbon (DOC/TOC) HIGH?", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.9rem"}),
                             dcc.RadioItems(
                                 id="env-step2a-input",
                                 options=[
@@ -289,31 +437,30 @@ def create_water_quality_content():
                                     {'label': "HIGH RISK (DOC >10 mg/L)", 'value': "HIGH RISK"},
                                 ],
                                 value=doc_toc_risk,
-                                className="d-flex flex-column",
-                                labelStyle={'display': 'block', 'margin-bottom': '8px'}
+                                className="d-flex flex-column small",
+                                labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.85rem'}
                             )
-                        ])
-                    ], className="mb-3", style={
-                        "box-shadow": "0 4px 8px 0 rgba(0,0,0,0.2)",
-                        "transition": "0.3s",
-                        "border-left": "5px solid #007bff"
+                        ], style={"padding": "0.75rem"})
+                    ], className="mb-2", style={
+                        "border-left": "4px solid #007bff"
                     }),
                 ]),
                 
                 # ========== GROUP 2: CHEMICAL COMPATIBILITY ==========
                 html.Div([
-                    html.H4("2. Chemical Compatibility", className="mb-3 mt-4 text-primary", style={
-                        "border-bottom": "3px solid #28a745",
-                        "padding-bottom": "10px"
+                    html.H6("2. Chemical Compatibility", className="mb-2 mt-2 text-primary fw-bold", style={
+                        "border-bottom": "2px solid #28a745",
+                        "padding-bottom": "5px",
+                        "fontSize": "0.95rem"
                     }),
                     
                     # Step 2B: pH/Alkalinity
                     dbc.Card([
                         dbc.CardHeader([
-                            html.H5("STEP 2B: pH/ALKALINITY COMPATIBILITY", className="mb-0 text-success")
-                        ], className="bg-light"),
+                            html.H6("STEP 2B: pH/Alkalinity Compatibility", className="mb-0 text-success", style={"fontSize": "0.9rem"})
+                        ], className="bg-light py-2"),
                         dbc.CardBody([
-                            html.P("Is pH/Alkalinity Significantly Different from Native Groundwater?", className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
+                            html.P("Is pH/Alkalinity Significantly Different from Native Groundwater?", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.9rem"}),
                             dcc.RadioItems(
                                 id="env-step2b-input",
                                 options=[
@@ -322,23 +469,21 @@ def create_water_quality_content():
                                     {'label': "HIGH RISK (pH difference >1.0 unit, large alkalinity mismatch)", 'value': "HIGH RISK"},
                                 ],
                                 value=ph_alkalinity_risk,
-                                className="d-flex flex-column",
-                                labelStyle={'display': 'block', 'margin-bottom': '8px'}
+                                className="d-flex flex-column small",
+                                labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.85rem'}
                             )
-                        ])
-                    ], className="mb-3", style={
-                        "box-shadow": "0 4px 8px 0 rgba(0,0,0,0.2)",
-                        "transition": "0.3s",
-                        "border-left": "5px solid #28a745"
+                        ], style={"padding": "0.75rem"})
+                    ], className="mb-2", style={
+                        "border-left": "4px solid #28a745"
                     }),
                     
                     # Step 3: Salinity Risk (TDS/Salinity)
                     dbc.Card([
                         dbc.CardHeader([
-                            html.H5("STEP 3: SALINITY RISK (CRITICAL CHECKPOINT)", className="mb-0 text-success")
-                        ], className="bg-light"),
+                            html.H6("STEP 3: Salinity Risk (CRITICAL)", className="mb-0 text-success", style={"fontSize": "0.9rem"})
+                        ], className="bg-light py-2"),
                         dbc.CardBody([
-                            html.P("Is TDS/Salinity significantly higher than Native Groundwater?", className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
+                            html.P("Is TDS/Salinity significantly higher than Native Groundwater?", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.9rem"}),
                             dcc.RadioItems(
                                 id="env-step3-input",
                                 options=[
@@ -347,23 +492,21 @@ def create_water_quality_content():
                                     {'label': "HIGH RISK (TDS increase >500 mg/L)", 'value': "HIGH RISK"},
                                 ],
                                 value=tds_salinity_risk,
-                                className="d-flex flex-column",
-                                labelStyle={'display': 'block', 'margin-bottom': '8px'}
+                                className="d-flex flex-column small",
+                                labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.85rem'}
                             )
-                        ])
-                    ], className="mb-3", style={
-                        "box-shadow": "0 4px 8px 0 rgba(0,0,0,0.2)",
-                        "transition": "0.3s",
-                        "border-left": "5px solid #28a745"
+                        ], style={"padding": "0.75rem"})
+                    ], className="mb-2", style={
+                        "border-left": "4px solid #28a745"
                     }),
                     
                     # Step 5B: Redox Compatibility
                     dbc.Card([
                         dbc.CardHeader([
-                            html.H5("STEP 5B: REDOX COMPATIBILITY", className="mb-0 text-success")
-                        ], className="bg-light"),
+                            html.H6("STEP 5B: Redox Compatibility", className="mb-0 text-success", style={"fontSize": "0.9rem"})
+                        ], className="bg-light py-2"),
                         dbc.CardBody([
-                            html.P("Is Source Water Redox State Incompatible with Native Aquifer?", className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
+                            html.P("Is Source Water Redox State Incompatible with Native Aquifer?", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.9rem"}),
                             dcc.RadioItems(
                                 id="env-step5b-input",
                                 options=[
@@ -372,31 +515,31 @@ def create_water_quality_content():
                                     {'label': "HIGH RISK (Significant redox incompatibility, risk of Fe/Mn precipitation or As mobilization)", 'value': "HIGH RISK"},
                                 ],
                                 value=redox_compatibility_risk,
-                                className="d-flex flex-column",
-                                labelStyle={'display': 'block', 'margin-bottom': '8px'}
+                                className="d-flex flex-column small",
+                                labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.85rem'}
                             )
-                        ])
-                    ], className="mb-3", style={
-                        "box-shadow": "0 4px 8px 0 rgba(0,0,0,0.2)",
-                        "transition": "0.3s",
-                        "border-left": "5px solid #28a745"
+                        ], style={"padding": "0.75rem"})
+                    ], className="mb-2", style={
+                        "border-left": "4px solid #28a745"
                     }),
                 ]),
                 
                 # ========== GROUP 3: WATER-QUALITY COMPLIANCE ==========
                 html.Div([
-                    html.H4("3. Water-Quality Compliance", className="mb-3 mt-4 text-primary", style={
-                        "border-bottom": "3px solid #dc3545",
-                        "padding-bottom": "10px"
+                    html.H6("3. Water-Quality Compliance", className="mb-2 mt-2 text-primary fw-bold", style={
+                        "border-bottom": "2px solid #dc3545",
+                        "padding-bottom": "5px",
+                        "fontSize": "0.95rem"
                     }),
                     
                     # Step 4: Inorganic Contaminants
                     dbc.Card([
                         dbc.CardHeader([
-                            html.H5("STEP 4: INORGANIC CONTAMINANTS (CRITICAL CHECKPOINT)", className="mb-0 text-success")
-                        ], className="bg-light"),
+                            html.H6("STEP 4: Inorganic Contaminants (CRITICAL)", className="mb-0 text-success", style={"fontSize": "0.9rem"})
+                        ], className="bg-light py-2"),
                         dbc.CardBody([
-                            html.P("Are key Inorganic Contaminants above Regulatory Limits? (Arsenic (>10 µg/L), Nitrate (>50 mg/L as NO₃⁻), Heavy Metals: Pb, Cd, Cr, Hg (above drinking water limits), Fluoride (>1.5 mg/L), Selenium, Boron)", className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
+                            html.P("Are key Inorganic Contaminants above Regulatory Limits?", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.9rem"}),
+                            html.P("(Arsenic >10 µg/L, Nitrate >50 mg/L, Heavy Metals, Fluoride >1.5 mg/L, Selenium, Boron)", className="text-muted mb-2 small", style={"fontSize": "0.8rem"}),
                             dcc.RadioItems(
                                 id="env-step4-input",
                                 options=[
@@ -405,23 +548,22 @@ def create_water_quality_content():
                                     {'label': "HIGH RISK (≥100% of limit)", 'value': "HIGH RISK"},
                                 ],
                                 value=inorganic_contaminants_risk,
-                                className="d-flex flex-column",
-                                labelStyle={'display': 'block', 'margin-bottom': '8px'}
+                                className="d-flex flex-column small",
+                                labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.85rem'}
                             )
-                        ])
-                    ], className="mb-3", style={
-                        "box-shadow": "0 4px 8px 0 rgba(0,0,0,0.2)",
-                        "transition": "0.3s",
-                        "border-left": "5px solid #dc3545"
+                        ], style={"padding": "0.75rem"})
+                    ], className="mb-2", style={
+                        "border-left": "4px solid #dc3545"
                     }),
                     
                     # Step 5A: Emerging Contaminants
                     dbc.Card([
                         dbc.CardHeader([
-                            html.H5("STEP 5A: EMERGING CONTAMINANTS", className="mb-0 text-success")
-                        ], className="bg-light"),
+                            html.H6("STEP 5A: Emerging Contaminants", className="mb-0 text-success", style={"fontSize": "0.9rem"})
+                        ], className="bg-light py-2"),
                         dbc.CardBody([
-                            html.P("Are Emerging Contaminants Present at Risky Levels? (PFAS (>10-70 ng/L), Pharmaceuticals/Personal Care Products, Endocrine Disrupting Compounds, Pesticides/Herbicides (>regulatory limits), Microplastics)", className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
+                            html.P("Are Emerging Contaminants Present at Risky Levels?", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.9rem"}),
+                            html.P("(PFAS >10-70 ng/L, Pharmaceuticals, EDCs, Pesticides, Microplastics)", className="text-muted mb-2 small", style={"fontSize": "0.8rem"}),
                             dcc.RadioItems(
                                 id="env-step5a-input",
                                 options=[
@@ -430,23 +572,22 @@ def create_water_quality_content():
                                     {'label': "HIGH RISK (Multiple compounds >health guidance OR PFAS >100 ng/L)", 'value': "HIGH RISK"},
                                 ],
                                 value=emerging_contaminants_risk,
-                                className="d-flex flex-column",
-                                labelStyle={'display': 'block', 'margin-bottom': '8px'}
+                                className="d-flex flex-column small",
+                                labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.85rem'}
                             )
-                        ])
-                    ], className="mb-3", style={
-                        "box-shadow": "0 4px 8px 0 rgba(0,0,0,0.2)",
-                        "transition": "0.3s",
-                        "border-left": "5px solid #dc3545"
+                        ], style={"padding": "0.75rem"})
+                    ], className="mb-2", style={
+                        "border-left": "4px solid #dc3545"
                     }),
                     
                     # Step 6: Pathogen Risk
                     dbc.Card([
                         dbc.CardHeader([
-                            html.H5("STEP 6: PATHOGEN RISK (CRITICAL CHECKPOINT)", className="mb-0 text-success")
-                        ], className="bg-light"),
+                            html.H6("STEP 6: Pathogen Risk (CRITICAL)", className="mb-0 text-success", style={"fontSize": "0.9rem"})
+                        ], className="bg-light py-2"),
                         dbc.CardBody([
-                            html.P("Are pathogens present at risky levels? (Consider source type: wastewater > stormwater > surface water > groundwater)", className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
+                            html.P("Are pathogens present at risky levels?", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.9rem"}),
+                            html.P("(Consider source type: wastewater > stormwater > surface water > groundwater)", className="text-muted mb-2 small", style={"fontSize": "0.8rem"}),
                             dcc.RadioItems(
                                 id="env-step6-input",
                                 options=[
@@ -455,54 +596,51 @@ def create_water_quality_content():
                                     {'label': "HIGH RISK", 'value': "HIGH RISK"},
                                 ],
                                 value=pathogen_risk,
-                                className="d-flex flex-column",
-                                labelStyle={'display': 'block', 'margin-bottom': '8px'}
+                                className="d-flex flex-column small",
+                                labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.85rem'}
                             )
-                        ])
-                    ], className="mb-3", style={
-                        "box-shadow": "0 4px 8px 0 rgba(0,0,0,0.2)",
-                        "transition": "0.3s",
-                        "border-left": "5px solid #dc3545"
+                        ], style={"padding": "0.75rem"})
+                    ], className="mb-2", style={
+                        "border-left": "4px solid #dc3545"
                     }),
                     
                 ]),
                 
                 # ========== GROUP 4: NEED FOR REMEDIATION ==========
                 html.Div([
-                    html.H4("4. Need for Remediation", className="mb-3 mt-4 text-primary", style={
-                        "border-bottom": "3px solid #6f42c1",
-                        "padding-bottom": "10px"
+                    html.H6("4. Need for Remediation", className="mb-2 mt-2 text-primary fw-bold", style={
+                        "border-bottom": "2px solid #6f42c1",
+                        "padding-bottom": "5px",
+                        "fontSize": "0.95rem"
                     }),
                     
                     # Step 7: Vadose Zone Pollution
                     dbc.Card([
                         dbc.CardHeader([
-                            html.H5("STEP 7: VADOSE ZONE POLLUTION", className="mb-0 text-success")
-                        ], className="bg-light"),
+                            html.H6("STEP 7: Vadose Zone Pollution", className="mb-0 text-success", style={"fontSize": "0.9rem"})
+                        ], className="bg-light py-2"),
                         dbc.CardBody([
-                            html.P("Indicates presence of pollution in the vadose zone.", className="font-weight-bold text-primary", style={"fontSize": "1.15rem"}),
+                            html.P("Indicates presence of pollution in the vadose zone.", className="fw-bold text-primary mb-2 small", style={"fontSize": "0.9rem"}),
                             dcc.RadioItems(
                                 id="env-step7-input",
                                 options=[
                                     {'label': "None", 'value': "None"},
                                     {'label': "Yes, biodegradable Pollution", 'value': "Yes, biodegradable Pollution"},
-                                    {'label': "Yes, highly toxic contaminants in the vadose zone (e.g., heavy metals, volatile organic compounds, radioactive materials)", 'value': "Yes, highly toxic contaminants in the vadose zone (e.g., heavy metals, volatile organic compounds, radioactive materials)"},
+                                    {'label': "Yes, highly toxic contaminants (e.g., heavy metals, VOCs, radioactive materials)", 'value': "Yes, highly toxic contaminants in the vadose zone (e.g., heavy metals, volatile organic compounds, radioactive materials)"},
                                 ],
                                 value=vadose_zone_pollution,
-                                className="d-flex flex-column",
-                                labelStyle={'display': 'block', 'margin-bottom': '8px'}
+                                className="d-flex flex-column small",
+                                labelStyle={'display': 'block', 'margin-bottom': '4px', 'fontSize': '0.85rem'}
                             )
-                        ])
-                    ], className="mb-3", style={
-                        "box-shadow": "0 4px 8px 0 rgba(0,0,0,0.2)",
-                        "transition": "0.3s",
-                        "border-left": "5px solid #6f42c1"
+                        ], style={"padding": "0.75rem"})
+                    ], className="mb-2", style={
+                        "border-left": "4px solid #6f42c1"
                     }),
                 ]),
                 
-                html.Hr(),
-                # Appendix / Detailed Treatment Table (moved under input cards)
-                html.H3("APPENDIX: Treatment Cost Summary Table", className="mt-3 mb-3 text-dark"),
+                html.Hr(className="my-2"),
+                # Appendix / Detailed Treatment Table - Compact
+                html.H6("Treatment Cost Summary Table", className="mt-2 mb-2 text-dark", style={"fontSize": "0.95rem"}),
                 html.Div(
                     dash_table.DataTable(
                         id='env-treatment-appendix-table',
@@ -510,14 +648,16 @@ def create_water_quality_content():
                         data=TREATMENT_DF.to_dict('records'),
                         style_header={
                             'backgroundColor': '#f8f9fa',
-                            'fontWeight': 'bold'
+                            'fontWeight': 'bold',
+                            'fontSize': '11px'
                         },
                         style_cell={
                             'textAlign': 'left',
-                            'minWidth': '80px', 'width': '120px', 'maxWidth': '240px',
+                            'minWidth': '70px', 'width': '100px', 'maxWidth': '200px',
                             'whiteSpace': 'normal',
                             'border': '1px solid #dee2e6',
-                            'fontSize': '13px'
+                            'fontSize': '11px',
+                            'padding': '5px'
                         },
                         style_header_conditional=[
                             {'if': {'column_id': 'Treatment Technology'}, 'backgroundColor': '#e3f2fd', 'color': '#0d47a1'},
@@ -535,70 +675,68 @@ def create_water_quality_content():
                         ],
                         export_format='csv'
                     ),
-                    className="mb-4",
+                    className="mb-2",
                     style={
-                        "maxWidth": "760px",
+                        "maxWidth": "100%",
                         "overflowX": "auto"
                     }
                 )
-            ], width=12, lg=8, style={
-                "max-height": "calc(100vh - 200px)",
+            ], width=12, lg=7, style={
+                "max-height": "calc(100vh - 150px)",
                 "overflow-y": "auto",
                 "overflow-x": "hidden",
                 "padding-right": "10px"
             }),
             
-            # Right Column for Outputs (Results, Score, Treatment)
+            # Right Column for Outputs (Results, Score, Treatment) - Compact
             dbc.Col([
-                # Score Tally and Cost Gauge (Side by Side) - Moved to top
-                html.H4("Risk Score & Treatment Cost", className="mb-3 text-info"),
+                # Score Tally and Cost Gauge (Side by Side) - Compact
+                html.H6("Risk Score & Treatment Cost", className="mb-2 text-info", style={"fontSize": "0.95rem"}),
                 dbc.Row([
                     dbc.Col([
-                        html.H5("Risk Score", className="text-center mb-2", style={"fontSize": "1rem"}),
+                        html.P("Risk Score", className="text-center mb-1 small fw-bold", style={"fontSize": "0.85rem"}),
                         dcc.Graph(
                             id='env-score-gauge', 
                             config={'displayModeBar': False, 'responsive': True},
-                            style={'height': '250px', 'width': '100%', 'minHeight': '250px'}
+                            style={'height': '200px', 'width': '100%', 'minHeight': '200px'}
                         ),
                     ], width=6),
                     dbc.Col([
-                        html.H5("Water Treatment Cost", className="text-center mb-2", style={"fontSize": "1rem"}),
+                        html.P("Treatment Cost", className="text-center mb-1 small fw-bold", style={"fontSize": "0.85rem"}),
                         dcc.Graph(
                             id='env-cost-gauge', 
                             config={'displayModeBar': False, 'responsive': True},
-                            style={'height': '250px', 'width': '100%', 'minHeight': '250px'}
+                            style={'height': '200px', 'width': '100%', 'minHeight': '200px'}
                         ),
                     ], width=6),
-                ], className="mb-4"),
+                ], className="mb-2"),
                 
-                html.H3("Final Assessment Output", className="mb-4 text-danger"),
+                html.H6("Final Assessment", className="mb-2 text-danger", style={"fontSize": "0.95rem"}),
                 
                 # Final Decision Box
-                html.Div(id='env-final-decision-output', className="mb-4"),
+                html.Div(id='env-final-decision-output', className="mb-2"),
                 
                 # Risk Score Details
-                html.H5("Risk Score Details", className="mt-3 mb-2 text-info", style={"fontSize": "1.1rem"}),
-                html.Div(id='env-score-details-output', className="alert alert-light border mb-3"),
+                html.H6("Risk Score Details", className="mt-2 mb-1 text-info small", style={"fontSize": "0.85rem"}),
+                html.Div(id='env-score-details-output', className="alert alert-light border mb-2 small", style={"padding": "0.5rem", "fontSize": "0.8rem"}),
                 
                 # Cost Details
-                html.H5("Cost Details", className="mt-3 mb-2 text-info", style={"fontSize": "1.1rem"}),
-                html.Div(id='env-cost-details-output', className="alert alert-light border mb-3"),
+                html.H6("Cost Details", className="mt-2 mb-1 text-info small", style={"fontSize": "0.85rem"}),
+                html.Div(id='env-cost-details-output', className="alert alert-light border mb-2 small", style={"padding": "0.5rem", "fontSize": "0.8rem"}),
                 
-                html.Hr(),
+                html.Hr(className="my-2"),
                 
                 # Treatment Recommendations
-                html.H4("🛠️ Required Treatment & Recommendations", className="mt-4 mb-3 text-info"),
-                html.Div(id='env-treatment-summary-output', className="mb-4"),
-                html.H5("Specific Recommendations by Risk Factor", className="mt-4 text-secondary"),
-                html.Ul(id='env-recommendations-list', className="list-group"),
-            ], width=12, lg=4, style={
+                html.H6("Required Treatment & Recommendations", className="mt-2 mb-2 text-info", style={"fontSize": "0.95rem"}),
+                html.Div(id='env-treatment-summary-output', className="mb-2"),
+                html.H6("Recommendations by Risk Factor", className="mt-2 mb-1 text-secondary small", style={"fontSize": "0.85rem"}),
+                html.Ul(id='env-recommendations-list', className="list-group small", style={"fontSize": "0.8rem"}),
+            ], width=12, lg=5, style={
                 "position": "sticky",
                 "top": "20px",
                 "align-self": "start"
             }),
         ]),
-        
-        # Removed bottom appendix; moved under Assessment Inputs column
     ]
 
 
@@ -661,82 +799,14 @@ def create_environmental_considerations_content():
                                     placeholder="Enter location (e.g., City, State or City, Country)",
                                     className="mb-3"
                                 ),
-                            ], width=12)
+                            ], width=12, md=6),
                         ]),
                         
-                        # Results table with loading indicator
-                        dcc.Loading(
-                            id="mar-factors-loading",
-                            type="default",
-                            children=html.Div(id="mar-factors-table-container", className="mt-4")
-                        )
+                        # Output section
+                        html.Div(id="mar-factors-output", className="mt-4")
                     ])
                 ])
-            ], width=12, md=6),
-            dbc.Col([
-                dbc.Card([
-                    dbc.CardHeader("AI model settings", className="fw-bold bg-info text-white"),
-                    dbc.CardBody([
-                        html.Div([
-                            html.P([
-                                html.Strong("(1) "),
-                                "To use the Gemini AI model, an API key is required. Go to ",
-                                html.A("Google AI Studio", href="https://aistudio.google.com/", target="_blank", className="text-primary"),
-                                " and click \"Create API Key\" to generate one."
-                            ], className="mb-3"),
-                            dcc.Upload(
-                                id="api-key-upload",
-                                children=html.Div([
-                                    html.A("Upload API Key File", className="btn btn-outline-primary btn-sm")
-                                ]),
-                                style={
-                                    "width": "100%",
-                                    "height": "40px",
-                                    "lineHeight": "40px",
-                                    "borderWidth": "1px",
-                                    "borderStyle": "dashed",
-                                    "borderRadius": "5px",
-                                    "textAlign": "center",
-                                    "marginBottom": "20px"
-                                },
-                                multiple=False
-                            ),
-                            html.P([
-                                html.Strong("(2) "),
-                                "Choose Gemini Model"
-                            ], className="mb-2"),
-                            dcc.Dropdown(
-                                id="gemini-model-dropdown",
-                                options=[
-                                    {"label": "gemini-2.5-pro", "value": "gemini-2.5-pro"},
-                                    {"label": "gemini-2.5-flash", "value": "gemini-2.5-flash"}
-                                ],
-                                value="gemini-2.5-flash",
-                                clearable=False,
-                                style={"marginBottom": "20px"}
-                            ),
-                            html.P([
-                                html.Strong("(3) "),
-                                "Temperature: Controls randomness."
-                            ], className="mb-2"),
-                            dcc.Slider(
-                                id="temperature-slider",
-                                min=0,
-                                max=1,
-                                step=0.1,
-                                value=0.5,
-                                marks={
-                                    0: "0",
-                                    0.5: "0.5",
-                                    1: "1"
-                                },
-                                tooltip={"placement": "bottom", "always_visible": True}
-                            ),
-                            html.Div(id="temperature-value-display", className="mt-2 mb-3", style={"fontSize": "0.9rem", "color": "#6c757d"})
-                        ])
-                    ])
-                ])
-            ], width=12, md=6)
+            ], width=12)
         ])
     ]
 
@@ -751,7 +821,7 @@ def create_environmental_impact_content():
                 children=create_water_quality_content()
             ),
             dbc.Tab(
-                label="(4.2) AI-Powered Feasibility",
+                label="4.2 Environmental Considerations",
                 tab_id="environmental-considerations-tab",
                 children=create_environmental_considerations_content()
             )

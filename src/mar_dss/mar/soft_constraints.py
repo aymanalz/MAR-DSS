@@ -19,6 +19,7 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     constraints = []
     graph = data_storage.get_data("decision_graph")
     aquifer_type = graph.get_node_value('aq_type') # ['Unconfined', 'Confined', 'Semi-confined', 'Karstic', 'Fractured', 'Other']
+    water_source = data_storage.get_data("water_source")
     
     
     # ==================================================================
@@ -262,6 +263,27 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     constraints.append(leakage_significance_metric)
 
     # ==================================================================
+    # land use
+    # ==================================================================
+    land_use = data_storage.get_data("land_use")
+    if land_use in ["Urban Residential", "Urban Nonresidential"]:
+        if option.name in ["Spreading Basins"]:
+            land_use_response = 1
+            land_use_penalty.append("Cost: Land cost increase in urban areas. Check zoning requirements and land use regulations.")
+        else:
+            land_use_response = 0
+            land_use_penalty = []
+
+    land_use_constraint = {
+        "name": "Land Use",
+        "response": land_use_response,
+        "penalty": land_use_penalty,
+        "type": "hydrogeologic",
+        "hard": True if "Land Use" in hardend_constraints else False
+    }
+    constraints.append(land_use_constraint)
+
+    # ==================================================================
     # Environmental Assessment Constraints (based on Water Quality & Geochemistry tab)
     # ==================================================================
     
@@ -276,7 +298,17 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     redox_compatibility_risk = data_storage.get_data("redox_compatibility_risk") or "LOW RISK"
     pathogen_risk = data_storage.get_data("pathogen_risk") or "LOW RISK"
     vadose_zone_pollution = data_storage.get_data("vadose_zone_pollution") or "None"
-    
+
+    # if land_use in ["Urban Residential", "Urban Nonresidential"]:
+    #     if water_source in ["Urban Stormwater Runoff"]:
+    #         environmental_assessment_response = 1
+    #         environmental_assessment_penalty.append("Cost: Environmental assessment cost increase in urban areas. Check zoning requirements and land use regulations.")
+    #     else:
+    #         environmental_assessment_response = 0
+    #         environmental_assessment_penalty = []
+
+ 
+
     # ==================================================================
     # 1. Clogging & Fouling Risks (Group 1)
     # ==================================================================
@@ -388,6 +420,7 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
         if not water_quality_compliance_penalty:
             water_quality_compliance_penalty.append("Mitigation + Cost: Moderate pathogen risk - disinfection required")
     
+
     water_quality_compliance_constraint = {
         "name": "Water-Quality Compliance",
         "response": water_quality_compliance_response,
@@ -555,6 +588,9 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
             "hard": True if "Site Feasibility Regulatory Compliance" in hardend_constraints else False
         }
         constraints.append(group_a_constraint)
+
+        
+        
         
         # ==================================================================
         # Group B: Water Source Feasibility (1 constraint)

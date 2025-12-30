@@ -106,21 +106,21 @@ def _get_empty_dashboard_content():
     empty_capital_fig.update_layout(
         title="Capital Cost",
         template="plotly_white",
-        height=280
+        height=300
     )
     
     empty_maintenance_fig = go.Figure()
     empty_maintenance_fig.update_layout(
         title="Maintenance Cost",
         template="plotly_white",
-        height=280
+        height=300
     )
     
     empty_npv_fig = go.Figure()
     empty_npv_fig.update_layout(
         title="NPV (20 years)",
         template="plotly_white",
-        height=280
+        height=300
     )
     
     empty_spider_plots = html.Div(
@@ -791,7 +791,7 @@ def _create_cost_chart(option_names, values, title, color):
         xaxis_title="Options",
         yaxis_title="Cost ($)",
         template="plotly_white",
-        height=280,
+        height=300,
         autosize=False,
         margin=dict(l=50, r=20, t=40, b=50),
         showlegend=False,
