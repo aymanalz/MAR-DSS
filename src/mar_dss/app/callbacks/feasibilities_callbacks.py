@@ -500,47 +500,63 @@ def _create_constraints_heatmap(results, filters, constraint_type=None, title=No
         )
         return heatmap_fig, html.Div()
     
-    # Prepare data for Plotly heatmap
-    z_data = []
-    text_data = []
+    # Get all option names from results to ensure consistent y-axis across all heatmaps
+    all_option_names = list(results.keys())
+    
+    # Prepare data for measles chart (scatter plot with circles)
+    x_data = []  # Constraint names
+    y_data = []  # Option names
+    response_levels = []  # Response levels for coloring
+    marker_sizes = []  # Marker sizes (fixed or based on response level)
+    hover_texts = []  # Hover text
     
     for option_name in option_names:
-        row = []
-        text_row = []
         for constraint_name in sorted_constraints:
             response_level = constraint_data[option_name].get(constraint_name, 0)
-            row.append(response_level)
-            text_row.append(str(response_level))
-        z_data.append(row)
-        text_data.append(text_row)
+            x_data.append(constraint_name)
+            y_data.append(option_name)
+            response_levels.append(response_level)
+            # Fixed marker size, or could vary based on response level
+            marker_sizes.append(40)  # Doubled from 20
+            hover_texts.append(f'{option_name}<br>{constraint_name}<br>Response Level: {response_level}')
     
-    # Create Plotly heatmap
-    heatmap_fig = go.Figure(data=go.Heatmap(
-        z=z_data,
-        x=sorted_constraints,
-        y=option_names,
-        text=text_data,
-        texttemplate='%{text}',
-        textfont={"size": 14, "color": "white"},
-        colorscale=[
-            [0, "#28a745"],    # Dark Green for 0
-            [0.2, "#90ee90"],  # Light Green for 1
-            [0.4, "#ffc107"],  # Yellow/Gold for 2
-            [0.6, "#fd7e14"],  # Orange for 3
-            [1.0, "#dc3545"]   # Red for 4
-        ],
-        zmin=0,
-        zmax=4,
-        showscale=True,
-        colorbar=dict(
-            title=dict(text="Response Level"),
-            tickmode="array",
-            tickvals=[0, 1, 2, 3, 4],
-            ticktext=["0", "1", "2", "3", "4"]
+    # Create color mapping for response levels
+    color_map = {
+        0: "#28a745",    # Dark Green
+        1: "#90ee90",    # Light Green
+        2: "#ffc107",    # Yellow/Gold
+        3: "#fd7e14",    # Orange
+        4: "#dc3545"     # Red
+    }
+    
+    # Map response levels to colors
+    marker_colors = [color_map.get(level, "#cccccc") for level in response_levels]
+    
+    # Create scatter plot (measles chart) with circles
+    heatmap_fig = go.Figure()
+    
+    # Add scatter trace for circles (measles chart)
+    heatmap_fig.add_trace(go.Scatter(
+        x=x_data,
+        y=y_data,
+        mode='markers+text',
+        marker=dict(
+            size=marker_sizes,
+            color=marker_colors,
+            line=dict(width=1.5, color='white'),
+            sizemode='diameter',
+            opacity=0.9
         ),
-        hovertemplate='<b>%{y}</b><br>%{x}<br>Response Level: %{z}<extra></extra>'
+        text=[str(level) for level in response_levels],
+        textposition='middle center',
+        textfont=dict(size=11, color='white', family='Arial, sans-serif'),
+        hovertemplate='<b>%{customdata[0]}</b><br>%{x}<br>Response Level: %{customdata[1]}<extra></extra>',
+        customdata=[[y_data[i], response_levels[i]] for i in range(len(y_data))],
+        showlegend=False
     ))
     
+    # Use categorical axes to ensure consistent spacing across all heatmaps
+    # Both x and y axes are categorical to prevent layout shifts
     heatmap_fig.update_layout(
         title=title,
         xaxis_title="Constraints",
@@ -548,9 +564,23 @@ def _create_constraints_heatmap(results, filters, constraint_type=None, title=No
         template="plotly_white",
         height=400,
         autosize=False,
-        margin=dict(l=100, r=50, t=50, b=50),
-        xaxis=dict(side="bottom"),
-        yaxis=dict(autorange="reversed")
+        margin=dict(l=100, r=50, t=50, b=150),  # Increased bottom margin for rotated labels
+        xaxis=dict(
+            type='category',  # Categorical x-axis for consistent spacing
+            side="bottom",
+            tickangle=-45,  # Rotate constraint labels for better readability
+            showgrid=True,
+            gridcolor='lightgray'
+        ),
+        yaxis=dict(
+            type='category',  # Use categorical axis for consistent spacing
+            categoryorder='array',
+            categoryarray=all_option_names[::-1],  # Reversed for top-to-bottom order
+            showgrid=True,
+            gridcolor='lightgray',
+            fixedrange=True  # Prevent zoom/pan that could affect spacing
+        ),
+        plot_bgcolor='white'
     )
     
     # Create legend
@@ -562,11 +592,12 @@ def _create_constraints_heatmap(results, filters, constraint_type=None, title=No
                         "",
                         style={
                             "display": "inline-block",
-                            "width": "25px",
-                            "height": "25px",
+                            "width": "20px",
+                            "height": "20px",
                             "backgroundColor": _get_response_color(0),
                             "marginRight": "8px",
-                            "border": "1px solid #ccc",
+                            "border": "1px solid white",
+                            "borderRadius": "50%",  # Make it a circle
                             "verticalAlign": "middle"
                         }
                     ),
@@ -575,11 +606,12 @@ def _create_constraints_heatmap(results, filters, constraint_type=None, title=No
                         "",
                         style={
                             "display": "inline-block",
-                            "width": "25px",
-                            "height": "25px",
+                            "width": "20px",
+                            "height": "20px",
                             "backgroundColor": _get_response_color(1),
                             "marginRight": "8px",
-                            "border": "1px solid #ccc",
+                            "border": "1px solid white",
+                            "borderRadius": "50%",  # Make it a circle
                             "verticalAlign": "middle"
                         }
                     ),
@@ -588,11 +620,12 @@ def _create_constraints_heatmap(results, filters, constraint_type=None, title=No
                         "",
                         style={
                             "display": "inline-block",
-                            "width": "25px",
-                            "height": "25px",
+                            "width": "20px",
+                            "height": "20px",
                             "backgroundColor": _get_response_color(2),
                             "marginRight": "8px",
-                            "border": "1px solid #ccc",
+                            "border": "1px solid white",
+                            "borderRadius": "50%",  # Make it a circle
                             "verticalAlign": "middle"
                         }
                     ),
@@ -601,11 +634,12 @@ def _create_constraints_heatmap(results, filters, constraint_type=None, title=No
                         "",
                         style={
                             "display": "inline-block",
-                            "width": "25px",
-                            "height": "25px",
+                            "width": "20px",
+                            "height": "20px",
                             "backgroundColor": _get_response_color(3),
                             "marginRight": "8px",
-                            "border": "1px solid #ccc",
+                            "border": "1px solid white",
+                            "borderRadius": "50%",  # Make it a circle
                             "verticalAlign": "middle"
                         }
                     ),
@@ -614,11 +648,12 @@ def _create_constraints_heatmap(results, filters, constraint_type=None, title=No
                         "",
                         style={
                             "display": "inline-block",
-                            "width": "25px",
-                            "height": "25px",
+                            "width": "20px",
+                            "height": "20px",
                             "backgroundColor": _get_response_color(4),
                             "marginRight": "8px",
-                            "border": "1px solid #ccc",
+                            "border": "1px solid white",
+                            "borderRadius": "50%",  # Make it a circle
                             "verticalAlign": "middle"
                         }
                     ),
