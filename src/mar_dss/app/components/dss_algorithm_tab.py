@@ -1,92 +1,213 @@
 """
 DSS Algorithm tab content for MAR DSS dashboard.
+Multi-Criteria Decision Support System (MCDSS).
 """
 
 import dash_bootstrap_components as dbc
-import numpy as np
-import pandas as pd
-import plotly.graph_objects as go
 from dash import dcc, html
 
 
 def create_dss_algorithm_content():
-    """Create content for DSS Algorithm sidebar tab."""
-    # Generate sample data
-    dates = pd.date_range(start="2023-01-01", end="2023-12-31", freq="D")
-    water_levels = np.random.normal(100, 10, len(dates)) + 5 * np.sin(
-        np.arange(len(dates)) * 2 * np.pi / 365
-    )
-
-    fig = go.Figure()
-    fig.add_trace(
-        go.Scatter(
-            x=dates,
-            y=water_levels,
-            mode="lines+markers",
-            name="Water Level",
-            line=dict(color="#1f77b4", width=2),
-            marker=dict(size=4),
-        )
-    )
-
-    fig.update_layout(
-        title="Water Level Monitoring",
-        xaxis_title="Date",
-        yaxis_title="Water Level (m)",
-        hovermode="x unified",
-        template="plotly_white",
-    )
-
+    """Create content for DSS Algorithm tab."""
     return html.Div(
         [
-            html.H3("DSS Algorithm Analysis"),
-            html.P(
-                "Advanced decision support algorithms for MAR project evaluation."
+            # Compact header with description
+            dbc.Row(
+                dbc.Col(
+                    html.P(
+                        "Weighted sum multi-criteria decision analysis (MCDA) to rank MAR options. "
+                        "Adjust weights to reflect the relative importance of each criterion.",
+                        className="text-muted mb-3 small"
+                    ),
+                    width=12
+                )
             ),
-            dcc.Graph(figure=fig),
-            html.Hr(),
-            html.H5("Algorithm Parameters:"),
+            # Weights in compact grid
             dbc.Row(
                 [
                     dbc.Col(
                         [
-                            html.Label("Algorithm Type:"),
-                            dbc.Select(
-                                options=[
-                                    {
-                                        "label": "Multi-Criteria Decision Analysis",
-                                        "value": "mcda",
-                                    },
-                                    {"label": "Fuzzy Logic", "value": "fuzzy"},
-                                    {
-                                        "label": "Neural Network",
-                                        "value": "neural",
-                                    },
-                                    {
-                                        "label": "Genetic Algorithm",
-                                        "value": "genetic",
-                                    },
-                                ],
-                                value="mcda",
-                            ),
+                            html.Label("Hydrogeologic", className="small fw-bold mb-1"),
+                            dbc.Input(
+                                id="weight-hydrogeologic",
+                                type="number",
+                                value=1.0,
+                                min=0,
+                                max=10,
+                                step=0.1,
+                                size="sm"
+                            )
                         ],
-                        width=6,
+                        width=2
                     ),
                     dbc.Col(
                         [
-                            html.Label("Confidence Level:"),
-                            dbc.Input(type="number", value=85, min=0, max=100),
+                            html.Label("Environmental", className="small fw-bold mb-1"),
+                            dbc.Input(
+                                id="weight-environmental",
+                                type="number",
+                                value=1.0,
+                                min=0,
+                                max=10,
+                                step=0.1,
+                                size="sm"
+                            )
                         ],
-                        width=6,
+                        width=2
                     ),
+                    dbc.Col(
+                        [
+                            html.Label("Regulation", className="small fw-bold mb-1"),
+                            dbc.Input(
+                                id="weight-regulation",
+                                type="number",
+                                value=1.0,
+                                min=0,
+                                max=10,
+                                step=0.1,
+                                size="sm"
+                            )
+                        ],
+                        width=2
+                    ),
+                    dbc.Col(
+                        [
+                            html.Label("Capital Cost Eff.", className="small fw-bold mb-1"),
+                            dbc.Input(
+                                id="weight-capital-cost",
+                                type="number",
+                                value=1.0,
+                                min=0,
+                                max=10,
+                                step=0.1,
+                                size="sm"
+                            )
+                        ],
+                        width=2
+                    ),
+                    dbc.Col(
+                        [
+                            html.Label("Maint. Cost Eff.", className="small fw-bold mb-1"),
+                            dbc.Input(
+                                id="weight-maintenance-cost",
+                                type="number",
+                                value=1.0,
+                                min=0,
+                                max=10,
+                                step=0.1,
+                                size="sm"
+                            )
+                        ],
+                        width=2
+                    ),
+                    dbc.Col(
+                        [
+                            html.Label("NPV Efficiency", className="small fw-bold mb-1"),
+                            dbc.Input(
+                                id="weight-npv",
+                                type="number",
+                                value=1.0,
+                                min=0,
+                                max=10,
+                                step=0.1,
+                                size="sm"
+                            )
+                        ],
+                        width=2
+                    )
                 ],
-                className="mb-3",
+                className="mb-3"
             ),
-            html.H5("Results:"),
-            html.P(
-                "The DSS algorithm has analyzed your MAR project parameters and generated comprehensive recommendations based on multi-criteria decision analysis."
+            # Main content row: Decision Matrix and Results side by side
+            dbc.Row(
+                [
+                    # Decision Matrix - Left side
+                    dbc.Col(
+                        [
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader(
+                                        "Decision Matrix",
+                                        className="fw-bold text-white py-2",
+                                        style={"backgroundColor": "#1e3a5f", "fontSize": "0.9rem"}
+                                    ),
+                                    dbc.CardBody(
+                                        id="dss-decision-matrix-table",
+                                        children=[
+                                            html.Div(
+                                                "Loading decision matrix...",
+                                                className="text-center text-muted p-2 small"
+                                            )
+                                        ],
+                                        style={"maxHeight": "400px", "overflowY": "auto", "padding": "0.5rem"}
+                                    )
+                                ],
+                                className="h-100"
+                            )
+                        ],
+                        width=7
+                    ),
+                    # Results - Right side (compact)
+                    dbc.Col(
+                        [
+                            # Ranking card
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader(
+                                        "Ranking",
+                                        className="fw-bold text-white py-2",
+                                        style={"backgroundColor": "#1e3a5f", "fontSize": "0.9rem"}
+                                    ),
+                                    dbc.CardBody(
+                                        id="dss-ranking",
+                                        style={"padding": "0.5rem", "maxHeight": "200px", "overflowY": "auto"}
+                                    )
+                                ],
+                                className="mb-2"
+                            ),
+                            # Weighted Scores card
+                            dbc.Card(
+                                [
+                                    dbc.CardHeader(
+                                        "Weighted Scores",
+                                        className="fw-bold text-white py-2",
+                                        style={"backgroundColor": "#1e3a5f", "fontSize": "0.9rem"}
+                                    ),
+                                    dbc.CardBody(
+                                        id="dss-weighted-scores",
+                                        style={"padding": "0.5rem", "maxHeight": "180px", "overflowY": "auto"}
+                                    )
+                                ]
+                            )
+                        ],
+                        width=5
+                    )
+                ],
+                className="mb-3"
             ),
-        ]
+            # Visualization row
+            dbc.Row(
+                dbc.Col(
+                    [
+                        dbc.Card(
+                            [
+                                dbc.CardHeader(
+                                    "Weighted Scores Visualization",
+                                    className="fw-bold text-white py-2",
+                                    style={"backgroundColor": "#1e3a5f", "fontSize": "0.9rem"}
+                                ),
+                                dbc.CardBody(
+                                    [
+                                        dcc.Graph(id="dss-sensitivity-chart", config={"displayModeBar": False})
+                                    ],
+                                    style={"padding": "0.5rem"}
+                                )
+                            ]
+                        )
+                    ],
+                    width=12
+                )
+            )
+        ],
+        style={"padding": "0.5rem"}
     )
-
-

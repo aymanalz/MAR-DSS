@@ -134,6 +134,15 @@ class DashboardApp:
         except ImportError:
             from .callbacks.cost_callbacks import setup_cost_callbacks
         setup_cost_callbacks(self.app)
+        
+        # Setup DSS Algorithm callbacks
+        try:
+            from mar_dss.app.callbacks.dss_algorithm_callbacks import (
+                setup_dss_algorithm_callbacks,
+            )
+        except ImportError:
+            from .callbacks.dss_algorithm_callbacks import setup_dss_algorithm_callbacks
+        setup_dss_algorithm_callbacks(self.app)
 
     def create_sample_data(self):
         """Create sample data for demonstration."""
