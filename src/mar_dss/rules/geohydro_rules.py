@@ -193,7 +193,8 @@ def compute_spread_area(k_min_vadose, max_available_area, gw_depth, source_water
     t = 50 # long time for near steady state
 
     # todo: Talk to run to check if the average is the best way to estimate the spread area.
-    spread_area = (np.max(source_water_volume)/30.25) / (k_min_vadose)
+    vol_max_available = (np.max(source_water_volume)/30.25)
+    spread_area =  vol_max_available / (k_min_vadose)
     
     # Iterative calculation to find appropriate spread area
     max_iterations = 100  # Safety limit
@@ -209,8 +210,14 @@ def compute_spread_area(k_min_vadose, max_available_area, gw_depth, source_water
         #     infl_rate = k_min_vadose
         #     break
 
-        if infl_rate < k_min_vadose:
-            spread_area = spread_area * infl_rate/k_min_vadose
+        vol = spread_area * infl_rate
+        if (infl_rate < k_min_vadose):  
+           if vol<vol_max_available:
+                spread_area = spread_area * k_min_vadose/infl_rate
+                
+           else:
+                spread_area = spread_area * infl_rate/k_min_vadose
+           spread_area = min(spread_area, max_available_area)
         else:
             # If spread area is too large, reduce it
             spread_area = spread_area * infl_rate/ k_min_vadose 
@@ -219,14 +226,14 @@ def compute_spread_area(k_min_vadose, max_available_area, gw_depth, source_water
             
         iteration += 1
 
-        if abs(infl_rate - k_min_vadose) < 1e-5:
+        if (infl_rate <= k_min_vadose) and (vol/vol_max_available >= 0.95):
             break
     
     # Ensure we don't exceed max available area
     if spread_area > max_available_area:
             spread_area = max_available_area
-    if infl_rate > k_min_vadose:
-        infl_rate = k_min_vadose
+    # if infl_rate > k_min_vadose:
+    #     infl_rate = k_min_vadose
             
     return {"spread_area": spread_area, "infl_rate": infl_rate, "inf_k_ratio": infl_rate/k_min_vadose}
 

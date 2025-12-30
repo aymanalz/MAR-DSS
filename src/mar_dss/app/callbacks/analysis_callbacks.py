@@ -167,12 +167,14 @@ def get_graph_inputs():
         inputs["aq_type"] = dash_storage.get_data("aquifer_type")
         
         # Max infiltration area with validation
-        max_infiltration_area = dash_storage.get_data("max_infiltration_area")
-        if max_infiltration_area is None:
-            max_infiltration_area = 1e7
+        max_infiltration_area_percent = dash_storage.get_data("max_infiltration_area")
+        max_available_area = dash_storage.get_data("max_available_area")
+
+        if max_available_area is None:
+            max_available_area = 1e7
         else:
             try:
-                max_infiltration_area = float(max_infiltration_area)
+                max_infiltration_area = float(max_infiltration_area_percent) * float(max_available_area)
             except (ValueError, TypeError):
                 logger.warning(f"Invalid max_infiltration_area: {max_infiltration_area}, using default")
                 max_infiltration_area = 1e7

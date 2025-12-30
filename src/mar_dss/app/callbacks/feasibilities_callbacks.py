@@ -13,34 +13,42 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def _ensure_dss_results_available(top_tab):
+def _ensure_dss_results_available():
     """Ensure DSS results are available, running analysis if needed.
     
     This function ensures that Analysis tab callbacks have run before
     Feasibilities tab tries to access the results.
     """
-    # If Analysis tab is accessed, ensure feasibility analysis has run first
-    if top_tab == "analysis":
-        logger.debug("Analysis tab accessed - ensuring feasibility analysis has run")
+    # First check if DSS results already exist
+    dss_results = dash_storage.get_data("dss_results")
+    has_dss_results = (dss_results is not None and 
+                      hasattr(dss_results, 'results') and 
+                      dss_results.results)
+    
+    # Only run analysis if results don't exist
+    if not has_dss_results:
+        logger.debug("No DSS results found - running feasibility analysis")
         try:
             from mar_dss.app.callbacks.analysis_callbacks import run_feasibility_analysis
             run_feasibility_analysis()
             logger.debug("Feasibility analysis completed")
         except Exception as e:
             logger.error(f"Error running feasibility analysis: {e}", exc_info=True)
-    
-    # Get DSS results from storage
-    dss_results = dash_storage.get_data("dss_results")
-    
-    # If no DSS results exist after running analysis, try running integrated analysis directly
-    if dss_results is None or not hasattr(dss_results, 'results') or not dss_results.results:
-        logger.info("No DSS results found. Running integrated analysis directly...")
-        try:
-            from mar_dss.app.callbacks.analysis_callbacks import run_integrated_analysis
-            dss_results, _ = run_integrated_analysis()
-            logger.info("Integrated analysis completed successfully")
-        except Exception as e:
-            logger.error(f"Error running integrated analysis: {e}", exc_info=True)
+        
+        # Get DSS results after running analysis
+        dss_results = dash_storage.get_data("dss_results")
+        
+        # If still no results, try running integrated analysis directly
+        if dss_results is None or not hasattr(dss_results, 'results') or not dss_results.results:
+            logger.info("No DSS results found after feasibility analysis. Running integrated analysis directly...")
+            try:
+                from mar_dss.app.callbacks.analysis_callbacks import run_integrated_analysis
+                dss_results, _ = run_integrated_analysis()
+                logger.info("Integrated analysis completed successfully")
+            except Exception as e:
+                logger.error(f"Error running integrated analysis: {e}", exc_info=True)
+    else:
+        logger.debug("DSS results already available - skipping analysis")
     
     return dss_results
 
@@ -760,30 +768,29 @@ def setup_feasibilities_callbacks(app):
          Output("regulation-constraints-heatmap-legend", "children"),
          Output("capital-cost-chart", "figure"),
          Output("maintenance-cost-chart", "figure"),
-         Output("npv-cost-chart", "figure")],
-        [Input("top-tabs", "active_tab"),
-         Input("analysis-tabs", "active_tab"),
-         Input("knowledge-graph-store", "data")],
+         Output("npv-cost-chart", "figure"),
+         Output("spider-plots-container", "children")],
+        [Input("analysis-tabs", "active_tab")],
         prevent_initial_call=False
     )
-    def update_feasibilities_dashboard(top_tab, active_tab, graph_store):
+    def update_feasibilities_dashboard(active_tab):
         """Update Executive Summary and Decision Funnel based on DSS results.
         
         This callback depends on Analysis tab callbacks completing first.
-        When Analysis tab is accessed, it initializes the graph and runs feasibility analysis.
-        This callback then uses those results to populate the Feasibilities dashboard.
+        When Feasibilities tab is accessed, it ensures analysis has run and then
+        displays the results.
         
         Execution order:
         1. Analysis tab callbacks run (initialize graph, run feasibility analysis)
-        2. This callback runs and ensures analysis has completed
+        2. This callback runs when Feasibilities sub-tab is selected
         3. Then it accesses and displays the results
         """
-        # Update when Analysis tab is accessed OR when Feasibilities sub-tab is selected
-        # This ensures data loads immediately when Analysis tab opens
-        if top_tab != "analysis" and active_tab != "analysis-feasibilities":
+        # Only trigger when Feasibilities sub-tab is selected
+        if active_tab != "analysis-feasibilities":
             return (dash.no_update, dash.no_update, dash.no_update, 
                     dash.no_update, dash.no_update, dash.no_update, dash.no_update,
-                    dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update)
+                    dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update,
+                    dash.no_update)
         
         # CRITICAL: Ensure Analysis tab callbacks have run first
         # This ensures the knowledge graph is initialized and feasibility analysis has completed
@@ -791,7 +798,8 @@ def setup_feasibilities_callbacks(app):
         # _ensure_dss_results_available() will run run_feasibility_analysis() if needed,
         # ensuring Analysis tab callbacks complete before this callback proceeds.
         logger.debug("Feasibilities callback triggered - ensuring Analysis callbacks have completed")
-        dss_results = _ensure_dss_results_available(top_tab)
+        dss_results = _ensure_dss_results_available()
+        dash_storage.set_data("dss_results", dss_results)
         
         # Check if results are available
         if dss_results is None or not hasattr(dss_results, 'results') or not dss_results.results:
@@ -822,6 +830,9 @@ def setup_feasibilities_callbacks(app):
         
         capital_fig, maintenance_fig, npv_fig = _create_cost_comparison_charts()
         
+        # Create spider plots
+        spider_plots_content = _create_spider_plots(dss_results)
+        
         return (
             html.Div(executive_summary),
             funnel_fig,
@@ -834,216 +845,204 @@ def setup_feasibilities_callbacks(app):
             reg_heatmap_legend,
             capital_fig,
             maintenance_fig,
-            npv_fig
+            npv_fig,
+            spider_plots_content
         )
     
-    @app.callback(
-        Output("spider-plots-container", "children"),
-        [Input("top-tabs", "active_tab"),
-         Input("analysis-tabs", "active_tab"),
-         Input("knowledge-graph-store", "data")],
-        prevent_initial_call=False
-    )
-    def update_spider_plots(top_tab, active_tab, graph_store):
-        """Create spider plots for each MAR option showing scores and NPV."""
-        # Update when Analysis tab is accessed OR when Feasibilities sub-tab is selected
-        if top_tab != "analysis" and active_tab != "analysis-feasibilities":
-            return html.Div("Loading...", className="text-center text-muted p-4")
+def _create_spider_plots(dss_results):
+    """Create spider plots for each MAR option showing scores and cost efficiencies."""
+    if dss_results is None or not hasattr(dss_results, 'results') or not dss_results.results:
+        return html.Div(
+            "No DSS evaluation results available. Please run the feasibility analysis first.",
+            className="text-muted text-center p-4"
+        )
+    
+    # Get scores and cost data
+    scores = getattr(dss_results, 'scores', {})
+    capital_cost_num = dash_storage.get_data("capital_cost_num")
+    maintenance_cost_num = dash_storage.get_data("maintenance_cost_num")
+    
+    if not scores:
+        return html.Div(
+            "No scoring data available. Please run the feasibility analysis first.",
+            className="text-muted text-center p-4"
+        )
+    
+    # Map option names to cost column names
+    option_to_capital_col = {
+        "Surface Recharge": "Spreading Pond Cost ($)",
+        "Injection Well": "Injection Wells Cost ($)",
+        "Dry Well": "Dry Wells Cost ($)"
+    }
+    
+    option_to_maintenance_col = {
+        "Surface Recharge": "Spreading Pond Maintenance Cost ($)",
+        "Injection Well": "Injection Wells Maintenance Cost ($)",
+        "Dry Well": "Dry Wells Maintenance Cost ($)"
+    }
+    
+    # Get all capital and maintenance costs and find minimums
+    capital_cost_dict = {}  # Store capital cost per option
+    maintenance_cost_dict = {}  # Store maintenance cost per option
+    capital_costs = []
+    maintenance_costs = []
+    
+    for option_name in scores.keys():
+        # Get capital cost
+        capital_col = option_to_capital_col.get(option_name)
+        if capital_col and capital_cost_num is not None and capital_col in capital_cost_num.index:
+            capital_val = float(capital_cost_num[capital_col]) if pd.notna(capital_cost_num[capital_col]) else 0
+            capital_cost_dict[option_name] = capital_val
+            if capital_val > 0:
+                capital_costs.append(capital_val)
+        else:
+            capital_cost_dict[option_name] = 0
         
-        # Ensure DSS results are available
-        dss_results = _ensure_dss_results_available(top_tab)
+        # Get maintenance cost
+        maintenance_col = option_to_maintenance_col.get(option_name)
+        if maintenance_col and maintenance_cost_num is not None and maintenance_col in maintenance_cost_num.index:
+            maintenance_val = float(maintenance_cost_num[maintenance_col]) if pd.notna(maintenance_cost_num[maintenance_col]) else 0
+            maintenance_cost_dict[option_name] = maintenance_val
+            if maintenance_val > 0:
+                maintenance_costs.append(maintenance_val)
+        else:
+            maintenance_cost_dict[option_name] = 0
+    
+    # Find minimum costs for efficiency calculation
+    min_capital_cost = min(capital_costs) if capital_costs else 1
+    min_maintenance_cost = min(maintenance_costs) if maintenance_costs else 1
+    
+    # Create spider plots for each option
+    spider_plots = []
+    for option_name, option_scores in scores.items():
+        # Get scores
+        hydro_score = option_scores.get("hydrogeologic", 0.0)
+        env_score = option_scores.get("environmental", 0.0)
+        reg_score = option_scores.get("regulation", 0.0)
         
-        if dss_results is None or not hasattr(dss_results, 'results') or not dss_results.results:
-            return html.Div(
-                "No DSS evaluation results available. Please run the feasibility analysis first.",
-                className="text-muted text-center p-4"
-            )
+        # Calculate capital cost efficiency: 100 for lowest cost, 100 * (min_cost / x) for others
+        capital_val = capital_cost_dict.get(option_name, 0.0)
+        if capital_val > 0 and min_capital_cost > 0:
+            capital_efficiency = 100.0 * (min_capital_cost / capital_val)
+        else:
+            capital_efficiency = 0.0
+        capital_efficiency = max(0.0, min(100.0, capital_efficiency))
         
-        # Get scores and cost data
-        scores = getattr(dss_results, 'scores', {})
-        capital_cost_num = dash_storage.get_data("capital_cost_num")
-        maintenance_cost_num = dash_storage.get_data("maintenance_cost_num")
+        # Calculate maintenance cost efficiency: 100 for lowest cost, 100 * (min_cost / x) for others
+        maintenance_val = maintenance_cost_dict.get(option_name, 0.0)
+        if maintenance_val > 0 and min_maintenance_cost > 0:
+            maintenance_efficiency = 100.0 * (min_maintenance_cost / maintenance_val)
+        else:
+            maintenance_efficiency = 0.0
+        maintenance_efficiency = max(0.0, min(100.0, maintenance_efficiency))
         
-        if not scores:
-            return html.Div(
-                "No scoring data available. Please run the feasibility analysis first.",
-                className="text-muted text-center p-4"
-            )
+        # Create spider plot
+        fig = go.Figure()
         
-        # Map option names to cost column names
-        option_to_capital_col = {
-            "Surface Recharge": "Spreading Pond Cost ($)",
-            "Injection Well": "Injection Wells Cost ($)",
-            "Dry Well": "Dry Wells Cost ($)"
-        }
+        # Categories for radar chart with scores included in labels (now 5 scores)
+        categories = [
+            f'Hydrogeologic ({hydro_score:.0f}%)',
+            f'Environmental ({env_score:.0f}%)',
+            f'Regulation ({reg_score:.0f}%)',
+            f'Capital Cost Efficiency ({capital_efficiency:.0f}%)',
+            f'Maintenance Cost Efficiency ({maintenance_efficiency:.0f}%)'
+        ]
+        values = [hydro_score, env_score, reg_score, capital_efficiency, maintenance_efficiency]
         
-        option_to_maintenance_col = {
-            "Surface Recharge": "Spreading Pond Maintenance Cost ($)",
-            "Injection Well": "Injection Wells Maintenance Cost ($)",
-            "Dry Well": "Dry Wells Maintenance Cost ($)"
-        }
+        # Calculate average score
+        average_score = sum(values) / len(values)
         
-        # Get all capital and maintenance costs and find minimums
-        capital_cost_dict = {}  # Store capital cost per option
-        maintenance_cost_dict = {}  # Store maintenance cost per option
-        capital_costs = []
-        maintenance_costs = []
+        # Close the polygon by adding the first point at the end
+        categories_closed = categories + [categories[0]]
+        values_closed = values + [values[0]]
         
-        for option_name in scores.keys():
-            # Get capital cost
-            capital_col = option_to_capital_col.get(option_name)
-            if capital_col and capital_cost_num is not None and capital_col in capital_cost_num.index:
-                capital_val = float(capital_cost_num[capital_col]) if pd.notna(capital_cost_num[capital_col]) else 0
-                capital_cost_dict[option_name] = capital_val
-                if capital_val > 0:
-                    capital_costs.append(capital_val)
-            else:
-                capital_cost_dict[option_name] = 0
-            
-            # Get maintenance cost
-            maintenance_col = option_to_maintenance_col.get(option_name)
-            if maintenance_col and maintenance_cost_num is not None and maintenance_col in maintenance_cost_num.index:
-                maintenance_val = float(maintenance_cost_num[maintenance_col]) if pd.notna(maintenance_cost_num[maintenance_col]) else 0
-                maintenance_cost_dict[option_name] = maintenance_val
-                if maintenance_val > 0:
-                    maintenance_costs.append(maintenance_val)
-            else:
-                maintenance_cost_dict[option_name] = 0
+        # Add trace with blue polygon
+        fig.add_trace(go.Scatterpolar(
+            r=values_closed,
+            theta=categories_closed,
+            fill='toself',
+            name=option_name,
+            line=dict(color='#1e90ff', width=3),  # Bright blue line
+            fillcolor='rgba(30, 144, 255, 0.4)',  # Semi-transparent blue fill
+            mode='lines+markers',
+            marker=dict(
+                size=8,
+                color='#1e90ff',
+                line=dict(width=2, color='white')
+            ),
+            hovertemplate='<b>%{theta}</b><br>Value: %{r:.1f}<extra></extra>'
+        ))
         
-        # Find minimum costs for efficiency calculation
-        min_capital_cost = min(capital_costs) if capital_costs else 1
-        min_maintenance_cost = min(maintenance_costs) if maintenance_costs else 1
-        
-        # Create spider plots for each option
-        spider_plots = []
-        for option_name, option_scores in scores.items():
-            # Get scores
-            hydro_score = option_scores.get("hydrogeologic", 0.0)
-            env_score = option_scores.get("environmental", 0.0)
-            reg_score = option_scores.get("regulation", 0.0)
-            
-            # Calculate capital cost efficiency: 100 for lowest cost, 100 * (min_cost / x) for others
-            capital_val = capital_cost_dict.get(option_name, 0.0)
-            if capital_val > 0 and min_capital_cost > 0:
-                capital_efficiency = 100.0 * (min_capital_cost / capital_val)
-            else:
-                capital_efficiency = 0.0
-            capital_efficiency = max(0.0, min(100.0, capital_efficiency))
-            
-            # Calculate maintenance cost efficiency: 100 for lowest cost, 100 * (min_cost / x) for others
-            maintenance_val = maintenance_cost_dict.get(option_name, 0.0)
-            if maintenance_val > 0 and min_maintenance_cost > 0:
-                maintenance_efficiency = 100.0 * (min_maintenance_cost / maintenance_val)
-            else:
-                maintenance_efficiency = 0.0
-            maintenance_efficiency = max(0.0, min(100.0, maintenance_efficiency))
-            
-            # Create spider plot
-            fig = go.Figure()
-            
-            # Categories for radar chart with scores included in labels (now 5 scores)
-            categories = [
-                f'Hydrogeologic ({hydro_score:.0f}%)',
-                f'Environmental ({env_score:.0f}%)',
-                f'Regulation ({reg_score:.0f}%)',
-                f'Capital Cost Efficiency ({capital_efficiency:.0f}%)',
-                f'Maintenance Cost Efficiency ({maintenance_efficiency:.0f}%)'
-            ]
-            values = [hydro_score, env_score, reg_score, capital_efficiency, maintenance_efficiency]
-            
-            # Calculate average score
-            average_score = sum(values) / len(values)
-            
-            # Close the polygon by adding the first point at the end
-            categories_closed = categories + [categories[0]]
-            values_closed = values + [values[0]]
-            
-            # Add trace with blue polygon
-            fig.add_trace(go.Scatterpolar(
-                r=values_closed,
-                theta=categories_closed,
-                fill='toself',
-                name=option_name,
-                line=dict(color='#1e90ff', width=3),  # Bright blue line
-                fillcolor='rgba(30, 144, 255, 0.4)',  # Semi-transparent blue fill
-                mode='lines+markers',
-                marker=dict(
-                    size=8,
-                    color='#1e90ff',
-                    line=dict(width=2, color='white')
+        # Update layout with white background and grey grid
+        fig.update_layout(
+            polar=dict(
+                radialaxis=dict(
+                    visible=True,
+                    range=[0, 100],
+                    tickmode='linear',
+                    tick0=0,
+                    dtick=20,
+                    tickfont=dict(size=10, color='black'),
+                    gridcolor='grey',
+                    gridwidth=1,
+                    linecolor='grey',
+                    linewidth=2,
+                    showline=True
                 ),
-                hovertemplate='<b>%{theta}</b><br>Value: %{r:.1f}<extra></extra>'
-            ))
-            
-            # Update layout with white background and grey grid
-            fig.update_layout(
-                polar=dict(
-                    radialaxis=dict(
-                        visible=True,
-                        range=[0, 100],
-                        tickmode='linear',
-                        tick0=0,
-                        dtick=20,
-                        tickfont=dict(size=10, color='black'),
-                        gridcolor='grey',
-                        gridwidth=1,
-                        linecolor='grey',
-                        linewidth=2,
-                        showline=True
-                    ),
-                    angularaxis=dict(
-                        tickfont=dict(size=12, color='black', family='Arial, sans-serif'),
-                        linecolor='grey',
-                        linewidth=2,
-                        gridcolor='grey',
-                        gridwidth=1
-                    ),
-                    bgcolor='white'
+                angularaxis=dict(
+                    tickfont=dict(size=12, color='black', family='Arial, sans-serif'),
+                    linecolor='grey',
+                    linewidth=2,
+                    gridcolor='grey',
+                    gridwidth=1
                 ),
-                plot_bgcolor='white',
-                paper_bgcolor='white',
-                showlegend=False,
-                height=450,
-                margin=dict(l=80, r=80, t=100, b=80),  # Increased top margin for subtitle
-                title=dict(
-                    text=f'{option_name}<br><span style="font-size:14px; color:red;">Average Score: {average_score:.1f}%</span>',
-                    x=0.5,
-                    y=0.98,
-                    font=dict(size=18, color='#006400', family='Arial, sans-serif', weight='bold'),
-                    xanchor='center',
-                    yanchor='top'
-                )
+                bgcolor='white'
+            ),
+            plot_bgcolor='white',
+            paper_bgcolor='white',
+            showlegend=False,
+            height=450,
+            margin=dict(l=80, r=80, t=70, b=80),  # Reduced top margin to bring title closer
+            title=dict(
+                text=f'{option_name}<br><span style="font-size:14px; color:red;">Average Score: {average_score:.1f}%</span>',
+                x=0.5,
+                y=0.99,  # Position closer to top
+                font=dict(size=18, color='#006400', family='Arial, sans-serif', weight='bold'),
+                xanchor='center',
+                yanchor='top',
+                pad=dict(t=5)  # Small padding to ensure visibility
             )
-            
-            # Create card for this option's spider plot
-            spider_plots.append(
-                dbc.Col(
-                    [
-                        dbc.Card(
-                            [
-                                dbc.CardBody(
-                                    [
-                                        dcc.Graph(figure=fig)
-                                    ]
-                                )
-                            ],
-                            className="h-100"
-                        )
-                    ],
-                    width=4,
-                    className="mb-3"
-                )
-            )
+        )
         
-        # Return in rows of 3
-        rows = []
-        for i in range(0, len(spider_plots), 3):
-            row_plots = spider_plots[i:i+3]
-            rows.append(
-                dbc.Row(row_plots, className="mb-3")
+        # Create card for this option's spider plot
+        spider_plots.append(
+            dbc.Col(
+                [
+                    dbc.Card(
+                        [
+                            dbc.CardBody(
+                                [
+                                    dcc.Graph(figure=fig)
+                                ]
+                            )
+                        ],
+                        className="h-100"
+                    )
+                ],
+                width=4,
+                className="mb-3"
             )
-        
-        return html.Div(rows)
+        )
+    
+    # Return in rows of 3
+    rows = []
+    for i in range(0, len(spider_plots), 3):
+        row_plots = spider_plots[i:i+3]
+        rows.append(
+            dbc.Row(row_plots, className="mb-3")
+        )
+    
+    return html.Div(rows)
 
 
 def _get_response_color(level):
