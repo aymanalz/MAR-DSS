@@ -68,15 +68,15 @@ def setup_hydro_callbacks(app):
         
         if not ctx.triggered:
             # Initial load - get saved aquifer type or use default, and save it
-            aquifer_type = dash_storage.get_data("aquifer_type") or "unconfined"
-            dash_storage.set_data("aquifer_type", aquifer_type)
+            aquifer_type = dash_storage.get_data("aq_type") or "unconfined"
+            dash_storage.set_data("aq_type", aquifer_type)
             return aquifer_type
         
         # Get the current selection
         current_selection = value if value else "unconfined"
         
         # Save aquifer type to data storage
-        dash_storage.set_data("aquifer_type", current_selection)
+        dash_storage.set_data("aq_type", current_selection)
         
         return current_selection
     
@@ -489,7 +489,7 @@ def setup_hydro_callbacks(app):
             return data
         
         # Check if confined aquifer is selected
-        aquifer_type = dash_storage.get_data("aquifer_type") or "unconfined"
+        aquifer_type = dash_storage.get_data("aq_type") or "unconfined"
         current_data = data or []
         
         button_id = ctx.triggered[0]["prop_id"].split(".")[0]
@@ -553,7 +553,7 @@ def setup_hydro_callbacks(app):
             return data
         
         # Check if confined aquifer is selected
-        aquifer_type = dash_storage.get_data("aquifer_type") or "unconfined"
+        aquifer_type = dash_storage.get_data("aq_type") or "unconfined"
         
         # For confined aquifers, ensure exactly 4 layers
         if aquifer_type == "confined" and len(data) != 4:
@@ -1232,7 +1232,7 @@ def setup_hydro_callbacks(app):
         try:
             # Store aquifer type
             if aquifer_type:
-                dash_storage.set_data("aquifer_type", aquifer_type)
+                dash_storage.set_data("aq_type", aquifer_type)
             
             # Generate dynamic content
             content = create_hydrogeologic_feasibility_content_dynamic()

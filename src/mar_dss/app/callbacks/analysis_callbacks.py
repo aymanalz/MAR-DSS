@@ -164,7 +164,7 @@ def get_graph_inputs():
     inputs = {}
     
     try:
-        inputs["aq_type"] = dash_storage.get_data("aquifer_type")
+        inputs["aq_type"] = dash_storage.get_data("aq_type")
         
         # Max infiltration area with validation
         max_infiltration_area_percent = dash_storage.get_data("max_infiltration_area")
@@ -443,7 +443,7 @@ def calculate_individual_feasibility_metrics(selected_technology, graph=None):
                 inputs = get_graph_inputs()
                 graph.evaluate(inputs)
                 node_values = graph.get_node_values()
-                aq_type = dash_storage.get_data("aquifer_type")
+                aq_type = dash_storage.get_data("aq_type")
                 if aq_type is None:
                     aq_type = node_values.get('aq_type', '')
             except Exception as eval_error:
@@ -588,7 +588,7 @@ def create_and_run_cost_calculator():
         from .cost_calculator import CostCalculator
     
     # Get inputs from data storage
-    aquifer_type = dash_storage.get_data("aquifer_type")
+    aquifer_type = dash_storage.get_data("aq_type")
     total_runoff_ft3 = dash_storage.get_data("total_runoff_ft3") or 0.0
     fraction_flow_capture = dash_storage.get_data("fraction_flow_capture") or 0.0
     runoff_volume_ft3 = float(total_runoff_ft3) * float(fraction_flow_capture)

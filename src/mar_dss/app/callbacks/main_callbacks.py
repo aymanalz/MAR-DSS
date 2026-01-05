@@ -676,7 +676,7 @@ def setup_main_callbacks(app, dashboard_instance):
             dash_storage.set_data("pathogen_risk", "LOW RISK")
             dash_storage.set_data("vadose_zone_pollution", "None")
             # Reset hydrogeology data
-            dash_storage.set_data("aquifer_type", "unconfined")
+            dash_storage.set_data("aq_type", "unconfined")
             dash_storage.set_data("max_allowed_head", 1.0)
             dash_storage.set_data("stratigraphy_data", [
                 {"layer": "Sand", "thickness": 60.0, "conductivity": 10.0, "storage": 0.0001, "yield": 0.25, "selected": False},

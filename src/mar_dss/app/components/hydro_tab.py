@@ -97,7 +97,7 @@ def create_hydro_tab_content():
 def _build_hydro_tab_header():
     """Build the hydrogeology tab header."""
     # Get existing values from data storage if available
-    aquifer_type = dash_storage.get_data("aquifer_type") or "unconfined"
+    aquifer_type = dash_storage.get_data("aq_type") or "unconfined"
     max_allowed_head = dash_storage.get_data("max_allowed_head")
     # Ensure max_allowed_head is a float, default to 1.0
     if max_allowed_head is not None:
