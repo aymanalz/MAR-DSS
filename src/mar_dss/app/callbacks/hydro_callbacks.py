@@ -80,6 +80,20 @@ def setup_hydro_callbacks(app):
         
         return current_selection
     
+    def _set_confined_stratigraphy():
+        """Set stratigraphy to 4 layers for confined aquifer."""
+        confined_stratigraphy = [
+            {"layer": "Sand", "thickness": 100.0, "conductivity": SOIL_PROPERTIES["Sand"]["conductivity"], 
+             "storage": SOIL_PROPERTIES["Sand"]["storage"], "yield": SOIL_PROPERTIES["Sand"]["yield"], "selected": False},
+            {"layer": "Clay", "thickness": 10.0, "conductivity": SOIL_PROPERTIES["Clay"]["conductivity"], 
+             "storage": SOIL_PROPERTIES["Clay"]["storage"], "yield": SOIL_PROPERTIES["Clay"]["yield"], "selected": False},
+            {"layer": "Sand", "thickness": 50.0, "conductivity": SOIL_PROPERTIES["Sand"]["conductivity"], 
+             "storage": SOIL_PROPERTIES["Sand"]["storage"], "yield": SOIL_PROPERTIES["Sand"]["yield"], "selected": False},
+            {"layer": "Clay", "thickness": 10.0, "conductivity": SOIL_PROPERTIES["Clay"]["conductivity"], 
+             "storage": SOIL_PROPERTIES["Clay"]["storage"], "yield": SOIL_PROPERTIES["Clay"]["yield"], "selected": False},
+        ]
+        dash_storage.set_data("stratigraphy_data", confined_stratigraphy)
+    
     # Callback to save max allowed head to data storage
     @app.callback(
         Output("max-allowed-head-input", "value"),
@@ -474,9 +488,24 @@ def setup_hydro_callbacks(app):
         if not ctx.triggered:
             return data
         
-        button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        # Check if confined aquifer is selected
+        aquifer_type = dash_storage.get_data("aquifer_type") or "unconfined"
         current_data = data or []
         
+        button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        
+        # For confined aquifers, prevent adding or deleting layers
+        if aquifer_type == "confined":
+            if button_id == "add-layer-btn":
+                # Don't add layer, return current data unchanged
+                # Error message will be shown by another callback
+                return dash.no_update
+            elif button_id == "delete-layer-btn":
+                # Don't delete layers, return current data unchanged
+                # Error message will be shown by another callback
+                return dash.no_update
+        
+        # For non-confined or move operations, proceed normally
         if button_id == "add-layer-btn":
             # Add new layer (default to Sand)
             new_layer = {
@@ -523,6 +552,14 @@ def setup_hydro_callbacks(app):
         if not data:
             return data
         
+        # Check if confined aquifer is selected
+        aquifer_type = dash_storage.get_data("aquifer_type") or "unconfined"
+        
+        # For confined aquifers, ensure exactly 4 layers
+        if aquifer_type == "confined" and len(data) != 4:
+            # Don't update if layer count is wrong - error will be shown
+            return dash.no_update
+        
         # Update data with new values
         for i, row in enumerate(data):
             if i < len(checkbox_values):
@@ -545,6 +582,58 @@ def setup_hydro_callbacks(app):
                 row["yield"] = float(yield_values[i])
         
         return data
+    
+    # Callback to update stratigraphy store when aquifer type changes to confined
+    @app.callback(
+        Output("stratigraphy-data-store", "data", allow_duplicate=True),
+        [Input("aquifer-type-radio", "value")],
+        prevent_initial_call=True
+    )
+    def update_stratigraphy_for_aquifer_type(aquifer_type):
+        """Update stratigraphy when aquifer type changes."""
+        if aquifer_type == "confined":
+            confined_stratigraphy = [
+                {"layer": "Sand", "thickness": 100.0, "conductivity": SOIL_PROPERTIES["Sand"]["conductivity"], 
+                 "storage": SOIL_PROPERTIES["Sand"]["storage"], "yield": SOIL_PROPERTIES["Sand"]["yield"], "selected": False},
+                {"layer": "Clay", "thickness": 10.0, "conductivity": SOIL_PROPERTIES["Clay"]["conductivity"], 
+                 "storage": SOIL_PROPERTIES["Clay"]["storage"], "yield": SOIL_PROPERTIES["Clay"]["yield"], "selected": False},
+                {"layer": "Sand", "thickness": 50.0, "conductivity": SOIL_PROPERTIES["Sand"]["conductivity"], 
+                 "storage": SOIL_PROPERTIES["Sand"]["storage"], "yield": SOIL_PROPERTIES["Sand"]["yield"], "selected": False},
+                {"layer": "Clay", "thickness": 10.0, "conductivity": SOIL_PROPERTIES["Clay"]["conductivity"], 
+                 "storage": SOIL_PROPERTIES["Clay"]["storage"], "yield": SOIL_PROPERTIES["Clay"]["yield"], "selected": False},
+            ]
+            dash_storage.set_data("stratigraphy_data", confined_stratigraphy)
+            return confined_stratigraphy
+        return dash.no_update
+    
+    # Callback to show error message for confined aquifer layer restrictions
+    @app.callback(
+        Output("stratigraphy-error-message", "children"),
+        [
+            Input("aquifer-type-radio", "value"),
+            Input("stratigraphy-data-store", "data"),
+            Input("add-layer-btn", "n_clicks"),
+            Input("delete-layer-btn", "n_clicks"),
+        ],
+        prevent_initial_call=False
+    )
+    def show_stratigraphy_error_message(aquifer_type, stratigraphy_data, add_clicks, delete_clicks):
+        """Show error message if user tries to change layer count for confined aquifer."""
+        if aquifer_type == "confined":
+            num_layers = len(stratigraphy_data) if stratigraphy_data else 0
+            if num_layers != 4:
+                return dbc.Alert(
+                    "Error: Confined aquifer must have exactly 4 layers. The stratigraphy has been reset to the required configuration.",
+                    color="danger",
+                    className="mb-2"
+                )
+            else:
+                return dbc.Alert(
+                    "Note: Confined aquifer requires exactly 4 layers. Adding or deleting layers is not allowed.",
+                    color="info",
+                    className="mb-2"
+                )
+        return html.Div()  # No message for non-confined aquifers
     
     # Groundwater Level Table Callbacks
     @app.callback(

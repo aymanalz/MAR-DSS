@@ -300,6 +300,9 @@ def _build_stratigraphy_tab():
                     html.H5("Stratigraphy Configuration", className="mb-3"),
                     html.P("Configure soil layers and their hydrogeological properties.", className="mb-4"),
                     
+                    # Error message for confined aquifer
+                    html.Div(id="stratigraphy-error-message", className="mb-3"),
+                    
                     # Table controls
                     dbc.Row([
                         dbc.Col([

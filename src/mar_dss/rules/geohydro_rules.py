@@ -405,7 +405,7 @@ def compute_rechargable_percentage(annual_recharge_volume, source_water_volume):
     return 100.0*annual_recharge_volume / np.sum(source_water_volume)
 
 
-def compute_confined_storage_volume(confined, strat_df, Hmax, number_of_injection_wells, source_water_volume):  
+def compute_confined_storage_volume(confined, strat_df, Hmax, injection_wells_result, source_water_volume):  
     # annual injection volume``  
     # we assume the table has four overburden layer, layers 2 bedrock and 1 aquifer in the middle
     # todo: test
@@ -419,12 +419,12 @@ def compute_confined_storage_volume(confined, strat_df, Hmax, number_of_injectio
         transmissivity = kaq * B
         Ss = Ss * B      
 
-        if number_of_injection_wells == 1:
-            max_injection_rate = number_of_injection_wells * theis_drawdown_or_Q(Q_or_dh=Hmax, T=transmissivity, S=Ss, r=1, t=50, compute_Q=True)
+        if injection_wells_result["number_of_wells"] == 1:
+            max_injection_rate = injection_wells_result['number_of_wells'] * theis_drawdown_or_Q(Q_or_dh=Hmax, T=transmissivity, S=Ss, r=1, t=50, compute_Q=True)
         else:
-            Q_per_well = np.max(source_water_volume)/30.25/number_of_injection_wells
+            Q_per_well = np.max(source_water_volume)/30.25/injection_wells_result["number_of_wells"]
             dh_from_well_at_300ft = theis_drawdown_or_Q(Q_or_dh=Q_per_well, T=transmissivity, S=Ss, r=300, t=50, compute_Q=False)
-            dh_superimposed = (Hmax/number_of_injection_wells) + (dh_from_well_at_300ft * (number_of_injection_wells -1))
+            dh_superimposed = (Hmax/injection_wells_result["number_of_wells"]) + (dh_from_well_at_300ft * (injection_wells_result["number_of_wells"] -1))
             max_injection_rate = theis_drawdown_or_Q(Q_or_dh=dh_superimposed, T=transmissivity, S=Ss, r=1, t=50, compute_Q=True)
          
         
