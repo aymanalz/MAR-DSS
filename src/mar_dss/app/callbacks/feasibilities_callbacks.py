@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 import pandas as pd
 import mar_dss.app.utils.data_storage as dash_storage
 import logging
+import math
 
 logger = logging.getLogger(__name__)
 
@@ -285,7 +286,7 @@ def _build_executive_summary(categorized_data):
         executive_summary.append(
             html.Div(
                 [
-                    html.H5("Recommended", className="text-success fw-bold mb-3"),
+                    html.H5("Recommended MAR Options", className="text-success fw-bold mb-3"),
                     *[
                         html.Div(
                             [
@@ -308,7 +309,7 @@ def _build_executive_summary(categorized_data):
         executive_summary.append(
             html.Div(
                 [
-                    html.H5("Conditional", className="text-warning fw-bold mb-3"),
+                    html.H5("Conditional MAR Options", className="text-warning fw-bold mb-3"),
                     *[
                         html.Div(
                             [
@@ -331,7 +332,7 @@ def _build_executive_summary(categorized_data):
         executive_summary.append(
             html.Div(
                 [
-                    html.H5("Rejected", className="text-danger fw-bold mb-3"),
+                    html.H5("Rejected MAR Options", className="text-danger fw-bold mb-3"),
                     *[
                         html.Div(
                             [
@@ -1100,25 +1101,43 @@ def _create_spider_plots(dss_results):
             npv_efficiency = 0.0
         npv_efficiency = max(0.0, min(100.0, npv_efficiency))
         
+        # Helper function to get color and style based on score
+        def get_score_style(score):
+            """Get color and font weight based on score value."""
+            if score < 50:
+                return {'color': 'red', 'weight': 'bold'}
+            elif score < 75:
+                return {'color': 'orange', 'weight': 'bold'}
+            else:
+                return {'color': 'green', 'weight': 'bold'}
+        
         # Create spider plot
         fig = go.Figure()
         
-        # Categories for radar chart with scores included in labels (now 6 scores)
-        # Using <br> to put percentage below the label
+        # Categories for radar chart - order matters for positioning
         categories = [
-            f'Hydrogeologic<br>{hydro_score:.0f}%',
-            f'Environmental<br>{env_score:.0f}%',
-            f'Regulation<br>{reg_score:.0f}%',
-            f'Capital Cost<br>Efficiency<br>{capital_efficiency:.0f}%',
-            f'Maintenance Cost<br>Efficiency<br>{maintenance_efficiency:.0f}%',
-            f'NPV Efficiency<br>{npv_efficiency:.0f}%'
+            'Hydrogeologic',
+            'Environmental',
+            'Regulation',
+            'Capital Cost Efficiency',
+            'Maintenance Cost Efficiency',
+            'NPV Efficiency'
         ]
         values = [hydro_score, env_score, reg_score, capital_efficiency, maintenance_efficiency, npv_efficiency]
         
         # Calculate average score
         average_score = sum(values) / len(values)
         
+        # Create categories with scores (score below category name, centered)
+        categories_with_scores = []
+        for category, score in zip(categories, values):
+            style = get_score_style(score)
+            # Category name on first line, score on second line (below, centered)
+            label = f'{category}\n<span style="color:{style["color"]};">{score:.0f}%</span>'
+            categories_with_scores.append(label)
+        
         # Close the polygon by adding the first point at the end
+        # Use original categories for theta (for positioning), but labels will show scores
         categories_closed = categories + [categories[0]]
         values_closed = values + [values[0]]
         
@@ -1128,8 +1147,8 @@ def _create_spider_plots(dss_results):
             theta=categories_closed,
             fill='toself',
             name=option_name,
-            line=dict(color='#1e90ff', width=3),  # Bright blue line
-            fillcolor='rgba(30, 144, 255, 0.4)',  # Semi-transparent blue fill
+            line=dict(color='#1e90ff', width=3),
+            fillcolor='rgba(30, 144, 255, 0.4)',
             mode='lines+markers',
             marker=dict(
                 size=8,
@@ -1139,7 +1158,7 @@ def _create_spider_plots(dss_results):
             hovertemplate='<b>%{theta}</b><br>Value: %{r:.1f}<extra></extra>'
         ))
         
-        # Update layout with white background and grey grid
+        # Update layout with clean polar plot
         fig.update_layout(
             polar=dict(
                 radialaxis=dict(
@@ -1148,18 +1167,23 @@ def _create_spider_plots(dss_results):
                     tickmode='linear',
                     tick0=0,
                     dtick=20,
-                    tickfont=dict(size=10, color='black'),
-                    gridcolor='grey',
+                    tickfont=dict(size=9, color='black'),
+                    gridcolor='lightgrey',
                     gridwidth=1,
                     linecolor='grey',
-                    linewidth=2,
+                    linewidth=1,
                     showline=True
                 ),
                 angularaxis=dict(
-                    tickfont=dict(size=12, color='black', family='Arial, sans-serif'),
+                    tickmode='array',
+                    tickvals=categories,
+                    ticktext=categories_with_scores,
+                    tickfont=dict(size=10, family='Arial, sans-serif'),
+                    rotation=0,
+                    direction='clockwise',
                     linecolor='grey',
-                    linewidth=2,
-                    gridcolor='grey',
+                    linewidth=1,
+                    gridcolor='lightgrey',
                     gridwidth=1
                 ),
                 bgcolor='white'
@@ -1167,16 +1191,16 @@ def _create_spider_plots(dss_results):
             plot_bgcolor='white',
             paper_bgcolor='white',
             showlegend=False,
-            height=350,  # Compact height
-            margin=dict(l=60, r=60, t=70, b=60),  # Reduced margins for compact layout
+            height=350,
+            margin=dict(l=80, r=80, t=100, b=80),
             title=dict(
                 text=f'{option_name}<br><span style="font-size:14px; color:red;">Average Score: {average_score:.1f}%</span>',
                 x=0.5,
-                y=0.98,  # Position slightly lower to ensure visibility
-                font=dict(size=18, color='#006400', family='Arial, sans-serif', weight='bold'),
+                y=0.98,
+                font=dict(size=16, color='#006400', family='Arial, sans-serif', weight='bold'),
                 xanchor='center',
                 yanchor='top',
-                pad=dict(t=10)  # Increased padding to ensure title is fully visible
+                pad=dict(t=10)
             )
         )
         
@@ -1194,7 +1218,7 @@ def _create_spider_plots(dss_results):
                             )
                         ],
                         className="h-100",
-                        style={"minHeight": "500px"}  # Increased card height
+                        style={"minHeight": "400px"}  # Smaller card height
                     )
                 ],
                 width=4,
