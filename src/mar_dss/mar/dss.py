@@ -199,6 +199,9 @@ class DecisionSupportSystem:
             
             if constraint_type in type_constraints:
                 response_level = sm.get("response", 0)
+                # Skip irrelevant constraints (response = -1) - they should not be part of score calculation
+                if response_level == -1:
+                    continue
                 points = self._get_constraint_points(response_level)
                 type_constraints[constraint_type].append(points)
         
