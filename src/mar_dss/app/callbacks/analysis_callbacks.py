@@ -588,6 +588,7 @@ def create_and_run_cost_calculator():
         from .cost_calculator import CostCalculator
     
     # Get inputs from data storage
+    aquifer_type = dash_storage.get_data("aquifer_type")
     total_runoff_ft3 = dash_storage.get_data("total_runoff_ft3") or 0.0
     fraction_flow_capture = dash_storage.get_data("fraction_flow_capture") or 0.0
     runoff_volume_ft3 = float(total_runoff_ft3) * float(fraction_flow_capture)
@@ -601,6 +602,10 @@ def create_and_run_cost_calculator():
     number_of_injection_wells = number_of_injection_wells_results['number_of_wells']
     injection_Q_ft3_per_day = number_of_injection_wells_results['Q_per_well']
     dry_well_results = graph.get_node_value("number_of_dry_wells")
+    if aquifer_type.lower() == "confined":
+        recharge_method = "injection_well"
+    else:
+        recharge_method = "dry_well"
     
     # Convert ft³/day to gpm (gallons per minute)
     # 1 ft³ = 7.48052 gallons, 1 day = 1440 minutes

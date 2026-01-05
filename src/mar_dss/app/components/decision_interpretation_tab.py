@@ -208,6 +208,10 @@ def _create_option_interpretation(option_name, result, filters=None):
             penalty = sc.get("penalty", [])
             is_hard = sc.get("hard", False)
             
+            # Skip irrelevant constraints in the display
+            if response == -1:
+                continue
+            
             response_labels = {
                 0: "Acceptable",
                 1: "Acceptable with additional Cost",

@@ -74,6 +74,10 @@ class DecisionSupportSystem:
         # ---------- 3. Soft-metric evaluation ----------
         for sm in self.soft_metrics:
             level = sm["response"]
+            
+            # Skip irrelevant constraints (response = -1)
+            if level == -1:
+                continue
 
             #mandatory = False → behaves soft
             #mandatory = True → violation becomes hard rejection

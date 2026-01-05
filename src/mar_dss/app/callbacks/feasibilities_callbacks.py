@@ -522,6 +522,7 @@ def _create_constraints_heatmap(results, filters, constraint_type=None, title=No
     
     # Create color mapping for response levels
     color_map = {
+        -1: "#808080",   # Grey for irrelevant
         0: "#28a745",    # Dark Green
         1: "#90ee90",    # Light Green
         2: "#ffc107",    # Yellow/Gold
@@ -536,24 +537,51 @@ def _create_constraints_heatmap(results, filters, constraint_type=None, title=No
     heatmap_fig = go.Figure()
     
     # Add scatter trace for circles (measles chart)
-    heatmap_fig.add_trace(go.Scatter(
-        x=x_data,
-        y=y_data,
-        mode='markers+text',
-        marker=dict(
-            size=marker_sizes,
-            color=marker_colors,
-            line=dict(width=1.5, color='white'),
-            sizemode='diameter',
-            opacity=0.9
-        ),
-        text=[str(level) for level in response_levels],
-        textposition='middle center',
-        textfont=dict(size=9, color='white', family='Arial, sans-serif'),
-        hovertemplate='<b>%{customdata[0]}</b><br>%{x}<br>Response Level: %{customdata[1]}<extra></extra>',
-        customdata=[[y_data[i], response_levels[i]] for i in range(len(y_data))],
-        showlegend=False
-    ))
+    # Create separate traces for irrelevant vs relevant constraints for better control
+    relevant_indices = [i for i, level in enumerate(response_levels) if level != -1]
+    irrelevant_indices = [i for i, level in enumerate(response_levels) if level == -1]
+    
+    # Add trace for relevant constraints
+    if relevant_indices:
+        heatmap_fig.add_trace(go.Scatter(
+            x=[x_data[i] for i in relevant_indices],
+            y=[y_data[i] for i in relevant_indices],
+            mode='markers+text',
+            marker=dict(
+                size=[marker_sizes[i] for i in relevant_indices],
+                color=[marker_colors[i] for i in relevant_indices],
+                line=dict(width=1.5, color='white'),
+                sizemode='diameter',
+                opacity=0.9
+            ),
+            text=[str(response_levels[i]) for i in relevant_indices],
+            textposition='middle center',
+            textfont=dict(size=9, color='white', family='Arial, sans-serif'),
+            hovertemplate='<b>%{customdata[0]}</b><br>%{x}<br>Response Level: %{customdata[1]}<extra></extra>',
+            customdata=[[y_data[i], response_levels[i]] for i in relevant_indices],
+            showlegend=False
+        ))
+    
+    # Add trace for irrelevant constraints (greyed out)
+    if irrelevant_indices:
+        heatmap_fig.add_trace(go.Scatter(
+            x=[x_data[i] for i in irrelevant_indices],
+            y=[y_data[i] for i in irrelevant_indices],
+            mode='markers+text',
+            marker=dict(
+                size=[marker_sizes[i] for i in irrelevant_indices],
+                color=[marker_colors[i] for i in irrelevant_indices],
+                line=dict(width=1, color='#666666'),
+                sizemode='diameter',
+                opacity=0.4
+            ),
+            text=['—' for _ in irrelevant_indices],  # Use dash for irrelevant
+            textposition='middle center',
+            textfont=dict(size=9, color='#666666', family='Arial, sans-serif'),
+            hovertemplate='<b>%{customdata[0]}</b><br>%{x}<br>Response Level: Irrelevant (excluded from analysis)<extra></extra>',
+            customdata=[[y_data[i], "Irrelevant"] for i in irrelevant_indices],
+            showlegend=False
+        ))
     
     # Function to split constraint names into two lines
     def split_constraint_name(name):
@@ -709,7 +737,22 @@ def _create_constraints_heatmap(results, filters, constraint_type=None, title=No
                             "verticalAlign": "middle"
                         }
                     ),
-                    html.Small("4: Reject")
+                    html.Small("4: Reject", className="me-4"),
+                    html.Span(
+                        "",
+                        style={
+                            "display": "inline-block",
+                            "width": "20px",
+                            "height": "20px",
+                            "backgroundColor": _get_response_color(-1),
+                            "marginRight": "8px",
+                            "border": "1px solid #666666",
+                            "borderRadius": "50%",  # Make it a circle
+                            "verticalAlign": "middle",
+                            "opacity": "0.4"
+                        }
+                    ),
+                    html.Small("-1: Irrelevant", className="text-muted")
                 ],
                 className="d-flex align-items-center justify-content-center flex-wrap"
             )
@@ -1171,13 +1214,14 @@ def _create_spider_plots(dss_results):
 
 
 def _get_response_color(level):
-    """Get color for response level (0-4)."""
+    """Get color for response level (0-4, or -1 for irrelevant)."""
     color_map = {
-        0: "#28a745",  # Dark Green
-        1: "#90ee90",  # Light Green
-        2: "#ffc107",  # Yellow/Gold
-        3: "#fd7e14",  # Orange
-        4: "#dc3545"   # Red
+        -1: "#808080",  # Grey for irrelevant
+        0: "#28a745",   # Dark Green
+        1: "#90ee90",   # Light Green
+        2: "#ffc107",   # Yellow/Gold
+        3: "#fd7e14",   # Orange
+        4: "#dc3545"    # Red
     }
     return color_map.get(level, "#ffffff")
 

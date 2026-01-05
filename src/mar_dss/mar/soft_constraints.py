@@ -5,6 +5,7 @@ import mar_dss.app.utils.data_storage as data_storage
 
 hardend_constraints =[]
 levels = {
+    -1: "Irrelevant",
     0: "Acceptable",
     1: "Acceptable with additional Cost",
     2: "Warning",
@@ -26,27 +27,31 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     # 1. ground surface slope
     # ==================================================================    
     slope_significance = graph.get_node_value('gs_slope_significance')
-    if slope_significance == "Gentle":
-        response = 0
+    if aquifer_type.lower() == "confined":
+        response = -1
         penalty = []
-    elif slope_significance == "Moderate":
-        if option.name == "Surface Recharge":
+    else:
+        if slope_significance == "Gentle":
+            response = 0
+            penalty = []
+        elif slope_significance == "Moderate":
+            if option.name == "Surface Recharge":
+                response = 1
+                penalty = ["Cost: Moderate extra cost for earthwork to mitigate slope"]
+            else:
+                response = 0
+                penalty = []
+        elif slope_significance == "Steep":
+            if option.name == "Surface Recharge":
+                response = 3
+                penalty = ["Cost: Significant extra cost for earthwork to mitigate slope"]
+            else:
+                response = 0
+                penalty = []
+        
+        if option.name in ["Dry Well", "Injection Well"]:
             response = 1
             penalty = ["Cost: Moderate extra cost for earthwork to mitigate slope"]
-        else:
-            response = 0
-            penalty = []
-    elif slope_significance == "Steep":
-        if option.name == "Surface Recharge":
-            response = 3
-            penalty = ["Cost: Significant extra cost for earthwork to mitigate slope"]
-        else:
-            response = 0
-            penalty = []
-    
-    if option.name in ["Dry Well", "Injection Well"]:
-        response = 1
-        penalty = ["Cost: Moderate extra cost for earthwork to mitigate slope"]
    
     
     ground_surface_slope = {
@@ -62,16 +67,20 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     # 2. restrictive vadose zone infiltration
     # ==================================================================
     high_infiltration = graph.get_node_value('k_vadose_threshold')
-    if (high_infiltration):
-        response = 0
+    if aquifer_type.lower() == "confined":
+        response = -1
         penalty = []
     else:
-        if option.name == "Surface Recharge":
-            response = 3
-            penalty = ["Cost: Consider bypassing vadose zone infiltration"]
-        else:
+        if (high_infiltration):
             response = 0
             penalty = []
+        else:
+            if option.name == "Surface Recharge":
+                response = 3
+                penalty = ["Cost: Consider bypassing vadose zone infiltration"]
+            else:
+                response = 0
+                penalty = []
             
     vadose_infiltration = {
         "name": "Vadose zone infiltration",
@@ -87,16 +96,20 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     # ==================================================================
 
     vadose_pollution = graph.get_node_value('vadose_pollution_present')
-    if not (vadose_pollution):
-        response = 0
+    if aquifer_type.lower() == "confined":
+        response = -1
         penalty = []
     else:
-        if option.name == "Surface Recharge":
-            response = 3
-            penalty = ["Cost: Consider bypassing vadose zone pollution or remediation"]
-        else:
+        if not (vadose_pollution):
             response = 0
-            penalty = []       
+            penalty = []
+        else:
+            if option.name == "Surface Recharge":
+                response = 3
+                penalty = ["Cost: Consider bypassing vadose zone pollution or remediation"]
+            else:
+                response = 0
+                penalty = []       
         
     vadose_pollution_metric = {
         "name": "Vadose zone pollution",
@@ -111,20 +124,24 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     # 4. vadose_biodegradable
     # ==================================================================
     vadose_biodegradable = graph.get_node_value('vadose_biodegradable')
-    if vadose_biodegradable:
-        if option.name == "Surface Recharge":
-            response = 2 # warning
-            penalty = ["Warning: Vadose zone pollution is biodegradable, ensure natural attenuation is monitored"]
-        else:
-            response = 0
-            penalty = []
+    if aquifer_type.lower() == "confined":
+        response = -1
+        penalty = []
     else:
-        if option.name == "Surface Recharge":
-            response = 3
-            penalty = ["Cost: Consider bypassing vadose zone pollution or remediation"]
-        else:            
-            response = 2 # warning
-            penalty = ["Action: Toxic contamination in the vadose. Although can be bypassed, mounding water table may mobilize contaminants to the aquifer"]
+        if vadose_biodegradable:
+            if option.name == "Surface Recharge":
+                response = 2 # warning
+                penalty = ["Warning: Vadose zone pollution is biodegradable, ensure natural attenuation is monitored"]
+            else:
+                response = 0
+                penalty = []
+        else:
+            if option.name == "Surface Recharge":
+                response = 3
+                penalty = ["Cost: Consider bypassing vadose zone pollution or remediation"]
+            else:            
+                response = 2 # warning
+                penalty = ["Action: Toxic contamination in the vadose. Although can be bypassed, mounding water table may mobilize contaminants to the aquifer"]
     vadose_biodegradable_metric = {
         "name": "Vadose zone pollution biodegradability",
         "response": response,   # 0–4
@@ -138,16 +155,20 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     # 5. vadose zone remediation
     # ==================================================================
     vadose_remediation = graph.get_node_value('vadose_remediation_needed')
-    if vadose_remediation:
-        if option.name == "Surface Recharge":
-            response = 3
-            penalty = ["Cost: Consider bypassing vadose zone or remediation"]
+    if aquifer_type.lower() == "confined":
+        response = -1
+        penalty = []
+    else:
+        if vadose_remediation:
+            if option.name == "Surface Recharge":
+                response = 3
+                penalty = ["Cost: Consider bypassing vadose zone or remediation"]
+            else:
+                response = 0
+                penalty = []
         else:
             response = 0
             penalty = []
-    else:
-        response = 0
-        penalty = []
     vadose_remediation_needed = {
         "name": "Vadose zone remediation needed",
         "response": response,   # 0–4
@@ -162,16 +183,20 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     # ==================================================================
     vadose_residence_time = graph.get_node_value('vadose_residence_time')
     residence_time_issues = graph.get_node_value('vadose_residence_time_issues')
-    if vadose_residence_time is None:
-        response = 0
+    if aquifer_type.lower() == "confined":
+        response = -1
         penalty = []
     else:
-        if residence_time_issues is not None and len(residence_time_issues) > 0:
-            response = 3
-            penalty = [f"Mitigation: Vadose zone residence time ({vadose_residence_time} days) is not reasonable for {', '.join(residence_time_issues)}"]
+        if vadose_residence_time is None:
+            response = 0
+            penalty = []
         else:
-            response = 2
-            penalty = [f"Warning: Vadose zone residence time ({vadose_residence_time} days) is reasonable but careful monitoring is needed"]
+            if residence_time_issues is not None and len(residence_time_issues) > 0:
+                response = 3
+                penalty = [f"Mitigation: Vadose zone residence time ({vadose_residence_time} days) is not reasonable for {', '.join(residence_time_issues)}"]
+            else:
+                response = 2
+                penalty = [f"Warning: Vadose zone residence time ({vadose_residence_time} days) is reasonable but careful monitoring is needed"]
  
     vadose_residence_time_metric = {
         "name": "Vadose zone residence time",
@@ -186,16 +211,20 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     # 7. surface recharge suitability
     # ==================================================================
     surface_recharge_suitability = graph.get_node_value('surface_recharge_suitability')
-    if surface_recharge_suitability is None:
-        response = 0
+    if aquifer_type.lower() == "confined":
+        response = -1
         penalty = []
     else:
-        if surface_recharge_suitability:
+        if surface_recharge_suitability is None:
             response = 0
             penalty = []
         else:
-            response = 3
-            penalty = ["Mitigation: Surface recharge is likely not suitable because of ground slope, infiltration, or vadose zone contamination"]
+            if surface_recharge_suitability:
+                response = 0
+                penalty = []
+            else:
+                response = 3
+                penalty = ["Mitigation: Surface recharge is likely not suitable because of ground slope, infiltration, or vadose zone contamination"]
     surface_recharge_suitability_metric = {
         "name": "Surface recharge suitability",
         "response": response,   # 0–4
@@ -209,23 +238,27 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     # 8. confined aquifer depth
     # ==================================================================
     confined_aquifer_depth = graph.get_node_value('confined_aquifer_depth')
-    if confined_aquifer_depth is None:
-        response = 0
+    if aquifer_type.lower() == "unconfined":
+        response = -1
         penalty = []
     else:
-        if aquifer_type.lower() == "confined":
-            if confined_aquifer_depth == "Too Deep":
-                response = 4
-                penalty = ["Reject :: Confined aquifer depth is too deep"]
-            elif confined_aquifer_depth == "Moderate Deep":
-                response = 2
-                penalty = ["Cost: Confined aquifer depth is moderate deep"]
+        if confined_aquifer_depth is None:
+            response = 0
+            penalty = []
+        else:
+            if aquifer_type.lower() == "confined":
+                if confined_aquifer_depth == "Too Deep":
+                    response = 4
+                    penalty = ["Reject :: Confined aquifer depth is too deep"]
+                elif confined_aquifer_depth == "Moderate Deep":
+                    response = 2
+                    penalty = ["Cost: Confined aquifer depth is moderate deep"]
+                else:
+                    response = 0
+                    penalty = []
             else:
                 response = 0
                 penalty = []
-        else:
-            response = 0
-            penalty = []
     confined_aquifer_depth_metric = {
         "name": "Confined aquifer depth Suitability",
         "response": response,   # 0–4
@@ -240,7 +273,7 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     # ==================================================================
     leakage_significance = graph.get_node_value('leakage_significance')
     if aquifer_type.lower() == "unconfined":
-        response = 0
+        response = -1
         penalty = []
     else: # confined
         if leakage_significance == "Low":
@@ -438,16 +471,19 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     # Based on Vadose Zone Pollution (Step 7)
     remediation_needed_response = 0
     remediation_needed_penalty = []
-    
-    if vadose_zone_pollution == "Yes, highly toxic contaminants in the vadose zone (e.g., heavy metals, volatile organic compounds, radioactive materials)":
-        remediation_needed_response = 4
-        remediation_needed_penalty.append("Reject: Highly toxic contaminants in vadose zone - comprehensive remediation required ($50K-$10M), high risk of contaminant migration to aquifer")
-    elif vadose_zone_pollution == "Yes, biodegradable Pollution":
-        remediation_needed_response = 2
-        remediation_needed_penalty.append("Warning + Cost: Biodegradable pollution in vadose zone - monitor natural attenuation, consider enhanced bioremediation if needed")
-    elif vadose_zone_pollution == "None":
-        remediation_needed_response = 0
-        remediation_needed_penalty = []
+    if aquifer_type.lower() == "confined":
+        response = -1
+        penalty = []
+    else:
+        if vadose_zone_pollution == "Yes, highly toxic contaminants in the vadose zone (e.g., heavy metals, volatile organic compounds, radioactive materials)":
+            remediation_needed_response = 4
+            remediation_needed_penalty.append("Reject: Highly toxic contaminants in vadose zone - comprehensive remediation required ($50K-$10M), high risk of contaminant migration to aquifer")
+        elif vadose_zone_pollution == "Yes, biodegradable Pollution":
+            remediation_needed_response = 2
+            remediation_needed_penalty.append("Warning + Cost: Biodegradable pollution in vadose zone - monitor natural attenuation, consider enhanced bioremediation if needed")
+        elif vadose_zone_pollution == "None":
+            remediation_needed_response = 0
+            remediation_needed_penalty = []
     
     remediation_needed_constraint = {
         "name": "Need for Remediation",
