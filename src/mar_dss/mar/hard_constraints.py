@@ -19,12 +19,12 @@ def hard_constraints(option: MAROption) -> List[Dict[str, bool]]:
         check = True
         why = "Unconfined aquifer is suitable for surface recharge"
     else:
-        if option.name == "Spreading Basins":
+        if option.name == "Surface Recharge":
             check = False
-            why = f"Spreading basins are not suitable for recharging {aquifer_type} aquifer"
+            why = f"Surface recharge is not suitable for recharging {aquifer_type} aquifer"
         else:
             check = True
-            why = "Spreading basins are suitable for recharging {aquifer_type} aquifer"
+            why = f"Surface recharge is suitable for recharging {aquifer_type} aquifer"
     initial_surface_rechargeability = {
         "name": "Surface rechargeability intial feasibility",
         "pass": True,

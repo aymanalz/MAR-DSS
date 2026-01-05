@@ -30,21 +30,21 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
         response = 0
         penalty = []
     elif slope_significance == "Moderate":
-        if option.name == "Spreading Basins":
+        if option.name == "Surface Recharge":
             response = 1
             penalty = ["Cost: Moderate extra cost for earthwork to mitigate slope"]
         else:
             response = 0
             penalty = []
     elif slope_significance == "Steep":
-        if option.name == "Spreading Basins":
+        if option.name == "Surface Recharge":
             response = 3
             penalty = ["Cost: Significant extra cost for earthwork to mitigate slope"]
         else:
             response = 0
             penalty = []
     
-    if option.name in ["Dry Wells", "Injection Wells"]:
+    if option.name in ["Dry Well", "Injection Well"]:
         response = 1
         penalty = ["Cost: Moderate extra cost for earthwork to mitigate slope"]
    
@@ -66,7 +66,7 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
         response = 0
         penalty = []
     else:
-        if option.name == "Spreading Basins":
+        if option.name == "Surface Recharge":
             response = 3
             penalty = ["Cost: Consider bypassing vadose zone infiltration"]
         else:
@@ -91,7 +91,7 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
         response = 0
         penalty = []
     else:
-        if option.name == "Spreading Basins":
+        if option.name == "Surface Recharge":
             response = 3
             penalty = ["Cost: Consider bypassing vadose zone pollution or remediation"]
         else:
@@ -112,14 +112,14 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     # ==================================================================
     vadose_biodegradable = graph.get_node_value('vadose_biodegradable')
     if vadose_biodegradable:
-        if option.name == "Spreading Basins":
+        if option.name == "Surface Recharge":
             response = 2 # warning
             penalty = ["Warning: Vadose zone pollution is biodegradable, ensure natural attenuation is monitored"]
         else:
             response = 0
             penalty = []
     else:
-        if option.name == "Spreading Basins":
+        if option.name == "Surface Recharge":
             response = 3
             penalty = ["Cost: Consider bypassing vadose zone pollution or remediation"]
         else:            
@@ -139,7 +139,7 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     # ==================================================================
     vadose_remediation = graph.get_node_value('vadose_remediation_needed')
     if vadose_remediation:
-        if option.name == "Spreading Basins":
+        if option.name == "Surface Recharge":
             response = 3
             penalty = ["Cost: Consider bypassing vadose zone or remediation"]
         else:
@@ -266,8 +266,10 @@ def soft_constraints(option: MAROption) -> List[Dict[str, Any]]:
     # land use
     # ==================================================================
     land_use = data_storage.get_data("land_use")
+    land_use_response = 0
+    land_use_penalty = []
     if land_use in ["Urban Residential", "Urban Nonresidential"]:
-        if option.name in ["Spreading Basins"]:
+        if option.name == "Surface Recharge":
             land_use_response = 1
             land_use_penalty.append("Cost: Land cost increase in urban areas. Check zoning requirements and land use regulations.")
         else:

@@ -821,24 +821,24 @@ def run_feasibility_analysis():
                       dss_results.results)
     
     # Check if inputs have changed
-    if current_hash == last_hash:
-        # Inputs haven't changed
-        logger.debug("Feasibility analysis skipped - inputs unchanged (hash match)")
+    # if current_hash == last_hash:
+    #     # Inputs haven't changed
+    #     logger.debug("Feasibility analysis skipped - inputs unchanged (hash match)")
         
-        # # Still ensure graph exists
-        # graph = dash_storage.get_data("decision_graph")
-        # if graph is None:
-        #     # If no graph exists, we need to create one
-        #     graph = get_session_graph()
-        #     dash_storage.set_data("decision_graph", graph)
+    #     # # Still ensure graph exists
+    #     # graph = dash_storage.get_data("decision_graph")
+    #     # if graph is None:
+    #     #     # If no graph exists, we need to create one
+    #     #     graph = get_session_graph()
+    #     #     dash_storage.set_data("decision_graph", graph)
         
-        # # CRITICAL: If DSS results don't exist, run integrated analysis anyway
-        # # This handles cases where results were cleared or this is the first run
-        # if not has_dss_results:
-        #     logger.info("Inputs unchanged but DSS results missing - running integrated analysis")
-        #     dss_results, cost_calculator = run_integrated_analysis()
+    #     # # CRITICAL: If DSS results don't exist, run integrated analysis anyway
+    #     # # This handles cases where results were cleared or this is the first run
+    #     # if not has_dss_results:
+    #     #     logger.info("Inputs unchanged but DSS results missing - running integrated analysis")
+    #     #     dss_results, cost_calculator = run_integrated_analysis()
         
-        return 1
+    #     return 1
     
     # Inputs have changed, run the analysis
     logger.info(f"Feasibility analysis running - inputs changed (hash: {current_hash[:8]}...)")

@@ -143,6 +143,15 @@ class DashboardApp:
         except ImportError:
             from .callbacks.dss_algorithm_callbacks import setup_dss_algorithm_callbacks
         setup_dss_algorithm_callbacks(self.app)
+        
+        # Setup Decision Sensitivity callbacks
+        try:
+            from mar_dss.app.callbacks.decision_sensitivity_callbacks import (
+                setup_decision_sensitivity_callbacks,
+            )
+        except ImportError:
+            from .callbacks.decision_sensitivity_callbacks import setup_decision_sensitivity_callbacks
+        setup_decision_sensitivity_callbacks(self.app)
 
     def create_sample_data(self):
         """Create sample data for demonstration."""
