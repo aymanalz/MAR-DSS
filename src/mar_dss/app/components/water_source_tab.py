@@ -238,8 +238,6 @@ def create_water_source_info_tab():
     emerging_contaminants = dash_storage.get_data("emerging_contaminants") or []
     
     return [
-        html.H3("Water Source Information"),
-        html.P("Water source details and configuration for your MAR project."),
         dbc.Row(
             [
                 dbc.Col(
@@ -247,8 +245,8 @@ def create_water_source_info_tab():
                         dbc.Card(
                             [
                                 dbc.CardHeader(
-                                    "Water Source",
-                                    className="fw-bold bg-primary text-white",
+                                    "Water Source Configuration",
+                                    className="fw-bold bg-primary text-white py-2",
                                 ),
                                 dbc.CardBody(
                                     [
@@ -258,11 +256,7 @@ def create_water_source_info_tab():
                                                     [
                                                         html.Label(
                                                             "Water Source:",
-                                                            className="fw-bold",
-                                                        ),
-                                                        html.P(
-                                                            "Select the water source for your MAR project:",
-                                                            className="text-muted small",
+                                                            className="fw-bold mb-2",
                                                         ),
                                                         dcc.Dropdown(
                                                             id="water-source-dropdown",
@@ -294,16 +288,10 @@ def create_water_source_info_tab():
                                                             ],
                                                             value=water_source,
                                                             placeholder="Select water source...",
-                                                            style={"margin-top": "10px"},
                                                         ),
-                                                        html.Hr(className="my-3"),
                                                         html.Label(
-                                                            "Proximity Distance from Recharge Site:",
-                                                            className="fw-bold",
-                                                        ),
-                                                        html.P(
-                                                            "Enter the distance from the water source to the recharge site:",
-                                                            className="text-muted small",
+                                                            "Proximity Distance (miles):",
+                                                            className="fw-bold mt-3 mb-2",
                                                         ),
                                                         dbc.Input(
                                                             id="proximity-distance-input",
@@ -312,12 +300,7 @@ def create_water_source_info_tab():
                                                             min=0.1,
                                                             max=100.0,
                                                             step=0.1,
-                                                            placeholder="Enter distance in miles",
-                                                            style={"margin-top": "10px"},
-                                                        ),
-                                                        html.Small(
-                                                            "Distance in miles",
-                                                            className="text-muted",
+                                                            placeholder="Enter distance",
                                                         ),
                                                     ],
                                                     width=6,
@@ -325,12 +308,8 @@ def create_water_source_info_tab():
                                                 dbc.Col(
                                                     [
                                                         html.Label(
-                                                            "Water Conveyance Methods:",
-                                                            className="fw-bold",
-                                                        ),
-                                                        html.P(
-                                                            "Select the method used to convey water to the recharge site:",
-                                                            className="text-muted small",
+                                                            "Water Conveyance:",
+                                                            className="fw-bold mb-2",
                                                         ),
                                                         dcc.Dropdown(
                                                             id="water-conveyance-dropdown",
@@ -351,16 +330,10 @@ def create_water_source_info_tab():
                                                             ],
                                                             value=water_conveyance,
                                                             placeholder="Select conveyance method...",
-                                                            style={"margin-top": "10px"},
                                                         ),
-                                                        html.Hr(className="my-3"),
                                                         html.Label(
                                                             "Water Ownership:",
-                                                            className="fw-bold",
-                                                        ),
-                                                        html.P(
-                                                            "Select the water ownership status:",
-                                                            className="text-muted small",
+                                                            className="fw-bold mt-3 mb-2",
                                                         ),
                                                         dbc.RadioItems(
                                                             id="water-ownership-radio",
@@ -373,16 +346,10 @@ def create_water_source_info_tab():
                                                             ],
                                                             value=water_ownership,
                                                             inline=True,
-                                                            style={"margin-top": "10px"},
                                                         ),
-                                                        html.Hr(className="my-3"),
                                                         html.Label(
-                                                            "Is pumping needed to move water from a source location to a recharge site for MAR?",
-                                                            className="fw-bold",
-                                                        ),
-                                                        html.P(
-                                                            "Select whether pumping is required:",
-                                                            className="text-muted small",
+                                                            "Pumping Needed:",
+                                                            className="fw-bold mt-3 mb-2",
                                                         ),
                                                         dbc.RadioItems(
                                                             id="pumping-needed-radio",
@@ -395,21 +362,22 @@ def create_water_source_info_tab():
                                                             ],
                                                             value=pumping_needed,
                                                             inline=True,
-                                                            style={"margin-top": "10px"},
                                                         ),
                                                     ],
                                                     width=6,
                                                 ),
                                             ]
                                         )
-                                    ]
+                                    ],
+                                    className="p-3",
                                 ),
-                            ]
+                            ],
+                            className="mb-3",
                         )
-                    ]
+                    ],
+                    width=12,
                 ),
             ],
-            className="mt-3",
         ),
         dbc.Row(
             [
@@ -419,7 +387,7 @@ def create_water_source_info_tab():
                             [
                                 dbc.CardHeader(
                                     "Volume Estimates",
-                                    className="fw-bold bg-primary text-white",
+                                    className="fw-bold bg-primary text-white py-2",
                                 ),
                                 dbc.CardBody(
                                     [
@@ -427,13 +395,9 @@ def create_water_source_info_tab():
                                             [
                                                 dbc.Col(
                                                     [
-                                                        html.H5(
-                                                            "Monthly Average Flow",
-                                                            className="fw-bold mb-3",
-                                                        ),
-                                                        html.P(
-                                                            "Click on any cell to edit the flow values (ft³/month):",
-                                                            className="text-muted small mb-3",
+                                                        html.Label(
+                                                            "Monthly Average Flow (ft³/month):",
+                                                            className="fw-bold mb-2",
                                                         ),
                                                         dcc.Store(
                                                             id="flow-data-store",
@@ -445,9 +409,9 @@ def create_water_source_info_tab():
                                                 ),
                                                 dbc.Col(
                                                     [
-                                                        html.H5(
-                                                            "Monthly Flow Analysis",
-                                                            className="fw-bold mb-3",
+                                                        html.Label(
+                                                            "Monthly Flow Chart:",
+                                                            className="fw-bold mb-2",
                                                         ),
                                                         dcc.Graph(
                                                             id="monthly-flow-chart",
@@ -459,15 +423,16 @@ def create_water_source_info_tab():
                                                 ),
                                             ]
                                         )
-                                    ]
+                                    ],
+                                    className="p-3",
                                 ),
-                            ]
+                            ],
+                            className="mb-3",
                         )
                     ],
                     width=12,
                 )
             ],
-            className="mt-3",
         ),
     ]
 

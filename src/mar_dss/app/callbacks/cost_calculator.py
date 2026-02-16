@@ -5,32 +5,32 @@ from mar_dss.rules.defaults import defaults
 import mar_dss.app.utils.data_storage as dash_storage
 
 
-default_engineering_elements = {
-   "Flow Capture Structure": True,
-   "Rough Grading/Grubbing in Field":True,
+# default_engineering_elements = {
+#    "Flow Capture Structure": True,
+#    "Rough Grading/Grubbing in Field":True,
   
 
-   "Sediment Removal Pond":True, #
-   "Conveyance to Sediment Removal Pond":"Trapezoidal Channel", # "Gravity Conveyance Pipeline" or "Pumped Conveyance"
-   "Sediment Removal Target":"Medium Silt", # "Medium Silt" or ""Fine Silt"
-   "Contaminant Filters":False, # 
+#    "Sediment Removal Pond":True, #
+#    "Conveyance to Sediment Removal Pond":"Trapezoidal Channel", # "Gravity Conveyance Pipeline" or "Pumped Conveyance"
+#    "Sediment Removal Target":"Medium Silt", # "Medium Silt" or ""Fine Silt"
+#    "Contaminant Filters":False, # 
 
-   "Storage Pond":True, #
-   "Pipeline to Storage Pond":True, #
-   "Pump to Storage Pond":True, #
-   "Controls for Storage Pond":True, #
-   "Electrical System for Storage Pond":True, #
+#    "Storage Pond":True, #
+#    "Pipeline to Storage Pond":True, #
+#    "Pump to Storage Pond":True, #
+#    "Controls for Storage Pond":True, #
+#    "Electrical System for Storage Pond":True, #
 
-   "Pipeline to Infiltration Site":True, #
-   "Pump to Infiltration Site":True, #
-   "Controls for Infiltration Site":True, #
-   "Electrical System for Infiltration Site":True, #
+#    "Pipeline to Infiltration Site":True, #
+#    "Pump to Infiltration Site":True, #
+#    "Controls for Infiltration Site":True, #
+#    "Electrical System for Infiltration Site":True, #
 
-   "Dry Wells Infiltration":"None", # "Dry Wells Infiltration" or "None"
-   "Injection Wells Infiltration":"None", # "Injection Wells Infiltration" or "None"
-   "Infiltration Basin":"None", # "Infiltration Basin" or "None"  
+#    "Dry Wells Infiltration":"None", # "Dry Wells Infiltration" or "None"
+#    "Injection Wells Infiltration":"None", # "Injection Wells Infiltration" or "None"
+#    "Infiltration Basin":"None", # "Infiltration Basin" or "None"  
    
-}
+# }
 
 class CostCalculator:
     def __init__(
@@ -155,7 +155,7 @@ class CostCalculator:
             )
 
     def calculate_cost(self):
-        self.read_engineering_elements()
+        #self.read_engineering_elements()
         self.hydro_calculations()
         self.conveyance_calculations()
         self.sediment_removal_pond()
@@ -169,9 +169,9 @@ class CostCalculator:
         self.maintenance_costs()
         self.net_present_value()
     
-    def read_engineering_elements(self):
-        # todo: read from data storage
-        self.engineering_elements = default_engineering_elements
+    # def read_engineering_elements(self):
+    #     # todo: read from data storage
+    #     self.engineering_elements = default_engineering_elements
 
 
     def hydro_calculations(self):
@@ -526,110 +526,139 @@ class CostCalculator:
         df = pd.DataFrame(columns=columns)        
 
         # ======== collection point and site preparation ========
-        unit_price = 0
-        if self.engineering_elements["Rough Grading/Grubbing in Field"]:
-            unit_price = 1500
-        df.loc[0] = [
+        irow = 0
+        flow_capture_values = dash_storage.get_data("flow_capture_values")
+        if "rough_grading" in flow_capture_values:
+            unit_price =1500
+        else:
+            unit_price = 0       
+        df.loc[irow] = [
             'COLLECTION BASIN PREPARATION',
             'Rough Grading/Grubbing in Field', 'acres', unit_price,
             self.hydro.basin_area_acres
         ]
-        unit_price = 0
-        if self.engineering_elements["Flow Capture Structure"]:
+
+        # ======== flow capture structure ========
+        irow += 1
+        if "flow_capture_structure" in flow_capture_values:
             unit_price = 10000
-        df.loc[1] = [
+        else:
+            unit_price = 0
+        df.loc[irow] = [
             'COLLECTION BASIN PREPARATION', 'Flow Capture Structure',
             'LS', unit_price, 1.0
         ]
+        
+        # ======== pump is used to divert water ========
+        irow += 1
+        if "pump_used" in flow_capture_values:
+            unit_price = 50000
+        else:
+            unit_price = 0
+        df.loc[irow] = [
+            'COLLECTION BASIN PREPARATION', 'Pump', 'LF', unit_price, 1.0
+        ]
+      
 
-        # unit_price = 0
-        # if self.engineering_elements["Pump is used to divert water"]:
-        #     unit_price = 50000  
-        # df.loc[2] = [
-        #     'COLLECTION BASIN PREPARATION', 'Pump', 'LF', unit_price, 1.0
-        # ]
-
-        # ======== conveyance to sediment removal pond ========
-        remove_sediment = self.engineering_elements["Sediment Removal Pond"]
-       
-
-        if (
-            self.collection_to_sediment_removal__conveyance_method ==
-            "trapezoidal"
-        ):
-            df.loc[2] = [
+        # ======== conveyance to sediment removal pond ======== 
+        conveyance_method = dash_storage.get_data("conveyance_method")
+      
+        irow += 1
+        if ("trapezoidal" == conveyance_method):
+            df.loc[irow] = [
                 'CONVEYANCE TO SEDIMENT POND',
                 'Trapezoidal Channel', 'LF', 93,
                 self.distance_collection_to_sediment_pond_ft
             ]
-        elif (
-            self.collection_to_sediment_removal__conveyance_method ==
-            "pipeline"
-        ):
-            df.loc[2] = [
+        elif ("pipeline" == conveyance_method):
+            df.loc[irow] = [
                 'CONVEYANCE TO SEDIMENT POND', 'Pipeline', 'LF', 72,
                 self.distance_collection_to_sediment_pond_ft
             ]
-        elif (
-            self.collection_to_sediment_removal__conveyance_method ==
-            "pumped"
-        ):
-            df.loc[2] = [
+        elif ("pumped" == conveyance_method):
+            df.loc[irow] = [
                 'CONVEYANCE TO SEDIMENT POND',
                 'Pumped Conveyance', 'LF', 400,
                 self.distance_collection_to_sediment_pond_ft
             ]
         
+        # ======== sediment removal pond ========
+        remove_sediment = dash_storage.get_data("remove_sediment_removal_pond")
+        if remove_sediment is None:
+            remove_sediment = False
+
         if remove_sediment:
             unit_price = 0
         else:
             unit_price = 10000
-
-        df.loc[5] = [
+        irow += 1
+        df.loc[irow] = [
             'SEDIMENT REMOVAL POND', 'Trash Rack', 'LS', unit_price, 1
         ]
-
+       
         if not(remove_sediment):
             unit_price = 0
         else:
             unit_price = 500000
         pond_area = self.sediment_removal_pond_area_acres
-        df.loc[6] = [
+        irow += 1
+        df.loc[irow] = [
             'SEDIMENT REMOVAL POND', self.sediment_type, 'Acre', unit_price,
             pond_area
         ]
 
         # ==== storage
-        storage = self.engineering_elements["Storage Pond"]
-        if not(storage):
-            unit_price = 0
-        else:
-            unit_price = 72
-        df.loc[7] = [
+        storage_pond_values = dash_storage.get_data("storage_pond_values")
+        pumped_storage_values = dash_storage.get_data("pumped_storage_values")
+        storage = "storage_pond_construction" in storage_pond_values
+
+        if storage is None:
+            storage = True
+        # ======== pipeline to storage pond ========
+        unit_price = 0
+        if storage:
+            if "pipeline_cost" in pumped_storage_values:
+                unit_price = 72
+   
+        irow += 1
+        df.loc[irow] = [
             'PUMPED CONVEYANCE TO STORAGE/INFILTRATION POND',
             'Pipeline Cost',
             'LF', unit_price, self.distance_sediment_to_storage_pond_ft
         ]
-        unit_price = 0
-        if self.engineering_elements["Pump to Storage Pond"] and storage:
-            unit_price = 100000
-        df.loc[8] = [
+        # ======== pumping and bag filter cost for storage pond ========
+        unit_price = 0        
+        if storage:
+            if "pumping_bag_filter_cost" in pumped_storage_values:
+                unit_price = 100000
+        irow += 1
+        df.loc[irow] = [
             'PUMPED CONVEYANCE TO STORAGE/INFILTRATION POND',
             'Pumping and Bag Filter Cost', 'LS', unit_price, 1
         ]
+
+        # ======== controls  ========
         unit_price = 0
-        if self.engineering_elements["Controls for Storage Pond"] and storage:
-            unit_price = 50000
-        df.loc[9] = [
+        if storage:         
+            if "controls" in pumped_storage_values:
+                unit_price = 50000         
+        
+        irow += 1
+        df.loc[irow] = [
             'PUMPED CONVEYANCE TO STORAGE/INFILTRATION POND',
             'Controls', 'LS', unit_price, 1
         ]
-        if self.engineering_elements["Electrical System for Storage Pond"] and storage:
-            unit_price = 20000
-        else:
-            unit_price = 0
-
-        df.loc[10] = [
+        # if self.engineering_elements["Electrical System for Storage Pond"] and storage:
+        #     unit_price = 20000
+        # else:
+        # ======== electrical system for storage pond ========
+        unit_price = 0
+        if storage:
+            if "electrical_system" in pumped_storage_values:
+                unit_price = 20000
+           
+        irow += 1
+        df.loc[irow] = [
             'PUMPED CONVEYANCE TO STORAGE/INFILTRATION POND',
             'Electrical System', 'LS', unit_price, 1
         ]
@@ -638,44 +667,48 @@ class CostCalculator:
             unit_price = 200000
         else:
             unit_price = 0
-
-        df.loc[11] = [
+        irow += 1
+        df.loc[irow] = [
             'STORAGE POND', 'Pond construction cost', 'Acre', unit_price,
             self.storage_pond.area_ft2 / 43560.0
         ]
 
         # ==== infiltration site
-        
-        if self.engineering_elements["Pipeline to Infiltration Site"]:
+        pumped_infiltration_values = dash_storage.get_data("pumped_infiltration_values")
+        if "infiltration_pipeline_cost" in pumped_infiltration_values:
             unit_price = 72
         else:
             unit_price = 0
 
-        df.loc[12] = [
+        irow += 1
+        df.loc[irow] = [
             'PUMPED CONVEYANCE TO INFILTRATION SITE',
             'Pipeline Cost', 'LF', unit_price, 500
         ]
-        if self.engineering_elements["Pump to Infiltration Site"]:
+        if"infiltration_pumping_bag_filter_cost" in pumped_infiltration_values:
             unit_price = 100000
         else:
             unit_price = 0
-        df.loc[13] = [
+        irow += 1
+        df.loc[irow] = [
             'PUMPED CONVEYANCE TO INFILTRATION SITE',
             'Pumping and Bag Filter Cost', 'LS', unit_price, 1
         ]
-        if self.engineering_elements["Controls for Infiltration Site"]:
+        if "infiltration_controls" in pumped_infiltration_values:
             unit_price = 50000
         else:
             unit_price = 0
-        df.loc[14] = [
+        irow += 1
+        df.loc[irow] = [
             'PUMPED CONVEYANCE TO INFILTRATION SITE',
             'Controls', 'LS', unit_price, 1
         ]
-        if self.engineering_elements["Electrical System for Infiltration Site"]:
+        if"infiltration_electrical_system" in pumped_infiltration_values:
             unit_price = 20000
         else:
             unit_price = 0
-        df.loc[15] = [
+        irow += 1
+        df.loc[irow] = [
             'PUMPED CONVEYANCE TO INFILTRATION SITE',
             'Electrical System', 'LS', unit_price, 1
         ]
@@ -688,33 +721,39 @@ class CostCalculator:
         # unit_price = 0
         # if self.recharge_method == "dry_well":
         unit_price = 50000
+        irow += 1
+        irow_dry_well = irow
         if self.number_of_dry_wells is not None:
-            df.loc[16] = [
+            df.loc[irow] = [
                 'INFILTRATION', 'Dry Well Cost', 'LF', unit_price,
                self.number_of_dry_wells
             ]
-        else:          
-       
-            df.loc[16] = [
+        else:
+            
+            df.loc[irow] = [
                 'INFILTRATION', 'Dry Well Cost', 'LF', unit_price,
                 self.dry_wells_infiltration_calculations[mask][
                     "Number of Wells Required"
                 ].values[0]
             ]
-        unit_price = 250000        
-        df.loc[17] = [
+        unit_price = 250000
+        irow += 1
+        irow_injection_wells = irow
+        df.loc[irow] = [
             'INFILTRATION', 'Injection Wells', 'EA', unit_price,
             self.number_of_injection_wells
         ]
        
         unit_price = 100000
-
-        df.loc[18] = [
+        irow += 1
+        irow_distribution_piping = irow
+        df.loc[irow] = [
             'INFILTRATION', "Distribution Piping", "LS", unit_price, 1
         ]
-      
+        irow += 1
+        irow_infiltration_basin = irow
         unit_price = 200000
-        df.loc[19] = [
+        df.loc[irow] = [
             'INFILTRATION', "Infiltration Basin", "Acre", unit_price,
             self.infiltration_basin_calculations["Basin Area (sf)"][0] /
             43560.0
@@ -725,22 +764,22 @@ class CostCalculator:
             unit_price = 0
             if recharge_method == "Spreading Pond":
                 unit_price = 200000
-                df.loc[16,  'Unit Cost $'] = 0 # dru well
-                df.loc[17,  'Unit Cost $'] = 0 # injection wells
-                df.loc[18,  'Unit Cost $'] = 0 # distribution piping
-                df.loc[19,  'Unit Cost $'] = unit_price # infiltration basin
+                df.loc[irow_dry_well,  'Unit Cost $'] = 0 # dru well
+                df.loc[irow_injection_wells,  'Unit Cost $'] = 0 # injection wells
+                df.loc[irow_distribution_piping,  'Unit Cost $'] = 0 # distribution piping
+                df.loc[irow_infiltration_basin,  'Unit Cost $'] = unit_price # infiltration basin
             elif recharge_method == "Injection Wells":
                 unit_price = 250000
-                df.loc[16,  'Unit Cost $'] = 0 # dru well
-                df.loc[17,  'Unit Cost $'] = unit_price # injection wells
-                df.loc[18,  'Unit Cost $'] = 100000 # distribution piping
-                df.loc[19,  'Unit Cost $'] = 0 # infiltration basin
+                df.loc[irow_dry_well,  'Unit Cost $'] = 0 # dru well
+                df.loc[irow_injection_wells,  'Unit Cost $'] = unit_price # injection wells
+                df.loc[irow_distribution_piping,  'Unit Cost $'] = 100000 # distribution piping
+                df.loc[irow_infiltration_basin,  'Unit Cost $'] = 0 # infiltration basin
             elif recharge_method == "Dry Wells":
                 unit_price = 50000                 
-                df.loc[16,  'Unit Cost $'] = unit_price # dry well
-                df.loc[17,  'Unit Cost $'] = 0 # injection wells
-                df.loc[18,  'Unit Cost $'] = 100000 # distribution piping
-                df.loc[19,  'Unit Cost $'] = 0 # infiltration basin
+                df.loc[irow_dry_well,  'Unit Cost $'] = unit_price # dry well
+                df.loc[irow_injection_wells,  'Unit Cost $'] = 0 # injection wells
+                df.loc[irow_distribution_piping,  'Unit Cost $'] = 100000 # distribution piping
+                df.loc[irow_infiltration_basin,  'Unit Cost $'] = 0 # infiltration basin
 
             df[name] = (
                 df['Unit Cost $'] * df['Number of Units']

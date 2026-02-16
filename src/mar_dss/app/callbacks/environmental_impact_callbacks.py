@@ -674,6 +674,107 @@ def setup_environmental_impact_callbacks(app):
         dash_storage.set_data("vadose_zone_pollution", current_selection)
         return current_selection
 
+    # Callback to load and auto-save Gemini API key
+    @app.callback(
+        Output('gemini-api-key-input', 'value'),
+        [
+            Input('gemini-api-key-input', 'value'),
+            Input('gemini-api-key-input', 'n_blur'),
+            Input('gemini-api-key-input', 'n_submit'),
+            Input('gemini-api-key-input', 'id')
+        ],
+        prevent_initial_call=False
+    )
+    def handle_gemini_api_key(value, n_blur, n_submit, component_id):
+        """Handle Gemini API key input and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved value or use default
+            saved_key = dash_storage.get_data("gemini_api_key") or ""
+            dash_storage.set_data("gemini_api_key", saved_key)
+            return saved_key
+        
+        # Get the current value
+        current_value = value if value else ""
+        
+        # Determine which trigger caused the callback
+        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1]
+        
+        # Save for all triggers except initial load
+        if trigger_prop != "id":
+            dash_storage.set_data("gemini_api_key", current_value)
+        
+        return current_value
+    
+    # Callback to load and auto-save Gemini API file path
+    @app.callback(
+        Output('gemini-api-file-input', 'value'),
+        [
+            Input('gemini-api-file-input', 'value'),
+            Input('gemini-api-file-input', 'n_blur'),
+            Input('gemini-api-file-input', 'n_submit'),
+            Input('gemini-api-file-input', 'id')
+        ],
+        prevent_initial_call=False
+    )
+    def handle_gemini_api_file(value, n_blur, n_submit, component_id):
+        """Handle Gemini API file path input and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved value or use default
+            saved_file = dash_storage.get_data("gemini_api_file") or r"C:\workspace\api\gemini.txt"
+            dash_storage.set_data("gemini_api_file", saved_file)
+            return saved_file
+        
+        # Get the current value
+        current_value = value if value else r"C:\workspace\api\gemini.txt"
+        
+        # Determine which trigger caused the callback
+        trigger_prop = ctx.triggered[0]["prop_id"].split(".")[1]
+        
+        # Save for all triggers except initial load
+        if trigger_prop != "id":
+            dash_storage.set_data("gemini_api_file", current_value)
+        
+        return current_value
+    
+    # Callback to save Gemini model and temperature
+    @app.callback(
+        [
+            Output('gemini-model-select', 'value'),
+            Output('temperature-slider', 'value')
+        ],
+        [
+            Input('gemini-model-select', 'value'),
+            Input('temperature-slider', 'value')
+        ],
+        prevent_initial_call=False
+    )
+    def save_gemini_settings(model, temperature):
+        """Save Gemini model and temperature settings to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved values or use defaults
+            saved_model = dash_storage.get_data("gemini_model") or "gemini-2.5-flash"
+            saved_temp = float(dash_storage.get_data("gemini_temperature") or 0.5)
+            dash_storage.set_data("gemini_model", saved_model)
+            dash_storage.set_data("gemini_temperature", saved_temp)
+            return saved_model, saved_temp
+        
+        # Save current values
+        if model:
+            dash_storage.set_data("gemini_model", model)
+        if temperature is not None:
+            dash_storage.set_data("gemini_temperature", float(temperature))
+        
+        # Get current values from storage
+        current_model = dash_storage.get_data("gemini_model") or "gemini-2.5-flash"
+        current_temp = float(dash_storage.get_data("gemini_temperature") or 0.5)
+        return current_model, current_temp
+    
     # Callback for MAR Factors Generation (Tab 4.2)
     @app.callback(
         Output('mar-factors-table-container', 'children'),
@@ -681,18 +782,37 @@ def setup_environmental_impact_callbacks(app):
             Input('generate-mar-factors-btn', 'n_clicks')
         ],
         [
-            State('mar-location-input', 'value')
+            State('mar-location-input', 'value'),
+            State('gemini-model-select', 'value'),
+            State('temperature-slider', 'value')
         ],
         prevent_initial_call=True
     )
-    def generate_mar_factors_table(n_clicks, location):
+    def generate_mar_factors_table(n_clicks, location, model, temperature):
         """Generate MAR factors table using AI."""
         if n_clicks == 0 or not location or location.strip() == "":
             return html.Div()
         
         try:
+            # Get API key from data storage
+            # check if api file exist in C:\workspace\projects\MAR_ESCTP\scripts\mar_dss\src\mar_dss\app
+            
+            api_key = dash_storage.get_data("gemini_api_key")
+            # if not api_key:
+            #     return html.Div([
+            #         dbc.Alert([
+            #             html.H5("API Key Required", className="alert-heading"),
+            #             html.P("Please enter and save your Gemini API key in the control panel above before generating MAR factors.", className="mb-0")
+            #         ], color="warning")
+            #     ])
+            # else:
+            #     pass
+            # Get model and temperature from storage or use provided values
+            model = model or dash_storage.get_data("gemini_model") or "gemini-2.5-flash"
+            temperature = temperature if temperature is not None else dash_storage.get_data("gemini_temperature") or 0.5
+            
             # Call the AI function (this may take a moment)
-            df = get_mar_factors(location.strip())
+            df = get_mar_factors(location.strip(), model=model, temperature=temperature)
             
             if df is None or df.empty:
                 return html.Div([

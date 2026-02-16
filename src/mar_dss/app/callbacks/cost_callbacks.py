@@ -353,6 +353,60 @@ def setup_cost_callbacks(app):
         dash_storage.set_data("distance_to_sediment", current_value)
         return current_value
     
+    # Callback to save "Remove Sediment Removal Pond" checkbox to data storage
+    @app.callback(
+        Output("remove-sediment-removal-pond-check", "value"),
+        [
+            Input("remove-sediment-removal-pond-check", "value"),
+            Input("remove-sediment-removal-pond-check", "id")
+        ],
+        prevent_initial_call=False
+    )
+    def handle_remove_sediment_pond_checkbox(value, component_id):
+        """Handle remove sediment removal pond checkbox and save to data storage."""
+        ctx = dash.callback_context
+        
+        if not ctx.triggered:
+            # Initial load - get saved value or use default, and save it
+            remove_sediment = dash_storage.get_data("remove_sediment_removal_pond") or False
+            dash_storage.set_data("remove_sediment_removal_pond", remove_sediment)
+            return remove_sediment
+        
+        current_value = value if value is not None else False
+        dash_storage.set_data("remove_sediment_removal_pond", current_value)
+        return current_value
+    
+    # Callback to enable/disable sediment removal pond components based on checkbox
+    @app.callback(
+        [
+            Output("sediment-removal-pond-check-wrapper", "style"),
+            Output("sediment-removal-target-radio-wrapper", "style"),
+        ],
+        [
+            Input("remove-sediment-removal-pond-check", "value"),
+        ],
+        prevent_initial_call=False
+    )
+    def handle_sediment_pond_components_disabled(remove_sediment):
+        """Enable/disable sediment removal pond components based on checkbox."""
+        if remove_sediment is None:
+            remove_sediment = False
+        
+        # If "Remove Sediment Removal Pond" is checked, disable all components
+        if remove_sediment:
+            disabled_style = {
+                "opacity": "0.5",
+                "pointerEvents": "none",
+                "cursor": "not-allowed"
+            }
+        else:
+            disabled_style = {
+                "opacity": "1",
+                "pointerEvents": "auto"
+            }
+        
+        return disabled_style, disabled_style
+    
     # Callback to save sediment removal pond checklist to data storage
     @app.callback(
         Output("sediment-removal-pond-check", "value"),
@@ -449,6 +503,40 @@ def setup_cost_callbacks(app):
         current_selection = value if value else []
         dash_storage.set_data("storage_pond_values", current_selection)
         return current_selection
+    
+    # Callback to enable/disable "Pumped Conveyance To Storage Pond" components based on Storage Pond
+    @app.callback(
+        [
+            Output("pumped-conveyance-storage-check-wrapper", "style"),
+            Output("distance-to-storage-pond-input-wrapper", "style"),
+        ],
+        [
+            Input("storage-pond-check", "value"),
+        ],
+        prevent_initial_call=False
+    )
+    def handle_pumped_conveyance_storage_disabled(storage_pond_values):
+        """Enable/disable pumped conveyance to storage pond components based on Storage Pond."""
+        if storage_pond_values is None:
+            storage_pond_values = []
+        
+        # Check if "storage_pond_construction" is in the list
+        storage_pond_enabled = "storage_pond_construction" in storage_pond_values
+        
+        # If Storage Pond is False (not enabled), disable all components
+        if not storage_pond_enabled:
+            disabled_style = {
+                "opacity": "0.5",
+                "pointerEvents": "none",
+                "cursor": "not-allowed"
+            }
+        else:
+            disabled_style = {
+                "opacity": "1",
+                "pointerEvents": "auto"
+            }
+        
+        return disabled_style, disabled_style
     
     # Callback to save pumped conveyance to infiltration checklist to data storage
     @app.callback(

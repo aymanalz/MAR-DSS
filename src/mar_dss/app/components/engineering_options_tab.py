@@ -187,89 +187,50 @@ def create_engineering_elements_content():
                                 dbc.CardBody(
                                     [
                                         html.H4("Sediment Removal Pond"),
-                                        dbc.Checklist(
-                                            options=[
-                                                {
-                                                    "label": "Trash Rack",
-                                                    "value": "trash_rack"
-                                                },
-                                                {
-                                                    "label": "Contech Filtration",
-                                                    "value": "contech_filtration"
-                                                }
-                                            ],
-                                            value=["trash_rack"],
-                                            id="sediment-removal-pond-check",
-                                            switch=True,
+                                        dbc.Checkbox(
+                                            id="remove-sediment-removal-pond-check",
+                                            label="Remove Sediment Removal Pond",
+                                            className="mb-3",
+                                            value=False,
+                                        ),
+                                        html.Div(
+                                            dbc.Checklist(
+                                                options=[
+                                                    {
+                                                        "label": "Trash Rack",
+                                                        "value": "trash_rack"
+                                                    },
+                                                    {
+                                                        "label": "Contech Filtration",
+                                                        "value": "contech_filtration"
+                                                    }
+                                                ],
+                                                value=["trash_rack"],
+                                                id="sediment-removal-pond-check",
+                                                switch=True,
+                                            ),
+                                            id="sediment-removal-pond-check-wrapper",
                                         ),
                                         html.Label(
                                             "Sediment Removal Target:",
                                             className="form-label mt-3"
                                         ),
-                                        dbc.RadioItems(
-                                            options=[
-                                                {
-                                                    "label": "Fine Silt",
-                                                    "value": "fine_silt"
-                                                },
-                                                {
-                                                    "label": "Medium Silt",
-                                                    "value": "medium_silt"
-                                                }
-                                            ],
-                                            value="medium_silt",
-                                            id="sediment-removal-target-radio",
-                                        ),
-                                    ]
-                                ),
-                            ],
-                            className="mb-4",
-                        ),
-                        dbc.Card(
-                            [
-                                dbc.CardBody(
-                                    [
-                                        html.H4("Pumped Conveyance To Storage Pond"),
-                                        dbc.Checklist(
-                                            options=[
-                                                {
-                                                    "label": "Pipeline Cost",
-                                                    "value": "pipeline_cost"
-                                                },
-                                                {
-                                                    "label": "Pumping and Bag Filter "
-                                                    "Cost",
-                                                    "value": "pumping_bag_filter_cost"
-                                                },
-                                                {
-                                                    "label": "Controls",
-                                                    "value": "controls"
-                                                },
-                                                {
-                                                    "label": "Electrical System",
-                                                    "value": "electrical_system"
-                                                }
-                                            ],
-                                            value=[
-                                                "pipeline_cost",
-                                                "pumping_bag_filter_cost",
-                                                "controls",
-                                                "electrical_system"
-                                            ],
-                                            id="pumped-conveyance-storage-check",
-                                            switch=True,
-                                        ),
-                                        html.Label(
-                                            "Distance to Storage Pond (ft):",
-                                            className="form-label mt-3"
-                                        ),
-                                        dbc.Input(
-                                            type="number",
-                                            value=500.0,
-                                            id="distance-to-storage-pond-input",
-                                            min=0,
-                                            step=0.1,
-                                            className="mb-2"
+                                        html.Div(
+                                            dbc.RadioItems(
+                                                options=[
+                                                    {
+                                                        "label": "Fine Silt",
+                                                        "value": "fine_silt"
+                                                    },
+                                                    {
+                                                        "label": "Medium Silt",
+                                                        "value": "medium_silt"
+                                                    }
+                                                ],
+                                                value="medium_silt",
+                                                id="sediment-removal-target-radio",
+                                            ),
+                                            id="sediment-removal-target-radio-wrapper",
                                         ),
                                     ]
                                 ),
@@ -292,6 +253,63 @@ def create_engineering_elements_content():
                                             value=["storage_pond_construction"],
                                             id="storage-pond-check",
                                             switch=True,
+                                        ),
+                                    ]
+                                ),
+                            ],
+                            className="mb-4",
+                        ),
+                        dbc.Card(
+                            [
+                                dbc.CardBody(
+                                    [
+                                        html.H4("Pumped Conveyance To Storage Pond"),
+                                        html.Div(
+                                            dbc.Checklist(
+                                                options=[
+                                                    {
+                                                        "label": "Pipeline Cost",
+                                                        "value": "pipeline_cost"
+                                                    },
+                                                    {
+                                                        "label": "Pumping and Bag Filter "
+                                                        "Cost",
+                                                        "value": "pumping_bag_filter_cost"
+                                                    },
+                                                    {
+                                                        "label": "Controls",
+                                                        "value": "controls"
+                                                    },
+                                                    {
+                                                        "label": "Electrical System",
+                                                        "value": "electrical_system"
+                                                    }
+                                                ],
+                                                value=[
+                                                    "pipeline_cost",
+                                                    "pumping_bag_filter_cost",
+                                                    "controls",
+                                                    "electrical_system"
+                                                ],
+                                                id="pumped-conveyance-storage-check",
+                                                switch=True,
+                                            ),
+                                            id="pumped-conveyance-storage-check-wrapper",
+                                        ),
+                                        html.Label(
+                                            "Distance to Storage Pond (ft):",
+                                            className="form-label mt-3"
+                                        ),
+                                        html.Div(
+                                            dbc.Input(
+                                                type="number",
+                                                value=500.0,
+                                                id="distance-to-storage-pond-input",
+                                                min=0,
+                                                step=0.1,
+                                                className="mb-2"
+                                            ),
+                                            id="distance-to-storage-pond-input-wrapper",
                                         ),
                                     ]
                                 ),

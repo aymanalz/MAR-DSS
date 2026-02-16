@@ -701,6 +701,10 @@ def create_water_quality_content():
 
 def create_environmental_considerations_content():
     """Create the Environmental Considerations content (sub-tab 4.2)."""
+    # Get existing API key and file path from data storage if available
+    gemini_api_key = dash_storage.get_data("gemini_api_key") or ""
+    gemini_api_file = dash_storage.get_data("gemini_api_file") or r"C:\workspace\api\gemini.txt"
+    
     return [
         dbc.Row([
             dbc.Col([
@@ -708,6 +712,84 @@ def create_environmental_considerations_content():
                     dbc.CardHeader("Environmental Considerations", className="fw-bold bg-primary text-white"),
                     dbc.CardBody([
                         html.H5("AI-Generated MAR Factors Analysis", className="mb-4 text-primary"),
+                        
+                        # Gemini AI Control Panel
+                        dbc.Card([
+                            dbc.CardHeader([
+                                html.H6("Gemini AI Configuration", className="mb-0 text-white fw-bold")
+                            ], className="bg-secondary py-2"),
+                            dbc.CardBody([
+                                dbc.Row([
+                                    dbc.Col([
+                                        dbc.Label("Gemini API Key:", className="fw-bold mb-2"),
+                                        dbc.Input(
+                                            id="gemini-api-key-input",
+                                            type="password",
+                                            value=gemini_api_key,
+                                            placeholder="Enter your Gemini API key",
+                                            className="mb-2"
+                                        ),
+                                        html.Small(
+                                            "Your API key is stored locally and used only for generating MAR factors. "
+                                            "Get your API key from: https://aistudio.google.com/apikey",
+                                            className="text-muted"
+                                        ),
+                                    ], width=12),
+                                ], className="mb-3"),
+                                dbc.Row([
+                                    dbc.Col([
+                                        dbc.Label("API Key File Path (Optional):", className="fw-bold mb-2"),
+                                        dbc.Input(
+                                            id="gemini-api-file-input",
+                                            type="text",
+                                            value=gemini_api_file,
+                                            placeholder=r"C:\workspace\api\gemini.txt",
+                                            className="mb-2"
+                                        ),
+                                        html.Small(
+                                            "Path to a file containing your Gemini API key (used as fallback if API key is not entered directly).",
+                                            className="text-muted"
+                                        ),
+                                    ], width=12),
+                                ], className="mb-3"),
+                                dbc.Row([
+                                    dbc.Col([
+                                        dbc.Label("Gemini Model Version:", className="fw-bold mb-2"),
+                                        dcc.Dropdown(
+                                            id="gemini-model-select",
+                                            options=[
+                                                {"label": "gemini-2.5-flash", "value": "gemini-2.5-flash"},
+                                                {"label": "gemini-1.5-flash", "value": "gemini-1.5-flash"},
+                                                {"label": "gemini-1.5-pro", "value": "gemini-1.5-pro"},
+                                                {"label": "gemini-pro", "value": "gemini-pro"},
+                                            ],
+                                            value=dash_storage.get_data("gemini_model") or "gemini-2.5-flash",
+                                            placeholder="Select Gemini model",
+                                            className="mb-2"
+                                        ),
+                                    ], width=12, md=6),
+                                    dbc.Col([
+                                        dbc.Label("Temperature:", className="fw-bold mb-2"),
+                                        dcc.Slider(
+                                            id="temperature-slider",
+                                            min=0.0,
+                                            max=2.0,
+                                            step=0.1,
+                                            value=float(dash_storage.get_data("gemini_temperature") or 0.5),
+                                            marks={
+                                                0.0: {'label': '0.0', 'style': {'fontSize': '12px'}},
+                                                0.5: {'label': '0.5', 'style': {'fontSize': '12px'}},
+                                                1.0: {'label': '1.0', 'style': {'fontSize': '12px'}},
+                                                1.5: {'label': '1.5', 'style': {'fontSize': '12px'}},
+                                                2.0: {'label': '2.0', 'style': {'fontSize': '12px'}}
+                                            },
+                                            tooltip={"placement": "bottom", "always_visible": True}
+                                        ),
+                                        html.Div(id="temperature-value-display", className="mt-2"),
+                                    ], width=12, md=6),
+                                ], className="mb-3"),
+                            ], className="p-3")
+                        ], className="mb-4 border"),
                         
                         # Text and button on same row
                         dbc.Row([
@@ -762,7 +844,7 @@ def create_environmental_considerations_content():
                         ]),
                         
                         # Output section
-                        html.Div(id="mar-factors-output", className="mt-4")
+                        html.Div(id="mar-factors-table-container", className="mt-4")
                     ])
                 ])
             ], width=12)

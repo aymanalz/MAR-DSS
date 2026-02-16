@@ -855,7 +855,7 @@ def run_feasibility_analysis():
     # Store the new hash for next time
     dash_storage.set_data("feasibility_analysis_hash", current_hash)
     logger.debug("Graph evaluation completed, plotting results")
-    graph.plotly()
+    #graph.plotly()
     
     # Run integrated analysis (cost + DSS)
     dss_results, cost_calculator = run_integrated_analysis()

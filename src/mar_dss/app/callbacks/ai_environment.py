@@ -1,15 +1,25 @@
 from google import genai
 import json
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 import pandas as pd
 import os # Import os for environment variable management
+import mar_dss.app.utils.data_storage as dash_storage
 
 # --- REVISED MAR PROMPT ---
 
-def get_mar_factors(location):
+def get_mar_factors(location, model="gemini-2.5-flash", temperature=0.5):
     """
     Get the MAR factors for a given location.
+    
+    Parameters:
+    -----------
+    location : str
+        The location for which to generate MAR factors
+    model : str, optional
+        The Gemini model version to use (default: "gemini-2.5-flash")
+    temperature : float, optional
+        The temperature parameter for generation (default: 0.5, range: 0.0-2.0)
     """
         
     mar_prompt = f"""
@@ -52,28 +62,33 @@ def get_mar_factors(location):
 
     # --- API Configuration and Execution ---
 
-    # **IMPORTANT**: Using environment variables is the recommended practice.
-    # Replace this file path logic with `os.getenv("GEMINI_API_KEY")` if possible.
-    api_file = r"C:\workspace\api\gemini.txt"
-    if os.path.exists(api_file):
-        with open(api_file, "r") as f:
-            api_key = f.read().strip()
-    else:
-        # Fallback to environment variable if file not found
+    # Priority order: 1) data_storage, 2) file, 3) environment variable
+    api_key = dash_storage.get_data("gemini_api_key")
+    
+    if not api_key:
+        # Fallback to file - use saved path from data_storage or default
+        api_file = dash_storage.get_data("gemini_api_file") or r"C:\workspace\api\gemini.txt"
+        if os.path.exists(api_file):
+            with open(api_file, "r") as f:
+                api_key = f.read().strip()
+    
+    if not api_key:
+        # Fallback to environment variable
         api_key = os.getenv("GEMINI_API_KEY")
 
     if not api_key:
-        raise ValueError("API Key not found. Please set GEMINI_API_KEY environment variable or check the file path.")
+        raise ValueError("API Key not found. Please enter your Gemini API key in the control panel, set GEMINI_API_KEY environment variable, or check the file path.")
 
     client = genai.Client(api_key=api_key)
 
     # The model must be one that supports structured output (e.g., gemini-2.5-flash)
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model=model,
         contents=mar_prompt,  # Use the revised MAR prompt
         config=genai.types.GenerateContentConfig(
             response_mime_type="application/json",
             response_schema=MARFactorList,  # Use the revised Pydantic schema
+            temperature=temperature,
         ),
     )
 
