@@ -9,7 +9,6 @@ import dash_leaflet as dl
 import pandas as pd
 import osmnx as ox
 import geopandas as gpd
-import streamstats
 import json
 from dash import dash_table
 from mar_dss.pfdf.data.noaa.atlas14 import download
@@ -131,6 +130,40 @@ def streams_to_geojson(streams):
     geojson = json.loads(streams.to_json())
     print(f"Converted {len(geojson.get('features', []))} features to GeoJSON")
     return geojson
+
+SS_DELINEATE_BASE = "https://streamstats.usgs.gov/ss-delineate/v1"
+SS_HYDRO_BASE = "https://streamstats.usgs.gov/ss-hydro/v1"
+
+
+def _get_state_from_coords(lat, lon):
+    """Resolve a US state abbreviation from WGS84 lat/lon using the FCC API."""
+    url = "https://geo.fcc.gov/api/census/area"
+    resp = requests.get(url, params={"lat": lat, "lon": lon, "format": "json"}, timeout=15)
+    resp.raise_for_status()
+    results = resp.json().get("results", [])
+    if not results:
+        raise ValueError(f"Could not determine state for coordinates ({lat}, {lon})")
+    return results[0]["state_code"]
+
+
+def _delineate_watershed(region, lat, lon):
+    """Call SS-Delineate to get the watershed boundary as a GeoJSON FeatureCollection."""
+    url = f"{SS_DELINEATE_BASE}/delineate/features/{region}"
+    resp = requests.get(url, params={"lat": lat, "lon": lon}, timeout=120)
+    resp.raise_for_status()
+    return resp.json()
+
+
+def _get_basin_characteristics(region, lat, lon):
+    """Call SS-Hydro to compute basin characteristics (calls SS-Delineate internally).
+
+    Returns a list of dicts with keys: name, description, code, unit, value.
+    """
+    url = f"{SS_HYDRO_BASE}/basin-characteristics/calculate-using-ssdelineate/"
+    resp = requests.post(url, params={"region": region, "lat": lat, "lon": lon}, timeout=120)
+    resp.raise_for_status()
+    return resp.json()
+
 
 def setup_runoff_callbacks(app):
     """Register callbacks related to the runoff calculator tab."""
@@ -270,18 +303,22 @@ def setup_runoff_callbacks(app):
                 monthly_rain_content = html.P(f"Error getting monthly rain data: {str(e)}", className="text-danger")
             # Get watershed data for the map
             try:
-                ws = streamstats.Watershed(lat=lat, lon=lon)
-                watershed_geojson = ws.boundary
-                print(f"Watershed parameters count: {len(ws.parameters)}")
-                print(f"Watershed parameters: {ws.parameters}")
-                
+                region = _get_state_from_coords(lat, lon)
+                print(f"Detected region/state: {region}")
+
+                watershed_geojson = _delineate_watershed(region, lat, lon)
+                print(f"Watershed delineation returned {len(watershed_geojson.get('features', []))} features")
+
+                basin_chars = _get_basin_characteristics(region, lat, lon)
+                print(f"Basin characteristics count: {len(basin_chars)}")
+
                 df_data = []
-                for par in ws.parameters:
-                    name = par['name']
-                    description = par['description']
-                    code = par['code']
-                    unit = par['unit'] 
-                    value = par['value']
+                for par in basin_chars:
+                    name = par.get('name', '')
+                    description = par.get('description', '')
+                    code = par.get('code', '')
+                    unit = par.get('unit', '')
+                    value = par.get('value', '')
                     print(f"Parameter: {name} = {value} {unit}")
                     df_data.append([name, description, code, unit, value])
                 
