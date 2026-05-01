@@ -2,8 +2,9 @@
 Main dashboard application for MAR DSS.
 """
 import os
-import json 
+import json
 from datetime import datetime
+from pathlib import Path
 import webbrowser
 import dash
 import dash_bootstrap_components as dbc
@@ -12,6 +13,8 @@ import pandas as pd
 import plotly.graph_objects as go
 from dash import Input, Output, dcc, html
 import mar_dss.app.utils.data_storage as dash_storage
+
+_APP_DIR = Path(__file__).resolve().parent
 
 try:
     # Try absolute imports first (when run as module)
@@ -72,7 +75,7 @@ class DashboardApp:
                 "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
             ],
             suppress_callback_exceptions=True,
-            assets_folder="assets",
+            assets_folder=str(_APP_DIR / "assets"),
         )
         self.current_theme = "CERULEAN"
         self.setup_layout()

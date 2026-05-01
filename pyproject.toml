@@ -27,6 +27,9 @@ dependencies = [
 requires-python = ">= 3.10"
 
 [project.optional-dependencies]
+exe = [
+  "pyinstaller>=6.0",
+]
 test = [
     "coverage",  # testing
     "pytest",  # testing
