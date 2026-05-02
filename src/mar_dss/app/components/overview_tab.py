@@ -15,6 +15,18 @@ except ImportError:
 DEFAULT_OVERVIEW_MAP_LAT = 38.5816
 DEFAULT_OVERVIEW_MAP_LON = -121.4944
 DEFAULT_OVERVIEW_MAP_ZOOM = 10
+DEFAULT_OVERVIEW_MAP_BASEMAP = "open-street-map"
+
+OVERVIEW_BASEMAP_OPTIONS = [
+    {"label": "OpenStreetMap", "value": "open-street-map"},
+    {"label": "Carto Positron (light)", "value": "carto-positron"},
+    {"label": "Carto Dark Matter", "value": "carto-darkmatter"},
+    {"label": "Terrain (OpenTopoMap)", "value": "opentopomap"},
+    {"label": "Satellite + streets (Esri)", "value": "satellite-streets"},
+    {"label": "White background", "value": "white-bg"},
+]
+
+ALLOWED_OVERVIEW_BASEMAP_STYLES = frozenset(o["value"] for o in OVERVIEW_BASEMAP_OPTIONS)
 
 
 def _float_storage(key, default):
@@ -41,15 +53,26 @@ def get_overview_map_header_text():
     )
 
 
+def get_overview_map_basemap():
+    """Plotly Mapbox layout style string for the overview map."""
+    raw = dash_storage.get_data("overview_map_basemap")
+    # Legacy CSVs: Plotly preset stamen-terrain often freezes interaction (Stamen/Stadia migration).
+    if raw == "stamen-terrain":
+        return "opentopomap"
+    if raw in ALLOWED_OVERVIEW_BASEMAP_STYLES:
+        return raw
+    return DEFAULT_OVERVIEW_MAP_BASEMAP
+
+
 def get_overview_map_figure_params():
-    """Lat, lon, zoom, and marker label for the overview location map."""
+    """Lat, lon, zoom, marker label, and basemap style for the overview location map."""
     lat = _float_storage("overview_map_lat", DEFAULT_OVERVIEW_MAP_LAT)
     lon = _float_storage("overview_map_lon", DEFAULT_OVERVIEW_MAP_LON)
     zoom = _float_storage("overview_map_zoom", DEFAULT_OVERVIEW_MAP_ZOOM)
     marker = (dash_storage.get_data("project_location") or "").strip()
     if not marker:
         marker = f"{lat:.4f}, {lon:.4f}"
-    return lat, lon, zoom, marker
+    return lat, lon, zoom, marker, get_overview_map_basemap()
 
 
 def create_mar_purpose_section():
@@ -207,7 +230,7 @@ def create_mar_purpose_section():
 
 def create_location_map_section():
     """Create location map section for overview with tooltips."""
-    lat, lon, zoom, marker_name = get_overview_map_figure_params()
+    lat, lon, zoom, marker_name, basemap = get_overview_map_figure_params()
     header_text = get_overview_map_header_text()
     return dbc.Card([
         dbc.CardHeader(
@@ -216,11 +239,31 @@ def create_location_map_section():
             className="fw-bold bg-primary text-white",
         ),
         dbc.CardBody([
+            html.Label("Basemap:", className="fw-bold small me-2"),
+            dcc.Dropdown(
+                id="overview-map-basemap",
+                options=OVERVIEW_BASEMAP_OPTIONS,
+                value=basemap,
+                clearable=False,
+                className="mb-2",
+                style={"maxWidth": "320px"},
+            ),
+            dbc.Tooltip(
+                "Switch background tiles; center and zoom stay as last saved from the map. "
+                "Terrain uses OpenTopoMap (© OpenStreetMap contributors). "
+                "Satellite + streets uses Esri imagery and reference overlays; comply with Esri terms.",
+                target="overview-map-basemap",
+                placement="top",
+            ),
             dcc.Graph(
                 figure=create_location_map(
-                    lat=lat, lon=lon, location_name=marker_name, zoom=float(zoom),
+                    lat=lat,
+                    lon=lon,
+                    location_name=marker_name,
+                    zoom=float(zoom),
+                    map_style=basemap,
                 ),
-                config={"displayModeBar": True},
+                config={"displayModeBar": True, "scrollZoom": True},
                 id="location-map",
             ),
             dbc.Tooltip(

@@ -43,6 +43,7 @@ try:
         DEFAULT_OVERVIEW_MAP_LAT,
         DEFAULT_OVERVIEW_MAP_LON,
         DEFAULT_OVERVIEW_MAP_ZOOM,
+        DEFAULT_OVERVIEW_MAP_BASEMAP,
     )
 except ImportError:
     from .components.ai_generated_decision_tab import (
@@ -67,6 +68,7 @@ except ImportError:
         DEFAULT_OVERVIEW_MAP_LAT,
         DEFAULT_OVERVIEW_MAP_LON,
         DEFAULT_OVERVIEW_MAP_ZOOM,
+        DEFAULT_OVERVIEW_MAP_BASEMAP,
     )
 
 
@@ -600,6 +602,7 @@ def setup_main_callbacks(app, dashboard_instance):
                     ("overview_map_lat", DEFAULT_OVERVIEW_MAP_LAT),
                     ("overview_map_lon", DEFAULT_OVERVIEW_MAP_LON),
                     ("overview_map_zoom", DEFAULT_OVERVIEW_MAP_ZOOM),
+                    ("overview_map_basemap", DEFAULT_OVERVIEW_MAP_BASEMAP),
                 ):
                     if data.get(_key) is None:
                         dash_storage.set_data(_key, _default)
@@ -726,6 +729,7 @@ def setup_main_callbacks(app, dashboard_instance):
             dash_storage.set_data("overview_map_lon", DEFAULT_OVERVIEW_MAP_LON)
             dash_storage.set_data("overview_map_zoom", DEFAULT_OVERVIEW_MAP_ZOOM)
             dash_storage.set_data("overview_map_location_label", "")
+            dash_storage.set_data("overview_map_basemap", DEFAULT_OVERVIEW_MAP_BASEMAP)
 
             import dash_bootstrap_components as dbc
             return [

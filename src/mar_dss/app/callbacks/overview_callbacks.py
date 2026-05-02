@@ -15,12 +15,20 @@ try:
     from mar_dss.app.components.overview_tab import (
         create_overview_content,
         get_overview_map_header_text,
+        get_overview_map_figure_params,
+        ALLOWED_OVERVIEW_BASEMAP_STYLES,
+        DEFAULT_OVERVIEW_MAP_BASEMAP,
     )
+    from mar_dss.app.components.water_source_tab import create_location_map
 except ImportError:
     from ..components.overview_tab import (
         create_overview_content,
         get_overview_map_header_text,
+        get_overview_map_figure_params,
+        ALLOWED_OVERVIEW_BASEMAP_STYLES,
+        DEFAULT_OVERVIEW_MAP_BASEMAP,
     )
+    from ..components.water_source_tab import create_location_map
 
 
 def _extract_mapbox_view_from_relayout(relayout_data):
@@ -187,6 +195,24 @@ def setup_overview_callbacks(app):
             dash_storage.set_data("mar_purpose", current_selections)
         
         return current_selections
+
+    @app.callback(
+        Output("location-map", "figure"),
+        Input("overview-map-basemap", "value"),
+        prevent_initial_call=True,
+    )
+    def apply_overview_map_basemap(style):
+        """Rebuild map tiles only; center/zoom come from storage (last pan/zoom)."""
+        style = style if style in ALLOWED_OVERVIEW_BASEMAP_STYLES else DEFAULT_OVERVIEW_MAP_BASEMAP
+        dash_storage.set_data("overview_map_basemap", style)
+        lat, lon, zoom, marker_name, _ = get_overview_map_figure_params()
+        return create_location_map(
+            lat=lat,
+            lon=lon,
+            location_name=marker_name,
+            zoom=float(zoom),
+            map_style=style,
+        )
 
     # Map pan/zoom: persist center & zoom for Save/Load and refresh header label
     @app.callback(
@@ -369,6 +395,9 @@ def setup_overview_callbacks(app):
                     
                     print(f"Setting data: {key} = {value}")
                     dash_storage.set_data(key, value)
+
+                if dash_storage.get_data("overview_map_basemap") == "stamen-terrain":
+                    dash_storage.set_data("overview_map_basemap", "opentopomap")
 
                 # Return success message and overview content
                 overview_content = create_overview_content()

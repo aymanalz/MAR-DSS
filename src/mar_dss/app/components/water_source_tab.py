@@ -46,8 +46,47 @@ def get_location_details(lat, lon):
         return "Unknown Location"
 
 
-def create_location_map(lat=38.5816, lon=-121.4944, location_name="Sacramento, CA", zoom=10):
+_DEFAULT_MAP_STYLE = "open-street-map"
+_ALLOWED_MAP_STYLES = frozenset(
+    {
+        "open-street-map",
+        "carto-positron",
+        "carto-darkmatter",
+        "opentopomap",
+        "satellite-streets",
+        "white-bg",
+    }
+)
+
+# Plotly's preset `stamen-terrain` often breaks (Stamen→Stadia; pan/zoom can freeze). Terrain via raster tiles.
+_OPENTOPOMAP_TILES = ["https://tile.opentopomap.org/{z}/{x}/{y}.png"]
+
+# Overview location map figure height (px); 720 = 50% increase over prior 480.
+_LOCATION_MAP_HEIGHT_PX = 720
+
+# Satellite + roads/labels via Esri World Imagery and Reference overlays (no Mapbox token; Esri terms apply).
+_ESRI_WORLD_IMAGERY = (
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+)
+_ESRI_WORLD_TRANSPORTATION = (
+    "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/"
+    "MapServer/tile/{z}/{y}/{x}"
+)
+_ESRI_WORLD_BOUNDARIES_PLACES = (
+    "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/"
+    "MapServer/tile/{z}/{y}/{x}"
+)
+
+
+def create_location_map(
+    lat=38.5816,
+    lon=-121.4944,
+    location_name="Sacramento, CA",
+    zoom=10,
+    map_style=None,
+):
     """Create a map centered on specified location with default Sacramento."""
+    style = map_style if map_style in _ALLOWED_MAP_STYLES else _DEFAULT_MAP_STYLE
     fig = go.Figure()
     fig.add_trace(
         go.Scattermapbox(
@@ -60,10 +99,31 @@ def create_location_map(lat=38.5816, lon=-121.4944, location_name="Sacramento, C
             name=location_name,
         )
     )
+    mapbox = dict(center=dict(lat=lat, lon=lon), zoom=float(zoom))
+    if style == "opentopomap":
+        mapbox["style"] = "white-bg"
+        mapbox["layers"] = [
+            dict(
+                sourcetype="raster",
+                source=list(_OPENTOPOMAP_TILES),
+                below="traces",
+            )
+        ]
+    elif style == "satellite-streets":
+        mapbox["style"] = "white-bg"
+        mapbox["layers"] = [
+            dict(sourcetype="raster", source=[_ESRI_WORLD_IMAGERY], below="traces"),
+            dict(sourcetype="raster", source=[_ESRI_WORLD_TRANSPORTATION], below="traces"),
+            dict(sourcetype="raster", source=[_ESRI_WORLD_BOUNDARIES_PLACES], below="traces"),
+        ]
+    else:
+        mapbox["style"] = style
     fig.update_layout(
-        mapbox=dict(style="open-street-map", center=dict(lat=lat, lon=lon), zoom=zoom),
+        mapbox=mapbox,
         margin=dict(l=0, r=0, t=0, b=0),
-        height=480,
+        height=_LOCATION_MAP_HEIGHT_PX,
+        uirevision="mar-overview-location-map",
+        dragmode="pan",
     )
     return fig
 
