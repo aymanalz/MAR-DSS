@@ -40,6 +40,9 @@ try:
     )
     from mar_dss.app.components.overview_tab import (
         create_overview_content,
+        DEFAULT_OVERVIEW_MAP_LAT,
+        DEFAULT_OVERVIEW_MAP_LON,
+        DEFAULT_OVERVIEW_MAP_ZOOM,
     )
 except ImportError:
     from .components.ai_generated_decision_tab import (
@@ -59,7 +62,12 @@ except ImportError:
         create_scenarios_comparison_content,
     )
     from .components.water_source_tab import create_general_tab_content
-    from .components.overview_tab import create_overview_content
+    from .components.overview_tab import (
+        create_overview_content,
+        DEFAULT_OVERVIEW_MAP_LAT,
+        DEFAULT_OVERVIEW_MAP_LON,
+        DEFAULT_OVERVIEW_MAP_ZOOM,
+    )
 
 
 def setup_main_callbacks(app, dashboard_instance):
@@ -587,6 +595,16 @@ def setup_main_callbacks(app, dashboard_instance):
                 # Add timestamp                
                 data["last_saved"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+                # Ensure overview map view keys exist so CSV restores lat/lon/zoom
+                for _key, _default in (
+                    ("overview_map_lat", DEFAULT_OVERVIEW_MAP_LAT),
+                    ("overview_map_lon", DEFAULT_OVERVIEW_MAP_LON),
+                    ("overview_map_zoom", DEFAULT_OVERVIEW_MAP_ZOOM),
+                ):
+                    if data.get(_key) is None:
+                        dash_storage.set_data(_key, _default)
+                        data[_key] = _default
+
                 if "workspace" in data:
                     folder_path = data["workspace"]
                 else:
@@ -704,7 +722,11 @@ def setup_main_callbacks(app, dashboard_instance):
             dash_storage.set_data("extension_rotation", 0.0)
             dash_storage.set_data("upstream_head", 10.0)
             dash_storage.set_data("downstream_head", 5.0)
-            
+            dash_storage.set_data("overview_map_lat", DEFAULT_OVERVIEW_MAP_LAT)
+            dash_storage.set_data("overview_map_lon", DEFAULT_OVERVIEW_MAP_LON)
+            dash_storage.set_data("overview_map_zoom", DEFAULT_OVERVIEW_MAP_ZOOM)
+            dash_storage.set_data("overview_map_location_label", "")
+
             import dash_bootstrap_components as dbc
             return [
                 dbc.Alert(

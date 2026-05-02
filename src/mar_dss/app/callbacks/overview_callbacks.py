@@ -12,9 +12,46 @@ import pandas as pd
 
 # Import the overview content creation function
 try:
-    from mar_dss.app.components.overview_tab import create_overview_content
+    from mar_dss.app.components.overview_tab import (
+        create_overview_content,
+        get_overview_map_header_text,
+    )
 except ImportError:
-    from ..components.overview_tab import create_overview_content
+    from ..components.overview_tab import (
+        create_overview_content,
+        get_overview_map_header_text,
+    )
+
+
+def _extract_mapbox_view_from_relayout(relayout_data):
+    """Parse Plotly mapbox relayout payload for center and zoom."""
+    if not relayout_data:
+        return None, None, None
+    lat = lon = zoom = None
+    z = relayout_data.get("mapbox.zoom")
+    if z is not None:
+        try:
+            zoom = float(z)
+        except (TypeError, ValueError):
+            pass
+    center = relayout_data.get("mapbox.center")
+    if isinstance(center, dict):
+        try:
+            lat = float(center["lat"])
+            lon = float(center["lon"])
+        except (KeyError, TypeError, ValueError):
+            pass
+    if lat is None and "mapbox.center.lat" in relayout_data:
+        try:
+            lat = float(relayout_data["mapbox.center.lat"])
+        except (TypeError, ValueError):
+            pass
+    if lon is None and "mapbox.center.lon" in relayout_data:
+        try:
+            lon = float(relayout_data["mapbox.center.lon"])
+        except (TypeError, ValueError):
+            pass
+    return lat, lon, zoom
 
 
 def setup_overview_callbacks(app):
@@ -151,19 +188,37 @@ def setup_overview_callbacks(app):
         
         return current_selections
 
-    # Add callback for map interactions to update location title
+    # Map pan/zoom: persist center & zoom for Save/Load and refresh header label
     @app.callback(
         Output("location-card-header", "children"),
         [Input("location-map", "relayoutData")],
     )
     def update_location_title(relayout_data):
-        """Update the location card title based on map interactions."""
-        if relayout_data and "mapbox.center" in relayout_data:
-            center = relayout_data["mapbox.center"]
-            lat = center["lat"]
-            lon = center["lon"]
-
-            # Import the function from components.water_source_tab
+        """Persist overview map view (lat/lon/zoom) and update card header."""
+        old_lat = dash_storage.get_data("overview_map_lat")
+        old_lon = dash_storage.get_data("overview_map_lon")
+        lat, lon, zoom = _extract_mapbox_view_from_relayout(relayout_data)
+        if lat is not None:
+            dash_storage.set_data("overview_map_lat", lat)
+        if lon is not None:
+            dash_storage.set_data("overview_map_lon", lon)
+        if zoom is not None:
+            dash_storage.set_data("overview_map_zoom", zoom)
+        # Reverse-geocode only when center moves meaningfully (avoid spam while dragging)
+        center_changed = False
+        if lat is not None and lon is not None:
+            try:
+                ola = float(old_lat) if old_lat is not None else None
+                olo = float(old_lon) if old_lon is not None else None
+                center_changed = (
+                    ola is None
+                    or olo is None
+                    or abs(ola - lat) > 0.002
+                    or abs(olo - lon) > 0.002
+                )
+            except (TypeError, ValueError):
+                center_changed = True
+        if center_changed:
             try:
                 from mar_dss.app.components.water_source_tab import (
                     get_location_details,
@@ -172,10 +227,11 @@ def setup_overview_callbacks(app):
                 from ..components.water_source_tab import get_location_details
 
             location_name = get_location_details(lat, lon)
-            return f"Project Location - {location_name}"
-
-        # Default fallback
-        return "Project Location - Sacramento, California, United States"
+            dash_storage.set_data(
+                "overview_map_location_label",
+                f"Project Location — {location_name}",
+            )
+        return get_overview_map_header_text()
 
     # Callback for workspace input - saves to data storage
     @app.callback(

@@ -1,5 +1,5 @@
 """Overview tab components for MAR DSS dashboard."""
-# todo: make sure the location map is saved to the data storage and get updated.
+# Overview map lat/lon/zoom persist via dash_storage (CSV Save/Load); see overview_callbacks.
 
 from datetime import datetime
 import dash_bootstrap_components as dbc
@@ -11,6 +11,45 @@ try:
     from mar_dss.app.components.water_source_tab import create_location_map
 except ImportError:
     from .water_source_tab import create_location_map
+
+DEFAULT_OVERVIEW_MAP_LAT = 38.5816
+DEFAULT_OVERVIEW_MAP_LON = -121.4944
+DEFAULT_OVERVIEW_MAP_ZOOM = 10
+
+
+def _float_storage(key, default):
+    raw = dash_storage.get_data(key)
+    if raw is None:
+        return default
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return default
+
+
+def get_overview_map_header_text():
+    """Card header line for the overview map (saved view or default)."""
+    label = dash_storage.get_data("overview_map_location_label")
+    if label:
+        return label
+    project_location = (dash_storage.get_data("project_location") or "").strip()
+    if project_location:
+        return f"Project Location — {project_location}"
+    return (
+        "Project Location — Sacramento, California, United States "
+        "(pan/zoom map to update saved view)"
+    )
+
+
+def get_overview_map_figure_params():
+    """Lat, lon, zoom, and marker label for the overview location map."""
+    lat = _float_storage("overview_map_lat", DEFAULT_OVERVIEW_MAP_LAT)
+    lon = _float_storage("overview_map_lon", DEFAULT_OVERVIEW_MAP_LON)
+    zoom = _float_storage("overview_map_zoom", DEFAULT_OVERVIEW_MAP_ZOOM)
+    marker = (dash_storage.get_data("project_location") or "").strip()
+    if not marker:
+        marker = f"{lat:.4f}, {lon:.4f}"
+    return lat, lon, zoom, marker
 
 
 def create_mar_purpose_section():
@@ -168,15 +207,19 @@ def create_mar_purpose_section():
 
 def create_location_map_section():
     """Create location map section for overview with tooltips."""
+    lat, lon, zoom, marker_name = get_overview_map_figure_params()
+    header_text = get_overview_map_header_text()
     return dbc.Card([
         dbc.CardHeader(
-            "Project Location - Sacramento, California, United States",
+            header_text,
             id="location-card-header",
             className="fw-bold bg-primary text-white",
         ),
         dbc.CardBody([
             dcc.Graph(
-                figure=create_location_map(),
+                figure=create_location_map(
+                    lat=lat, lon=lon, location_name=marker_name, zoom=float(zoom),
+                ),
                 config={"displayModeBar": True},
                 id="location-map",
             ),
