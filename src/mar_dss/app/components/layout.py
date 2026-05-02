@@ -14,17 +14,10 @@ import mar_dss.app.utils.data_storage as dash_storage
 def setup_layout(app_ctx):
     """Set up the main dashboard layout on the given app context.
 
-    The app_ctx is expected to be an instance that provides:
-    - app (Dash instance)
-    - create_sample_data
-    - create_water_level_chart
-    - create_recharge_chart
-    - create_quality_chart
-    - create_summary_cards
+    The app_ctx is expected to provide ``app`` (Dash instance). Tab content for
+    ``#main-content`` is filled by callbacks (e.g. Overview from overview_tab).
     """
-    _create_initial_data(app_ctx)
-    _create_charts(app_ctx)
-    app_ctx.app.layout = _build_root_layout(app_ctx)
+    app_ctx.app.layout = _build_root_layout()
 
 
 # ------------------------------
@@ -65,21 +58,6 @@ def _create_theme_link(initial_theme: str = "CERULEAN") -> html.Link:
         rel="stylesheet",
         href=_get_theme_url(initial_theme),
     )
-
-
-# ------------------------------
-# Data and charts
-# ------------------------------
-
-def _create_initial_data(app_ctx) -> None:
-    app_ctx.data = app_ctx.create_sample_data()
-
-
-def _create_charts(app_ctx) -> None:
-    app_ctx.water_level_chart = app_ctx.create_water_level_chart(app_ctx.data)
-    app_ctx.recharge_chart = app_ctx.create_recharge_chart(app_ctx.data)
-    app_ctx.quality_chart = app_ctx.create_quality_chart(app_ctx.data)
-    app_ctx.summary_cards = app_ctx.create_summary_cards(app_ctx.data)
 
 
 # ------------------------------
@@ -354,47 +332,17 @@ def _build_tabs() -> dbc.Tabs:
     )
 
 
-def _build_overview_content(app_ctx) -> list:
+def _build_main_card_body() -> list:
+    """Placeholder until ``top-tabs`` callbacks populate ``main-content``."""
     return [
-        # Main Content Area - switches based on navigation
         html.Div(
             id="main-content",
-            children=[
-                # Default content (overview)
-                dbc.Row(
-                    [
-                        dbc.Col(card, width=4)
-                        for card in (app_ctx.summary_cards)
-                    ],
-                    className="mb-4",
-                ),
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            [dcc.Graph(figure=(app_ctx.water_level_chart))],
-                            width=6,
-                        ),
-                        dbc.Col(
-                            [dcc.Graph(figure=(app_ctx.recharge_chart))],
-                            width=6,
-                        ),
-                    ]
-                ),
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            [dcc.Graph(figure=(app_ctx.quality_chart))],
-                            width=12,
-                        )
-                    ],
-                    className="mt-4",
-                ),
-            ],
+            children=[],
         )
     ]
 
 
-def _build_main_card(app_ctx) -> dbc.Card:
+def _build_main_card() -> dbc.Card:
     return dbc.Card([
         dbc.CardHeader([
             dbc.Row([
@@ -424,7 +372,7 @@ def _build_main_card(app_ctx) -> dbc.Card:
                 ], width=3)
             ])
         ]),
-        dbc.CardBody(_build_overview_content(app_ctx)),
+        dbc.CardBody(_build_main_card_body()),
     ])
 
 
@@ -487,25 +435,25 @@ def _build_sidebar() -> dbc.Col:
 # Page layout builders
 # ------------------------------
 
-def _build_content_area(app_ctx) -> dbc.Row:
+def _build_content_area() -> dbc.Row:
     return dbc.Row(
         [
             dbc.Col(
-                [_build_main_card(app_ctx)],
+                [_build_main_card()],
                 width=12,  # Full width since sidebar is removed
             ),
         ]
     )
 
 
-def _build_root_layout(app_ctx) -> html.Div:
+def _build_root_layout() -> html.Div:
     return html.Div(
         [
             _create_theme_link("CERULEAN"),
             dbc.Container(
                 [
                     _build_header(),
-                    _build_content_area(app_ctx),
+                    _build_content_area(),
                 ],
                 fluid=True,
                 id="app-container",

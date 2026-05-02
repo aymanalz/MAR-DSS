@@ -1,18 +1,10 @@
 """
 Main dashboard application for MAR DSS.
 """
-import os
-import json
-from datetime import datetime
 from pathlib import Path
 import webbrowser
 import dash
 import dash_bootstrap_components as dbc
-import numpy as np
-import pandas as pd
-import plotly.graph_objects as go
-from dash import Input, Output, dcc, html
-import mar_dss.app.utils.data_storage as dash_storage
 
 _APP_DIR = Path(__file__).resolve().parent
 
@@ -156,161 +148,6 @@ class DashboardApp:
             from .callbacks.decision_sensitivity_callbacks import setup_decision_sensitivity_callbacks
         setup_decision_sensitivity_callbacks(self.app)
 
-    def create_sample_data(self):
-        """Create sample data for demonstration."""
-        # Generate sample time series data
-        dates = pd.date_range(start="2023-01-01", end="2023-12-31", freq="D")
-
-        # Water level data
-        water_levels = np.random.normal(100, 10, len(dates)) + 5 * np.sin(
-            np.arange(len(dates)) * 2 * np.pi / 365
-        )
-
-        # Recharge data
-        recharge_data = np.random.exponential(2, len(dates)) * (
-            1 + 0.5 * np.sin(np.arange(len(dates)) * 2 * np.pi / 365)
-        )
-
-        # Quality data
-        quality_data = np.random.normal(7.5, 0.5, len(dates))
-
-        return {
-            "dates": dates,
-            "water_levels": water_levels,
-            "recharge_data": recharge_data,
-            "quality_data": quality_data,
-        }
-
-    def create_water_level_chart(self, data):
-        """Create water level time series chart."""
-        fig = go.Figure()
-        fig.add_trace(
-            go.Scatter(
-                x=data["dates"],
-                y=data["water_levels"],
-                mode="lines+markers",
-                name="Water Level",
-                line=dict(color="#1f77b4", width=2),
-                marker=dict(size=4),
-            )
-        )
-
-        fig.update_layout(
-            title="Water Level Over Time",
-            xaxis_title="Date",
-            yaxis_title="Water Level (m)",
-            hovermode="x unified",
-            template="plotly_white",
-        )
-
-        return fig
-
-    def create_recharge_chart(self, data):
-        """Create recharge rate chart."""
-        fig = go.Figure()
-        fig.add_trace(
-            go.Bar(
-                x=data["dates"],
-                y=data["recharge_data"],
-                name="Recharge Rate",
-                marker_color="#2ca02c",
-            )
-        )
-
-        fig.update_layout(
-            title="Recharge Rate Over Time",
-            xaxis_title="Date",
-            yaxis_title="Recharge Rate (mm/day)",
-            template="plotly_white",
-        )
-
-        return fig
-
-    def create_quality_chart(self, data):
-        """Create water quality chart."""
-        fig = go.Figure()
-        fig.add_trace(
-            go.Scatter(
-                x=data["dates"],
-                y=data["quality_data"],
-                mode="lines+markers",
-                name="pH Level",
-                line=dict(color="#ff7f0e", width=2),
-                marker=dict(size=4),
-            )
-        )
-
-        fig.update_layout(
-            title="Water Quality (pH) Over Time",
-            xaxis_title="Date",
-            yaxis_title="pH Level",
-            hovermode="x unified",
-            template="plotly_white",
-        )
-
-        return fig
-
-    def create_summary_cards(self, data):
-        """Create summary cards for the dashboard."""
-        current_level = data["water_levels"][-1]
-        avg_recharge = np.mean(data["recharge_data"])
-        current_quality = data["quality_data"][-1]
-
-        cards = [
-            dbc.Card(
-                [
-                    dbc.CardBody(
-                        [
-                            html.H4(
-                                f"{current_level:.1f} m", className="card-title"
-                            ),
-                            html.P(
-                                "Current Water Level", className="card-text"
-                            ),
-                            html.I(className="fas fa-tint fa-2x text-primary"),
-                        ]
-                    )
-                ],
-                className="text-center mb-3",
-            ),
-            dbc.Card(
-                [
-                    dbc.CardBody(
-                        [
-                            html.H4(
-                                f"{avg_recharge:.2f} mm/day",
-                                className="card-title",
-                            ),
-                            html.P(
-                                "Average Recharge Rate", className="card-text"
-                            ),
-                            html.I(
-                                className="fas fa-cloud-rain fa-2x text-success"
-                            ),
-                        ]
-                    )
-                ],
-                className="text-center mb-3",
-            ),
-            dbc.Card(
-                [
-                    dbc.CardBody(
-                        [
-                            html.H4(
-                                f"{current_quality:.2f}", className="card-title"
-                            ),
-                            html.P("Current pH Level", className="card-text"),
-                            html.I(className="fas fa-flask fa-2x text-warning"),
-                        ]
-                    )
-                ],
-                className="text-center mb-3",
-            ),
-        ]
-
-        return cards
-
-
     def setup_layout(self):
         """Set up the main dashboard layout by delegating to layout module."""
         # Import locally to avoid potential circular imports
@@ -318,12 +155,8 @@ class DashboardApp:
             from mar_dss.app.components.layout import (
                 setup_layout as _setup_layout,
             )
-            from mar_dss.app.components.overview_tab import (
-                create_overview_content,
-            )
         except ImportError:
             from .components.layout import setup_layout as _setup_layout
-            from .components.overview_tab import create_overview_content
 
         _setup_layout(self)
 
