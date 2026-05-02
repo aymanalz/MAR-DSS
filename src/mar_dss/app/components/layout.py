@@ -167,6 +167,7 @@ def _build_action_buttons() -> dbc.ButtonGroup:
                 size="sm",
                 className="me-1",
                 style={"padding": "4px 8px"},
+                title="Save the current project to the workspace path and filename",
             ),
             dbc.Button(
                 [html.I(className=("fas fa-plus me-1")), "New"],
@@ -174,6 +175,7 @@ def _build_action_buttons() -> dbc.ButtonGroup:
                 color="outline-info",
                 size="sm",
                 style={"padding": "4px 8px"},
+                title="Start a new project (clear inputs depending on app logic)",
             ),
         ],
         className="mb-2",
@@ -412,7 +414,12 @@ def _build_main_card(app_ctx) -> dbc.Card:
                             value="CERULEAN",
                             clearable=False,
                             style={"width": "150px"},
-                        )
+                        ),
+                        dbc.Tooltip(
+                            "Bootstrap/Bootswatch color theme for the dashboard",
+                            target="theme-selector",
+                            placement="bottom",
+                        ),
                     ], className="d-flex align-items-center justify-content-end")
                 ], width=3)
             ])

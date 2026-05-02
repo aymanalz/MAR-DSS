@@ -14,17 +14,17 @@ except ImportError:
 
 
 def create_mar_purpose_section():
-    """Create MAR Project Purpose section for overview."""
+    """Create MAR Project Purpose section for overview with tooltips."""
     project_name = dash_storage.get_data("project_name")
     workspace = dash_storage.get_data("workspace")
     filename = dash_storage.get_data("filename")
     analysis_date_raw = dash_storage.get_data("analysis_date")
-    
+
     if analysis_date_raw:
         try:
-            if (isinstance(analysis_date_raw, str) and 
-                len(analysis_date_raw) == 10 and 
-                analysis_date_raw[4] == '-' and 
+            if (isinstance(analysis_date_raw, str) and
+                len(analysis_date_raw) == 10 and
+                analysis_date_raw[4] == '-' and
                 analysis_date_raw[7] == '-'):
                 analysis_date = analysis_date_raw
             else:
@@ -34,10 +34,10 @@ def create_mar_purpose_section():
             analysis_date = datetime.now().strftime("%Y-%m-%d")
     else:
         analysis_date = datetime.now().strftime("%Y-%m-%d")
-    
+
     project_location = dash_storage.get_data("project_location") or ""
-    mar_purpose = dash_storage.get_data("mar_purpose") or ["secure_water_supply"] 
-    
+    mar_purpose = dash_storage.get_data("mar_purpose") or ["secure_water_supply"]
+
     return dbc.Card([
         dbc.CardHeader(
             "MAR Project Purpose",
@@ -49,7 +49,7 @@ def create_mar_purpose_section():
                 id="project-name-input",
                 type="text",
                 placeholder="Enter your MAR project name...",
-                value=project_name,
+                value=project_name or "",
                 style={"margin-bottom": "15px"},
             ),
             dbc.Row([
@@ -59,7 +59,7 @@ def create_mar_purpose_section():
                         id="workspace-input",
                         type="text",
                         placeholder="Enter workspace path...",
-                        value=workspace,
+                        value=workspace or "",
                         style={"margin-bottom": "15px"},
                     )
                 ], width=6),
@@ -70,13 +70,14 @@ def create_mar_purpose_section():
                             id="filename-input",
                             type="text",
                             placeholder="Enter filename...",
-                            value=filename,
+                            value=filename if filename is not None else "",
                         ),
                         dbc.Button(
                             [html.I(className="fas fa-upload me-1"), "Load"],
                             id="btn-open",
                             color="outline-primary",
                             size="sm",
+                            title="Load an existing project file from the specified workspace",
                             style={"padding": "4px 8px"},
                         )
                     ], style={"margin-bottom": "15px"})
@@ -129,12 +130,44 @@ def create_mar_purpose_section():
                 inline=False,
                 style={"margin-top": "10px"},
             ),
+            dbc.Tooltip(
+                'Enter a descriptive name for your MAR project '
+                '(e.g., "Sacramento Groundwater Recharge")',
+                target="project-name-input",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Specify the filesystem path where project files will be stored "
+                "(default: current directory)",
+                target="workspace-input",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Filename for saving/loading the project (auto-generated if left blank)",
+                target="filename-input",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Select the date for the analysis (defaults to today)",
+                target="analysis-date-input",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Geographic location of the MAR project (used for mapping and analysis)",
+                target="project-location-input",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Select the objectives your MAR project aims to achieve",
+                target="mar-purpose-checklist",
+                placement="top",
+            ),
         ])
     ])
 
 
 def create_location_map_section():
-    """Create location map section for overview."""
+    """Create location map section for overview with tooltips."""
     return dbc.Card([
         dbc.CardHeader(
             "Project Location - Sacramento, California, United States",
@@ -146,18 +179,23 @@ def create_location_map_section():
                 figure=create_location_map(),
                 config={"displayModeBar": True},
                 id="location-map",
-            )
+            ),
+            dbc.Tooltip(
+                "Interactive map showing project location. Hover or click to explore geographic details",
+                target="location-map",
+                placement="top",
+            ),
         ])
     ])
 
 
 def create_site_description_section():
-    """Create Site Description section for overview."""
+    """Create Site Description section for overview with tooltips."""
     # Get existing values from data storage if available
     ground_slope = dash_storage.get_data("ground_surface_slope") or 0.5
     max_area = dash_storage.get_data("max_available_area") or 1.0
     land_use = dash_storage.get_data("land_use") or "Urban Residential"
-    
+
     return dbc.Card([
         dbc.CardHeader(
             "Site Description",
@@ -200,6 +238,21 @@ def create_site_description_section():
                 ],
                 value=land_use,
                 style={"margin-top": "10px"},
+            ),
+            dbc.Tooltip(
+                "Enter slope as percentage (e.g., 5% = 0.05). Affects recharge calculations",
+                target="ground-slope-input",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Total land area available for recharge activities (impacts design capacity)",
+                target="max-area-input",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Land use type affects infiltration rates and suitability for recharge",
+                target="land-use-dropdown",
+                placement="top",
             ),
         ])
     ])

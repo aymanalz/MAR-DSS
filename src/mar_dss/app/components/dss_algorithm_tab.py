@@ -207,7 +207,42 @@ def create_dss_algorithm_content():
                     ],
                     width=12
                 )
-            )
+            ),
+            dbc.Tooltip(
+                "Relative weight for hydrogeologic feasibility scores in the MCDA (0–10)",
+                target="weight-hydrogeologic",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Relative weight for environmental suitability scores",
+                target="weight-environmental",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Relative weight for regulatory / permitting scores",
+                target="weight-regulation",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Relative weight for capital cost effectiveness",
+                target="weight-capital-cost",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Relative weight for maintenance cost effectiveness",
+                target="weight-maintenance-cost",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Relative weight for net present value efficiency",
+                target="weight-npv",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Bar chart of weighted criterion scores for ranked MAR options",
+                target="dss-sensitivity-chart",
+                placement="top",
+            ),
         ],
         style={"padding": "0.5rem"}
     )

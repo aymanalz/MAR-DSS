@@ -130,6 +130,16 @@ def _build_hydro_tab_header():
             ],
             className="mb-3"
         ),
+        dbc.Tooltip(
+            "Unconfined, confined, or semi-confined aquifer affects geometry checks and feasibility logic",
+            target="aquifer-type-radio",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Pressure head limit used when aquifer type is confined or semi-confined",
+            target="max-allowed-head-input",
+            placement="top",
+        ),
     ]
 
 
@@ -307,10 +317,10 @@ def _build_stratigraphy_tab():
                     dbc.Row([
                         dbc.Col([
                             dbc.ButtonGroup([
-                                dbc.Button("Add Layer", id="add-layer-btn", color="success", size="sm"),
-                                dbc.Button("Delete Selected", id="delete-layer-btn", color="danger", size="sm"),
-                                dbc.Button("Move Up", id="move-up-btn", color="info", size="sm"),
-                                dbc.Button("Move Down", id="move-down-btn", color="info", size="sm"),
+                                dbc.Button("Add Layer", id="add-layer-btn", color="success", size="sm", title="Add a stratigraphy layer row"),
+                                dbc.Button("Delete Selected", id="delete-layer-btn", color="danger", size="sm", title="Delete selected layer rows"),
+                                dbc.Button("Move Up", id="move-up-btn", color="info", size="sm", title="Move selected layer up"),
+                                dbc.Button("Move Down", id="move-down-btn", color="info", size="sm", title="Move selected layer down"),
                             ])
                         ], width=8),
                         dbc.Col([
@@ -341,7 +351,7 @@ def _build_stratigraphy_tab():
                     ),
                     
                     # Store for table data - load from dash_storage if available
-                    dcc.Store(id="stratigraphy-data-store", data=_get_stratigraphy_data())
+                    dcc.Store(id="stratigraphy-data-store", data=_get_stratigraphy_data()),
                 ],
                 id="stratigraphy-content"
             )
@@ -375,9 +385,9 @@ def _build_groundwater_level_tab():
                     dbc.Row([
                         dbc.Col([
                             dbc.ButtonGroup([
-                                dbc.Button("Add Month", id="add-month-btn", color="success", size="sm"),
-                                dbc.Button("Delete Selected", id="delete-month-btn", color="danger", size="sm"),
-                                dbc.Button("Reset to Default", id="reset-gw-btn", color="info", size="sm"),
+                                dbc.Button("Add Month", id="add-month-btn", color="success", size="sm", title="Add a month row to the groundwater table"),
+                                dbc.Button("Delete Selected", id="delete-month-btn", color="danger", size="sm", title="Delete selected month rows"),
+                                dbc.Button("Reset to Default", id="reset-gw-btn", color="info", size="sm", title="Restore default monthly groundwater elevations"),
                             ])
                         ], width=12)
                     ], className="mb-3"),
@@ -428,7 +438,17 @@ def _build_groundwater_level_tab():
                     ], className="mb-3"),
                     
                     # Store for groundwater data - load from dash_storage if available
-                    dcc.Store(id="groundwater-data-store", data=_get_groundwater_data())
+                    dcc.Store(id="groundwater-data-store", data=_get_groundwater_data()),
+                    dbc.Tooltip(
+                        "Ground surface elevation used with groundwater levels for storage and graphics",
+                        target="ground-surface-elevation",
+                        placement="top",
+                    ),
+                    dbc.Tooltip(
+                        "Maximum vertical thickness available for MAR storage above constraints",
+                        target="max-mar-storage-depth",
+                        placement="top",
+                    ),
                 ],
                 id="groundwater-level-content"
             )
@@ -519,7 +539,32 @@ def _build_horizontal_extension_tab():
                         dbc.Col([
                             # Empty column for spacing
                         ], width=6)
-                    ], className="mb-3")
+                    ], className="mb-3"),
+                    dbc.Tooltip(
+                        "MAR footprint length for horizontal extent analysis (feet)",
+                        target="extension-length",
+                        placement="top",
+                    ),
+                    dbc.Tooltip(
+                        "MAR footprint width for horizontal extent analysis (feet)",
+                        target="extension-width",
+                        placement="top",
+                    ),
+                    dbc.Tooltip(
+                        "Rotation of the MAR area from north (degrees)",
+                        target="extension-rotation",
+                        placement="top",
+                    ),
+                    dbc.Tooltip(
+                        "Hydraulic or specified head at the upstream boundary (feet)",
+                        target="upstream-head",
+                        placement="top",
+                    ),
+                    dbc.Tooltip(
+                        "Hydraulic or specified head at the downstream boundary (feet)",
+                        target="downstream-head",
+                        placement="top",
+                    ),
                 ],
                 id="horizontal-extension-content"
             )
@@ -663,7 +708,22 @@ def _build_view_card():
                         ],
                         id="view-tabs",
                         active_tab="stratigraphy-cross-section",
-                    )
+                    ),
+                    dbc.Tooltip(
+                        "Cross-section sketch of stratigraphy and key horizons",
+                        target="stratigraphy-cross-section-plot",
+                        placement="top",
+                    ),
+                    dbc.Tooltip(
+                        "Groundwater level and available MAR storage visualization",
+                        target="groundwater-plot",
+                        placement="top",
+                    ),
+                    dbc.Tooltip(
+                        "Plan-view layout of the MAR geometry",
+                        target="xy-view-plot",
+                        placement="top",
+                    ),
                 ]
             ),
         ],

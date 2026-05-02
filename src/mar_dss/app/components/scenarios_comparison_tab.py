@@ -68,7 +68,12 @@ def create_scenarios_comparison_content():
             html.P(
                 "Compare different MAR project scenarios and their outcomes."
             ),
-            dcc.Graph(figure=fig),
+            dcc.Graph(id="scenarios-comparison-chart", figure=fig),
+            dbc.Tooltip(
+                "Illustrative scenario scores for supply, cost, and environment",
+                target="scenarios-comparison-chart",
+                placement="top",
+            ),
             html.Hr(),
             html.H5("Scenario Analysis:", className="mt-3"),
             html.Div(

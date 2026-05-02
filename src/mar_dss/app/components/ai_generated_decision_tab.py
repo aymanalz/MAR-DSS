@@ -59,7 +59,12 @@ def create_ai_generated_decision_content():
             html.P(
                 "Artificial Intelligence powered decision recommendations and analysis."
             ),
-            dcc.Graph(figure=fig),
+            dcc.Graph(id="ai-generated-decision-chart", figure=fig),
+            dbc.Tooltip(
+                "Sample AI-style scoring chart (placeholder narrative dashboard)",
+                target="ai-generated-decision-chart",
+                placement="top",
+            ),
             html.Hr(),
             html.H5("AI Recommendation:", className="mt-3"),
             dbc.Alert(

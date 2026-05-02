@@ -23,18 +23,24 @@ def create_data_export_content():
                                         [
                                             dbc.Button(
                                                 "Export CSV",
+                                                id="export-csv-btn",
                                                 color="primary",
                                                 className="mb-2",
+                                                title="Export tabular results as comma-separated values",
                                             ),
                                             dbc.Button(
                                                 "Export Excel",
+                                                id="export-excel-btn",
                                                 color="success",
                                                 className="mb-2",
+                                                title="Export results as a spreadsheet workbook",
                                             ),
                                             dbc.Button(
                                                 "Export PDF",
+                                                id="export-pdf-btn",
                                                 color="warning",
                                                 className="mb-2",
+                                                title="Export a printable PDF summary",
                                             ),
                                         ],
                                         width=6,
@@ -43,6 +49,7 @@ def create_data_export_content():
                                         [
                                             html.P("Select data range:"),
                                             dbc.Select(
+                                                id="export-date-range-select",
                                                 options=[
                                                     {
                                                         "label": "Last 7 days",
@@ -67,6 +74,11 @@ def create_data_export_content():
                                         width=6,
                                     ),
                                 ]
+                            ),
+                            dbc.Tooltip(
+                                "Time window included in the export file",
+                                target="export-date-range-select",
+                                placement="top",
                             ),
                         ]
                     )

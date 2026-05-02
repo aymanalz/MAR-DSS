@@ -11,7 +11,13 @@ def create_reports_tab_content():
     return [
         html.H3("Reports"),
         html.P("Generate and download reports here."),
-        dbc.Button("Generate Report", color="primary", className="mt-3"),
+        dbc.Button(
+            "Generate Report",
+            id="generate-report-btn",
+            color="primary",
+            className="mt-3",
+            title="Build a summary report from current analysis outputs (when wired)",
+        ),
     ]
 
 

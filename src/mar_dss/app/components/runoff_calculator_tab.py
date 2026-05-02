@@ -50,7 +50,12 @@ def create_map_card():
     return dbc.Card([
         dbc.CardHeader("Runoff Analysis Map", className="fw-bold bg-primary text-white"),
         dbc.CardBody([
-            create_runoff_map()
+            create_runoff_map(),
+            dbc.Tooltip(
+                "Click the map to set coordinates; use layers for markers, stations, and watershed",
+                target="runoff-map",
+                placement="top",
+            ),
         ])
     ])
 
@@ -62,7 +67,6 @@ def create_coordinate_inputs():
         dbc.Input(
             id="selected-latitude",
             type="number",
-            value=None,
             placeholder="Click map to set latitude",
             step=0.000001,
             style={"margin-bottom": "10px"}
@@ -71,7 +75,6 @@ def create_coordinate_inputs():
         dbc.Input(
             id="selected-longitude",
             type="number",
-            value=None,
             placeholder="Click map to set longitude",
             step=0.000001,
             style={"margin-bottom": "15px"}
@@ -86,19 +89,22 @@ def create_action_buttons():
             "Obtain nearby streams",
             id="obtain-streams-btn",
             color="success",
-            className="me-2 mb-3"
+            className="me-2 mb-3",
+            title="Find stream features near the selected map location",
         ),
         dbc.Button(
             "Get Watershed Info",
             id="get-watershed-btn",
             color="info",
-            className="mb-3"
+            className="mb-3",
+            title="Retrieve watershed boundaries and attributes for the area",
         ),
         dbc.Button(
             "Calculate Runoff",
             id="calculate-runoff-btn",
             color="primary",
-            className="me-2"
+            className="me-2",
+            title="Run runoff estimates using current watershed and CN inputs",
         ),
     ]
 
@@ -117,7 +123,17 @@ def create_controls_card():
             html.Small(
                 "Click on the map to add monitoring points or draw watershed boundaries.",
                 className="text-muted"
-            )
+            ),
+            dbc.Tooltip(
+                "Latitude from map click or manual entry (decimal degrees)",
+                target="selected-latitude",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Longitude from map click or manual entry (decimal degrees)",
+                target="selected-longitude",
+                placement="top",
+            ),
         ])
     ])
 
@@ -142,7 +158,12 @@ def create_impervious_curve_number_content():
                 placeholder="Select a surface condition...",
                 className="mb-3"
             ),
-            html.Div(id="selected-impervious-curve-number-display", className="mt-3")
+            html.Div(id="selected-impervious-curve-number-display", className="mt-3"),
+            dbc.Tooltip(
+                "Curve number for fully impervious surfaces (SCS CN tables)",
+                target="impervious-curve-number-select",
+                placement="top",
+            ),
         ])
     ])
 
@@ -189,7 +210,17 @@ def create_cover_soil_curve_number_content():
                     ),
                 ], width=6)
             ]),
-            html.Div(id="selected-curve-number-display", className="mt-3")
+            html.Div(id="selected-curve-number-display", className="mt-3"),
+            dbc.Tooltip(
+                "Land cover condition for pervious portion of the watershed",
+                target="cover-description-select",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "NRCS hydrologic soil group for pervious CN lookup",
+                target="soil-type-select",
+                placement="top",
+            ),
         ])
     ])
 
@@ -317,7 +348,8 @@ def create_curve_number_tab():
                                         "Download Rain Statistics",
                                         id="download-rain-statistics-btn",
                                         color="secondary",
-                                        className="mb-3"
+                                        className="mb-3",
+                                        title="Fetch NOAA precipitation statistics for the coordinates entered",
                                     ),
                                     html.Div(id="runoff-calculations-content", className="mt-3"),
                                     dbc.Row([
@@ -398,7 +430,8 @@ def create_curve_number_tab():
                                                 "Get Monthly Rainfall and Runoff",
                                                 id="get-monthly-rain-btn",
                                                 color="primary",
-                                                className="mb-3"
+                                                className="mb-3",
+                                                title="Compute monthly rainfall depth and runoff using storm statistics",
                                             )
                                         ], width="auto"),
                                         dbc.Col([
@@ -414,7 +447,37 @@ def create_curve_number_tab():
                                 ])
                             ])
                         ], width=12)
-                    ], className="mt-4")
+                    ], className="mt-4"),
+        dbc.Tooltip(
+            "Choose how impervious drainage connects to the storm system (affects composite CN)",
+            target="impervious-outlet-option",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Latitude for NOAA rain download and single-storm runoff (decimal degrees)",
+            target="runoff-single-storm-latitude",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Longitude for NOAA rain download and single-storm runoff (decimal degrees)",
+            target="runoff-single-storm-longitude",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Editable runoff calculation inputs and intermediate results",
+            target="runoff-calculations-table",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Typical number of runoff-producing storms per month for annualization",
+            target="rain-events-per-month",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "When checked, monthly runoff estimates can feed MAR recharge inputs elsewhere",
+            target="use-runoff-for-recharge-check",
+            placement="top",
+        ),
     ]
 
 

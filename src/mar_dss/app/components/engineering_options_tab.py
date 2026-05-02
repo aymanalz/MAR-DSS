@@ -435,7 +435,82 @@ def create_engineering_elements_content():
                 ),
             ],
             className="mb-4",
-        )
+        ),
+        dbc.Tooltip(
+            "Use manual runoff/peaks or pull estimates from the runoff calculator tab",
+            target="hydrologic-design-method-radio",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Total stormwater or supply runoff volume available (ft³)",
+            target="peak-flow-available-input",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Fraction of available flow routed into MAR facilities (0–1)",
+            target="fraction-flow-capture-input",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Structures and earthwork options for capturing runoff",
+            target="flow-capture-pump-check",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Open channel vs. gravity or pumped pipe to the sediment pond",
+            target="conveyance-method-radio",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Conveyance distance from collection point to sediment pond (miles)",
+            target="distance-collection-to-sediment",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Toggle sediment pond out of the cost build-up",
+            target="remove-sediment-removal-pond-check",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Sediment controls included in pond cost (trash rack, filtration, etc.)",
+            target="sediment-removal-pond-check",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Particle-size removal target for pond design",
+            target="sediment-removal-target-radio",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Include capital line items for temporary storage pond",
+            target="storage-pond-check",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Cost elements for pumped conveyance from sediment pond to storage",
+            target="pumped-conveyance-storage-check",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Pipeline / pump distance from sediment pond to storage (ft)",
+            target="distance-to-storage-pond-input",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Cost elements for pumped conveyance from storage to infiltration site",
+            target="pumped-conveyance-infiltration-check",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "MAR infiltration structure type for sizing and costing",
+            target="infiltration-method-radio",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Design infiltration footprint (default ~60% of site area from Overview)",
+            target="max-infiltration-area-input",
+            placement="top",
+        ),
     ]
 
 
@@ -606,7 +681,27 @@ def create_cost_content():
             ],
             id="cost-tables-tabs",
             active_tab="capital-cost-table-tab"
-        )
+        ),
+        dbc.Tooltip(
+            "Total estimated capital cost from engineering selections",
+            target="capital-cost-display",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Annual O&M cost estimate for the MAR facility",
+            target="annual-maintenance-cost-display",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "20-year net present value of benefits minus costs",
+            target="npv-20-years-display",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Switch between capital, maintenance, and NPV detail tables",
+            target="cost-tables-tabs",
+            placement="top",
+        ),
     ]
 
 

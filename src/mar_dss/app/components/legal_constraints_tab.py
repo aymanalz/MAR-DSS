@@ -307,7 +307,22 @@ def create_basic_regulation_feasibility_content():
                     style={"position": "sticky", "top": "20px", "align-self": "start"},
                 ),
             ]
-        )
+        ),
+        dbc.Tooltip(
+            "Source-water category for applying source-specific regulatory pathways",
+            target="legal-src-type",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Primary MAR delivery mechanism affecting UIC and construction rules",
+            target="legal-qual-method",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Summary regulatory risk index from your feasibility questionnaire",
+            target="legal-risk-gauge",
+            placement="top",
+        ),
     ]
 
 

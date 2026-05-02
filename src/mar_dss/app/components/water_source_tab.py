@@ -367,7 +367,32 @@ def create_water_source_info_tab():
                                                     width=6,
                                                 ),
                                             ]
-                                        )
+                                        ),
+                                        dbc.Tooltip(
+                                            "Primary source supplying water for MAR (surface water, stormwater, reclaimed, etc.)",
+                                            target="water-source-dropdown",
+                                            placement="top",
+                                        ),
+                                        dbc.Tooltip(
+                                            "Distance from the MAR site to the diversion or intake point (miles)",
+                                            target="proximity-distance-input",
+                                            placement="top",
+                                        ),
+                                        dbc.Tooltip(
+                                            "How water is moved from the source to the MAR facility",
+                                            target="water-conveyance-dropdown",
+                                            placement="top",
+                                        ),
+                                        dbc.Tooltip(
+                                            "Whether you hold legal rights or permits for the source water",
+                                            target="water-ownership-radio",
+                                            placement="top",
+                                        ),
+                                        dbc.Tooltip(
+                                            "Whether pumping is required to deliver source water to the site",
+                                            target="pumping-needed-radio",
+                                            placement="top",
+                                        ),
                                     ],
                                     className="p-3",
                                 ),
@@ -422,7 +447,17 @@ def create_water_source_info_tab():
                                                     width=8,
                                                 ),
                                             ]
-                                        )
+                                        ),
+                                        dbc.Tooltip(
+                                            "Edit monthly flows (ft³/month); values feed charts and saved project data",
+                                            target="flow-data-table",
+                                            placement="top",
+                                        ),
+                                        dbc.Tooltip(
+                                            "Monthly flow bars and cumulative annual flow trend",
+                                            target="monthly-flow-chart",
+                                            placement="top",
+                                        ),
                                     ],
                                     className="p-3",
                                 ),

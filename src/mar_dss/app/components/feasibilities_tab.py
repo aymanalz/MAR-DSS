@@ -240,7 +240,47 @@ def create_feasibilities_content():
                     )
                 ],
                 className="mb-2"
-            )
+            ),
+            dbc.Tooltip(
+                "Text summary of integrated feasibility conclusions",
+                target="executive-summary-content",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Share of MAR options passing filters at each decision stage",
+                target="decision-funnel-chart",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Constraint intensity by option for hydrogeologic criteria",
+                target="hydrogeologic-constraints-heatmap-chart",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Constraint intensity for environmental criteria",
+                target="environmental-constraints-heatmap-chart",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Constraint intensity for permitting and regulatory criteria",
+                target="regulation-constraints-heatmap-chart",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Capital cost comparison across MAR technology options",
+                target="capital-cost-chart",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Annual maintenance cost comparison across options",
+                target="maintenance-cost-chart",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Net present value comparison across options",
+                target="npv-cost-chart",
+                placement="top",
+            ),
         ],
         style={"padding": "0.5rem"}
     )

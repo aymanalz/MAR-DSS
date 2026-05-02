@@ -15,6 +15,12 @@ window.dash_clientside = Object.assign({}, window.dash_clientside, {
         }, 0);
       }
       return window.dash_clientside.no_update;
+    },
+
+    initOverviewTooltips: function() {
+      // Initialize Bootstrap tooltips for overview tab elements
+      initOverviewTooltips(); // Immediately initialize tooltips when dashboard loads
+      return window.dash_clientside.no_update;
     }
   }
 });

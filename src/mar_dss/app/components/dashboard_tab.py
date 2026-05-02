@@ -566,7 +566,27 @@ def create_dashboard_content():
                 id="technology-analysis-tabs",
                 active_tab="feasibility-metrics",
                 className="mb-4"
-            )
+            ),
+            dbc.Tooltip(
+                "Roll-up feasibility score from integrated DSS metrics",
+                target="overall-feasibility-score",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Indicative total capital range from selected MAR technologies",
+                target="total-project-cost",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "MAR technologies passing soft and hard constraints",
+                target="feasible-technologies-card-body",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Feasibility metrics, comparisons, and sensitivity views",
+                target="technology-analysis-tabs",
+                placement="top",
+            ),
         ]
     )
 

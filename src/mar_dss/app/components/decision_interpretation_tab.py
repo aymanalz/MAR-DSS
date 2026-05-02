@@ -474,6 +474,11 @@ def create_decision_interpretation_content():
                                     "borderRadius": "5px"
                                 }
                             ),
+                            dbc.Tooltip(
+                                "MAR engineering option to show detailed narrative, warnings, and mitigations",
+                                target="decision-interpretation-option-selector",
+                                placement="bottom",
+                            ),
                         ],
                         style={
                             "padding": "1rem",
@@ -562,8 +567,22 @@ def create_decision_interpretation_content():
             # Charts
             dbc.Row(
                 [
-                    dbc.Col(dcc.Graph(figure=status_fig, config={"displayModeBar": False}), width=6),
-                    dbc.Col(dcc.Graph(figure=benefit_fig, config={"displayModeBar": False}), width=6),
+                    dbc.Col(
+                        dcc.Graph(
+                            id="decision-interpretation-status-chart",
+                            figure=status_fig,
+                            config={"displayModeBar": False},
+                        ),
+                        width=6,
+                    ),
+                    dbc.Col(
+                        dcc.Graph(
+                            id="decision-interpretation-benefit-chart",
+                            figure=benefit_fig,
+                            config={"displayModeBar": False},
+                        ),
+                        width=6,
+                    ),
                 ],
                 className="mb-2",
             ),
@@ -640,6 +659,16 @@ def create_decision_interpretation_content():
                         className="mb-0"
                     ),
                 ]
+            ),
+            dbc.Tooltip(
+                "Counts of MAR options by recommendation status",
+                target="decision-interpretation-status-chart",
+                placement="top",
+            ),
+            dbc.Tooltip(
+                "Benefit scores across options for quick comparison",
+                target="decision-interpretation-benefit-chart",
+                placement="top",
             ),
         ],
         style={"padding": "0.5rem"}

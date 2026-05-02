@@ -188,7 +188,11 @@ def create_hydrogeologic_feasibility_content_dynamic():
                     dbc.Card([
                         dbc.CardHeader(html.H5("Overall Feasibility Score", className="mb-0")),
                         dbc.CardBody([
-                            dcc.Graph(figure=gauge_fig, config={'displayModeBar': False}),
+                            dcc.Graph(
+                                id="hydro-feasibility-gauge-chart",
+                                figure=gauge_fig,
+                                config={'displayModeBar': False},
+                            ),
                             dbc.Alert(
                                 [
                                     html.H6(f"Status: {status}", className="mb-0"),
@@ -255,8 +259,9 @@ def create_hydrogeologic_feasibility_content_dynamic():
                         dbc.CardHeader(html.H5("Component Scores Breakdown", className="mb-0")),
                         dbc.CardBody([
                             dcc.Graph(
+                                id="hydro-feasibility-component-scores-chart",
                                 figure=create_component_scores_chart(breakdown),
-                                config={'displayModeBar': True}
+                                config={'displayModeBar': True},
                             )
                         ])
                     ])
@@ -298,7 +303,21 @@ def create_hydrogeologic_feasibility_content_dynamic():
                 ], width=12, className="mb-4")
             ])
         )
-        
+        content.extend(
+            [
+                dbc.Tooltip(
+                    "Integrated hydrogeologic feasibility index from the decision graph",
+                    target="hydro-feasibility-gauge-chart",
+                    placement="top",
+                ),
+                dbc.Tooltip(
+                    "Breakdown of feasibility contributions by subsystem",
+                    target="hydro-feasibility-component-scores-chart",
+                    placement="top",
+                ),
+            ]
+        )
+
         return content
         
     except Exception as e:

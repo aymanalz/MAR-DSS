@@ -696,6 +696,86 @@ def create_water_quality_content():
                 "align-self": "start"
             }),
         ]),
+        dbc.Tooltip(
+            "Water-quality parameters to track for suitability scoring",
+            target="physical-parameters",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Constituent groups used in chemical compatibility and compliance steps",
+            target="chemical-parameters",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Pathogen indicators considered in microbial risk scoring",
+            target="biological-indicators",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "PFAS, pesticides, and similar constituents of emerging concern",
+            target="emerging-contaminants",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Physical clogging risk from suspended solids and turbidity",
+            target="env-step1-input",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Organic fouling potential from dissolved organic carbon",
+            target="env-step2a-input",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "pH and alkalinity mismatch with native groundwater",
+            target="env-step2b-input",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Salinity / TDS mismatch relative to native groundwater",
+            target="env-step3-input",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Redox-driven precipitation or mobilization concerns",
+            target="env-step5b-input",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Regulatory exceedances for major inorganic contaminants",
+            target="env-step4-input",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "PFAS, pharmaceuticals, and other emerging contaminants",
+            target="env-step5a-input",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Microbial pathogen risk tier for the selected source type",
+            target="env-step6-input",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Vadose zone contamination that could affect recharge safety",
+            target="env-step7-input",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Reference treatment technologies and indicative unit costs",
+            target="env-treatment-appendix-table",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Composite suitability score from the decision tree",
+            target="env-score-gauge",
+            placement="top",
+        ),
+        dbc.Tooltip(
+            "Order-of-magnitude treatment cost index from selected technologies",
+            target="env-cost-gauge",
+            placement="top",
+        ),
     ]
 
 
@@ -813,6 +893,7 @@ def create_environmental_considerations_content():
                                         color="success",
                                         className="w-100",
                                         n_clicks=0,
+                                        title="Call Gemini with the location to build an environmental factors checklist",
                                         style={
                                             "aspectRatio": "1",
                                             "height": "auto",
@@ -844,7 +925,32 @@ def create_environmental_considerations_content():
                         ]),
                         
                         # Output section
-                        html.Div(id="mar-factors-table-container", className="mt-4")
+                        html.Div(id="mar-factors-table-container", className="mt-4"),
+                        dbc.Tooltip(
+                            "Google Gemini API key (stored locally for this session)",
+                            target="gemini-api-key-input",
+                            placement="top",
+                        ),
+                        dbc.Tooltip(
+                            "Optional text file on disk containing the API key",
+                            target="gemini-api-file-input",
+                            placement="top",
+                        ),
+                        dbc.Tooltip(
+                            "Gemini model used for environmental factor generation",
+                            target="gemini-model-select",
+                            placement="top",
+                        ),
+                        dbc.Tooltip(
+                            "Sampling temperature: lower is more deterministic; higher is more varied",
+                            target="temperature-slider",
+                            placement="top",
+                        ),
+                        dbc.Tooltip(
+                            "Plain-language place name sent to the AI (e.g., city, state)",
+                            target="mar-location-input",
+                            placement="top",
+                        ),
                     ])
                 ])
             ], width=12)
